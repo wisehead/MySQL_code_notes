@@ -1,0 +1,5 @@
+1.ibuf_merge_or_delete_for_page
+
+将Insert Buffer中缓存的记录插入到辅助索引中。不论主动还是被动合并。
+
+2.

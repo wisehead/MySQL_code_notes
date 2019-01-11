@@ -1,0 +1,1070 @@
+0.概念梳理
+- rollback segment (trx0rseg.*).
+- undo segment(trx0undo.*)
+- undo log(trx0rec.*)
+- undo log header
+- undo log record.
+
+
+1.trx_undo_page_get
+--buf_page_get
+
+
+2.trx_sys_create
+创建事务系统段对象
+
+innobase_start_or_create_for_mysql
+--trx_sys_create
+--recv_recovery_from_checkpoint_start
+--trx_sys_init_at_db_start
+----trx_lists_init_at_db_start
+------UT_LIST_INIT(trx_sys->ro_trx_list);
+------UT_LIST_INIT(trx_sys->rw_trx_list);
+------trx_resurrect_insert
+------trx_list_rw_insert_ordered
+------trx_resurrect_table_locks
+------trx_get_rw_trx_by_id
+------trx_allocate_for_background
+------trx_resurrect_update
+------trx_list_rw_insert_ordered
+------trx_resurrect_table_locks
+------
+
+
+
+trx_start_low
+trx_list_rw_insert_ordered
+
+3.trx_undo_seg_create
+用于完成整个undo段的初始化工作。需要注意的是，在创建undo日志的任何对象时，同样需要进行记录重做日志。
+因为在发生宕机的情况下，首先要通过redo log恢复undo log，然后再判断事务是否需要根据undo log进行回滚或是提交操作。
+
+4.trx_undo_set_state_at_finish
+若一个undo段中的undo页的数量大于1，则此时不可再重用undo页。
+即重用undo页的一个充分条件为当前undo段中undo页的数量为1。
+
+5.trx_undo_assign_undo
+
+trx_undo_assign_undo
+--trx_undo_reuse_cached
+--trx_undo_create
+----trx_rsegf_get
+--UT_LIST_ADD_FIRST(undo_list, rseg->insert_undo_list, undo);
+--UT_LIST_ADD_FIRST(undo_list, rseg->update_undo_list, undo);
+--trx_undo_mark_as_dict_operation
+
+
+ 			Thread 199 (Thread 0x7f7520785700 (LWP 24727)):
+ 			#0  0x00007f76e11c95bc in pthread_cond_wait@@GLIBC_2.3.2 () from /lib64/libpthread.so.0
+ 			#1  0x0000000000995b5b in os_event_wait_low(os_event*, long) ()
+ 			#2  0x00000000009ffa24 in sync_array_wait_event(sync_array_t*, unsigned long) ()
+ 			#3  0x0000000000a00ef2 in mutex_spin_wait(ib_mutex_t*, char const*, unsigned long) ()
+ 			#4  0x0000000000a1c655 in trx_undo_assign_undo(trx_t*, unsigned long) ()
+ 			#5  0x0000000000a0b39d in trx_undo_report_row_operation(unsigned long, unsigned long, que_thr_t*, dict_index_t*, dtuple_t const*, upd_t const*, unsigned long, unsigned char con
+ 			st*, unsigned long const*, unsigned long*) ()
+ 			#6  0x0000000000a3642a in btr_cur_update_in_place(unsigned long, btr_cur_t*, unsigned long*, upd_t const*, unsigned long, que_thr_t*, unsigned long, mtr_t*) ()
+ 			#7  0x0000000000a3d42c in btr_cur_optimistic_update(unsigned long, btr_cur_t*, unsigned long**, mem_block_info_t**, upd_t const*, unsigned long, que_thr_t*, unsigned long, mtr_
+ 			t*) ()
+ 			#8  0x00000000009ed78d in row_upd_clust_rec(upd_node_t*, dict_index_t*, unsigned long*, mem_block_info_t**, que_thr_t*, mtr_t*) ()
+ 			#9  0x00000000009ee8ec in row_upd_clust_step(upd_node_t*, que_thr_t*) ()
+ 			#10 0x00000000009efc1e in row_upd_step(que_thr_t*) ()
+ 			#11 0x00000000009d4f3b in row_update_for_mysql(unsigned char*, row_prebuilt_t*) ()
+ 			#12 0x000000000094f763 in ha_innobase::update_row(unsigned char const*, unsigned char*) ()
+ 			#13 0x00000000005911a0 in handler::ha_update_row(unsigned char const*, unsigned char*) ()
+ 			#14 0x0000000000744d72 in mysql_update(THD*, TABLE_LIST*, List<Item>&, List<Item>&, Item*, unsigned int, st_order*, unsigned long long, enum_duplicates, bool, unsigned long lon
+ 			g*, unsigned long long*) ()
+ 			#15 0x00000000006d8b0a in mysql_execute_command(THD*) ()
+ 			#16 0x00000000006e98e2 in Prepared_statement::execute(String*, bool) ()
+ 			#17 0x00000000006edb5a in Prepared_statement::execute_loop(String*, bool, unsigned char*, unsigned char*) ()
+ 			#18 0x00000000006ee224 in mysqld_stmt_execute(THD*, char*, unsigned int) ()
+ 			#19 0x00000000006dce04 in dispatch_command(enum_server_command, THD*, char*, unsigned int) ()
+ 			#20 0x00000000006a4cad in do_handle_one_connection(THD*) ()
+ 			#21 0x00000000006a4de2 in handle_one_connection ()
+ 			#22 0x0000000000b03a57 in pfs_spawn_thread ()
+ 			#23 0x00007f76e11c59d1 in start_thread () from /lib64/libpthread.so.0
+ 			#24 0x00007f76dff2e8fd in clone () from /lib64/libc.so.6
+ 
+ 
+6.trx_undo_header_create
+在事务每次发生DML操作时，首先要给事务分配一个undo log header。
+一个事务可以同时有Insert和update操作。但是不能存放于一个undo页中。每个类型undo记录需要分配单独的undo段。
+
+9.trx_undo_parse_erase_page_end
+当一个undo页放入不了update undo log record时，会调用该函数将已经产生的部分update undo log record删除，并以16进制0xFF进行填充。
+同时将新的undo页添加进undo段中，并使用新申请的undo页存放update undo log record。同时，该undo页不可再进行重用。
+
+10.trx_undo_page_report_modify
+用于产生具体的 update undo log record.
+
+
+
+11.trx_lists_init_at_db_start
+
+
+trx_list_rw_insert_ordered
+
+trx_start_low
+
+trx_commit_in_memory//remove
+
+trx_cleanup_at_db_startup//remove
+
+
+12.trx_list_rw_insert_ordered
+
+innobase_start_or_create_for_mysql
+--trx_sys_init_at_db_start
+----trx_lists_init_at_db_start
+------trx_list_rw_insert_ordered
+
+
+p trx_sys->rw_trx_list.start->trx_list.next->id
+
+(gdb) p *trx_list->start
+$102 = {
+magic_n = 91118598, 
+mutex = {event = 0x1281cb50, lock_word = 0 '\000', waiters = 0, list = {prev = 0x127d2a78, next = 0x1281b358}, 
+    file_name = 0x1035ad8 "/home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc", line = 1170, level = 297, 
+    cfile_name = 0x1062160 "/home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc", cline = 108, count_os_wait = 0, thread_id = 18446744073709551615, magic_n = 979585, cmutex_name = 0x0, 
+    ib_mutex_type = 0, pfs_psi = 0x0}, 
+state = TRX_STATE_ACTIVE, 
+lock = {n_active_thrs = 1, que_state = TRX_QUE_RUNNING, wait_lock = 0x0, deadlock_mark = 0, was_chosen_as_deadlock_victim = 0, 
+    wait_started = 0, wait_thr = 0x0, lock_heap = 0x12802490, trx_locks = {count = 0, start = 0x0, end = 0x0}, table_locks = 0x127d0e68, cancel = 0}, 
+is_recovered = 0, 
+  op_info = 0x103ff9f "dropping indexes", isolation_level = 2, check_foreigns = 1, is_registered = 0, owns_prepare_mutex = 0, check_unique_secondary = 1, support_xa = 1, flush_log_later = 0, 
+  must_flush_log_later = 0, duplicates = 0, has_search_latch = 0, search_latch_timeout = 10000, dict_operation = TRX_DICT_OP_INDEX, declared_to_be_inside_innodb = 0, 
+  n_tickets_to_enter_innodb = 0, dict_operation_lock_mode = 2, no = 18446744073709551615, start_time = 0, id = 47396352, 
+xid = {formatID = -1, gtrid_length = 0, bqual_length = 0, 
+    data = '\000' <repeats 127 times>}, 
+commit_lsn = 0, table_id = 0, mysql_thd = 0x0, mysql_log_file_name = 0x0, mysql_log_offset = 0, n_mysql_tables_in_use = 0, mysql_n_tables_locked = 0, 
+trx_list = {prev = 0x0, next = 0x1286a368}, 
+in_ro_trx_list = 0, in_rw_trx_list = 1, mysql_trx_list = {prev = 0x0, next = 0x0}, in_mysql_trx_list = 0, error_state = DB_SUCCESS, error_info = 0x0, 
+  error_key_num = 0, sess = 0x1283a7f8, graph = 0x0, global_read_view_heap = 0x12800b20, global_read_view = 0x0, read_view = 0x0, 
+trx_savepoints = {count = 0, start = 0x0, end = 0x0}, 
+undo_mutex = {event = 0x12829a10, lock_word = 0 '\000', waiters = 0, list = {prev = 0x0, next = 0x127d2790}, file_name = 0x105a6de "not yet reserved", line = 0, level = 700, 
+    cfile_name = 0x1062160 "/home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc", cline = 125, count_os_wait = 0, thread_id = 0, magic_n = 979585, cmutex_name = 0x0, ib_mutex_type = 0, 
+    pfs_psi = 0x0}, 
+undo_no = 0, last_sql_stat_start = {least_undo_no = 0}, rseg = 0x127cebb8, insert_undo = 0x0, update_undo = 0x0, roll_limit = 0, pages_undone = 0, undo_no_arr = 0x0, 
+n_autoinc_rows = 0, autoinc_locks = 0x1280c628, read_only = 0, auto_commit = 0, will_lock = 1, ddl = true, fts_trx = 0x0, fts_next_doc_id = 0, flush_tables = 0, start_line = 2062, 
+  start_file = 0x104bf28 "/home/chenhui/mysql-baidu-5623/storage/innobase/row/row0sel.cc", api_trx = false, api_auto_commit = false, read_write = true, detailed_error = '\000' <repeats 255 times>}
+  
+19.问题三，trx_sys_validate_trx_list_low
+
+InnoDB: Apply batch completed
+2015-10-10 11:22:06 7f15d791f740  InnoDB: Assertion failure in thread 139731787708224 in file trx0sys.cc line 1289
+InnoDB: Failing assertion: prev_trx == NULL || prev_trx->id > trx->id
+
+trx_sys_validate_trx_list_low
+
+   1281 
+   1282     for (trx = UT_LIST_GET_FIRST(*trx_list);
+   1283          trx != NULL;
+   1284          prev_trx = trx, trx = UT_LIST_GET_NEXT(trx_list, prev_trx)) {
+   1285 
+   1286         assert_trx_in_list(trx);
+   1287         ut_ad(trx->read_only == (trx_list == &trx_sys->ro_trx_list));
+   1288 
+   1289         ut_a(prev_trx == NULL || prev_trx->id > trx->id);
+   1290     }
+   1291     
+   1292     return(TRUE);
+   1293 }
+   
+Breakpoint 1, trx_sys_validate_trx_list_low (trx_list=0x127c0ad0) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0sys.cc:1275
+1275            const trx_t*    prev_trx = NULL;
+(gdb) bt 
+#0  trx_sys_validate_trx_list_low (trx_list=0x127c0ad0) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0sys.cc:1275
+#1  0x0000000000c7faec in trx_sys_validate_trx_list () at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0sys.cc:1305
+#2  0x0000000000c842b7 in trx_start_low (trx=0x127d2788) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:903
+#3  0x0000000000c874eb in trx_start_if_not_started_xa_low (trx=0x127d2788) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:2233
+#4  0x0000000000c2d57f in row_sel_step (thr=0x128bcea8) at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0sel.cc:2062
+#5  0x0000000000bbf866 in que_thr_step (thr=0x128bcea8) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1083
+#6  0x0000000000bbfba5 in que_run_threads_low (thr=0x128bcea8) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1167
+#7  0x0000000000bbfd6a in que_run_threads (thr=0x128bcea8) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1208
+#8  0x0000000000bbffd0 in que_eval_sql (info=0x0, 
+    sql=0x1040ae0 <row_merge_drop_temp_indexes()::sql> "PROCEDURE DROP_TEMP_INDEXES_PROC () IS\nixid CHAR;\nfound INT;\nDECLARE CURSOR index_cur IS\n SELECT ID FROM SYS_INDEXES\n WHERE SUBSTR(NAME,0,1)='\377'\nFOR UPDATE;\nBEGIN\nfound := 1;\nOPEN index_cur;\nWHILE fou"..., reserve_dict_mutex=0, trx=0x127d2788) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1285
+#9  0x0000000000bf8886 in row_merge_drop_temp_indexes () at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0merge.cc:2907
+#10 0x0000000000b7bf32 in recv_recovery_rollback_active () at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:3476
+#11 0x0000000000c5880b in innobase_start_or_create_for_mysql () at /home/chenhui/mysql-baidu-5623/storage/innobase/srv/srv0start.cc:2560
+#12 0x0000000000b09022 in innobase_init (p=0x193d7f0) at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:3365
+#13 0x0000000000644ded in ha_initialize_handlerton (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:662
+#14 0x00000000007f12e8 in plugin_initialize (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1137
+#15 0x00000000007f1d5d in plugin_init (argc=0x17fb1c8 <remaining_argc>, argv=0x185d598, flags=0) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1431
+#16 0x000000000062f666 in init_server_components () at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:4849
+#17 0x0000000000630563 in mysqld_main (argc=94, argv=0x185d598) at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:5444
+#18 0x0000000000625bb0 in main (argc=1, argv=0x7fffffffe848) at /home/chenhui/mysql-baidu-5623/sql/main.cc:25
+
+
+20。问题四
+InnoDB: Apply batch completed
+InnoDB: Cleaning up trx with id 47424359
+2015-10-10 16:10:25 7f5b0bd9d740  InnoDB: Assertion failure in thread 140029017577280 in file trx0trx.cc line 292
+InnoDB: Failing assertion: trx->update_undo == NULL
+InnoDB: We intentionally generate a memory trap.
+
+
+trx_free_for_background
+
+    290     ut_a(trx->state == TRX_STATE_NOT_STARTED);
+    291     ut_a(trx->insert_undo == NULL);
+    292     ut_a(trx->update_undo == NULL);
+    293     ut_a(trx->read_view == NULL);
+    
+    
+Breakpoint 1, trx_free_for_background (trx=0x12880738) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:261
+261             if (trx->declared_to_be_inside_innodb) {
+(gdb) bt
+#0  trx_free_for_background (trx=0x12880738) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:261
+#1  0x0000000000c782df in trx_rollback_resurrected (trx=0x12880738, all=0) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:700
+#2  0x0000000000c7856c in trx_rollback_or_clean_recovered (all=0) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:768
+#3  0x0000000000b7bec5 in recv_recovery_from_checkpoint_finish () at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:3448
+#4  0x0000000000c5837d in innobase_start_or_create_for_mysql () at /home/chenhui/mysql-baidu-5623/storage/innobase/srv/srv0start.cc:2443
+#5  0x0000000000b09022 in innobase_init (p=0x193d7f0) at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:3365
+#6  0x0000000000644ded in ha_initialize_handlerton (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:662
+#7  0x00000000007f12e8 in plugin_initialize (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1137
+#8  0x00000000007f1d5d in plugin_init (argc=0x17fb1c8 <remaining_argc>, argv=0x185d598, flags=0) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1431
+#9  0x000000000062f666 in init_server_components () at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:4849
+#10 0x0000000000630563 in mysqld_main (argc=94, argv=0x185d598) at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:5444
+#11 0x0000000000625bb0 in main (argc=1, argv=0x7fffffffe848) at /home/chenhui/mysql-baidu-5623/sql/main.cc:25  
+
+
+
+innobase_start_or_create_for_mysql
+--buf_pool_invalidate//???????????
+--recv_recovery_from_checkpoint_start//to be investigated
+--dict_boot
+--trx_sys_init_at_db_start//!!!!!!!!!!!!!!
+----mtr_start(&mtr);
+----trx_lists_init_at_db_start
+------trx_resurrect_update
+--------trx_resurrect_update_in_prepared_state
+------trx_resurrect_table_locks
+----mtr_commit
+
+--trx_purge_sys_create
+
+--recv_recovery_from_checkpoint_finish//!!!!!!!!!!!!!!!!!
+----recv_apply_hashed_log_recs
+----trx_rollback_or_clean_recovered
+------trx_rollback_resurrected
+--------trx_cleanup_at_db_startup//case TRX_STATE_COMMITTED_IN_MEMORY:
+--------trx_rollback_active
+--------trx_free_for_background
+
+
+(gdb) p trx->id
+$10 = 47424359
+(gdb) p *trx
+$11 = {magic_n = 91118598, mutex = {event = 0x1a80f20, lock_word = 0 '\000', waiters = 0, list = {prev = 0x1a80cf8, next = 0x1a7fda8}, file_name = 0x105a6de "not yet reserved", 
+    line = 0, level = 297, cfile_name = 0x1062160 "/home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc", cline = 108, count_os_wait = 0, thread_id = 0, magic_n = 979585, 
+    cmutex_name = 0x0, ib_mutex_type = 0, pfs_psi = 0x0}, state = TRX_STATE_COMMITTED_IN_MEMORY, lock = {n_active_thrs = 0, que_state = TRX_QUE_RUNNING, wait_lock = 0x0, 
+    deadlock_mark = 0, was_chosen_as_deadlock_victim = 0, wait_started = 0, wait_thr = 0x0, lock_heap = 0x1a81040, trx_locks = {count = 0, start = 0x0, end = 0x0}, 
+    table_locks = 0x1a814c8, cancel = 0}, is_recovered = 1, op_info = 0x10621bc "", isolation_level = 2, check_foreigns = 1, is_registered = 0, owns_prepare_mutex = 0, 
+  check_unique_secondary = 1, support_xa = 1, flush_log_later = 0, must_flush_log_later = 0, duplicates = 0, has_search_latch = 0, search_latch_timeout = 10000, 
+  dict_operation = TRX_DICT_OP_NONE, declared_to_be_inside_innodb = 0, n_tickets_to_enter_innodb = 0, dict_operation_lock_mode = 0, no = 47424359, start_time = 0, id = 47424359, xid = {
+    formatID = -1, gtrid_length = 0, bqual_length = 0, data = '\000' <repeats 127 times>}, commit_lsn = 0, table_id = 0, mysql_thd = 0x0, mysql_log_file_name = 0x0, 
+  mysql_log_offset = 0, n_mysql_tables_in_use = 0, mysql_n_tables_locked = 0, trx_list = {prev = 0x0, next = 0x0}, in_ro_trx_list = 0, in_rw_trx_list = 0, mysql_trx_list = {prev = 0x0, 
+    next = 0x0}, in_mysql_trx_list = 0, error_state = DB_SUCCESS, error_info = 0x0, error_key_num = 0, sess = 0x1a3bbf8, graph = 0x0, global_read_view_heap = 0x1a811c0, 
+  global_read_view = 0x0, read_view = 0x0, trx_savepoints = {count = 0, start = 0x0, end = 0x0}, undo_mutex = {event = 0x1a80fb0, lock_word = 0 '\000', waiters = 0, list = {prev = 0x0, 
+      next = 0x1a80a10}, file_name = 0x105a6de "not yet reserved", line = 0, level = 700, cfile_name = 0x1062160 "/home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc", 
+    cline = 125, count_os_wait = 0, thread_id = 0, magic_n = 979585, cmutex_name = 0x0, ib_mutex_type = 0, pfs_psi = 0x0}, undo_no = 0, last_sql_stat_start = {least_undo_no = 0}, 
+  rseg = 0x1a3a628, insert_undo = 0x0, update_undo = 0x1a3ab98, roll_limit = 0, pages_undone = 0, undo_no_arr = 0x0, n_autoinc_rows = 0, autoinc_locks = 0x1a813d8, read_only = 0, 
+  auto_commit = 0, will_lock = 0, ddl = false, fts_trx = 0x0, fts_next_doc_id = 0, flush_tables = 0, start_line = 0, start_file = 0x0, api_trx = false, api_auto_commit = false, 
+  read_write = true, detailed_error = '\000' <repeats 255 times>}
+(gdb) p *trx->update_undo
+$12 = {id = 2, type = 2, state = 4, del_marks = 0, trx_id = 47424359, xid = {formatID = -1, gtrid_length = 0, bqual_length = 0, data = '\000' <repeats 127 times>}, dict_operation = 0, 
+  table_id = 0, rseg = 0x1a3a628, space = 0, zip_size = 0, hdr_page_no = 764, hdr_offset = 12143, last_page_no = 764, size = 1, empty = 0, top_page_no = 764, top_offset = 12329, 
+  top_undo_no = 0, guess_block = 0x0, undo_list = {prev = 0x0, next = 0x0}}
+  
+  
+21.查看trx->update_undo在哪里被设置为NULL
+
+innobase_shutdown_for_mysql
+--trx_sys_close
+----trx_free_prepared
+------trx_undo_free_prepared
+
+trx_commit
+--trx_commit_low
+----trx_write_serialisation_history
+------trx_undo_update_cleanup
+--------trx_purge_add_update_undo_to_history
+
+ha_commit_trans//in compiler
+--innobase_init
+----ha_innodb.cc::innobase_commit()
+------innobase_commit_low() 
+-------trx_commit_for_mysql
+----------trx_commit()；
+------------mtr_start(mtr);//!!!!!!!!!!!!!!!!
+------------trx_commit_low
+--------------trx_write_serialisation_history
+----------------trx_undo_set_state_at_finish
+----------------trx_undo_update_cleanup
+------------------trx_purge_add_update_undo_to_history
+--------------------trx_rsegf_set_nth_undo(rseg_header, undo->id, FIL_NULL, mtr);
+--------------------flst_add_first
+--------------------srv_wake_purge_thread_if_not_active
+------------------UT_LIST_REMOVE(undo_list, rseg->update_undo_list, undo);
+------------------trx->update_undo = NULL;
+------------------trx_undo_mem_free
+--------------mtr_commit(mtr);//!!!!!!!!!!!!!!!!!
+--------------trx_commit_in_memory
+----------------lock_trx_release_locks
+------------------trx->state = TRX_STATE_COMMITTED_IN_MEMORY;
+----------------UT_LIST_REMOVE(trx_list, trx_sys->rw_trx_list, trx);
+----------------trx->state = TRX_STATE_NOT_STARTED;
+----------------read_view_remove
+----------------trx_flush_log_if_needed
+------------------trx_flush_log_if_needed_low
+--------------------log_write_up_to
+	
+	
+	
+innobase_start_or_create_for_mysql
+--trx_sys_create
+--recv_recovery_from_checkpoint_start
+--trx_sys_init_at_db_start
+----trx_lists_init_at_db_start
+------UT_LIST_INIT(trx_sys->ro_trx_list);
+------UT_LIST_INIT(trx_sys->rw_trx_list);
+------trx_resurrect_insert
+------trx_list_rw_insert_ordered
+------trx_resurrect_table_locks
+------trx_get_rw_trx_by_id
+------trx_allocate_for_background
+------trx_resurrect_update
+------trx_list_rw_insert_ordered
+------trx_resurrect_table_locks
+
+
+trx_undo_mem_create_at_db_start
+trx_undo_lists_init
+trx_undo_assign_undo
+
+recv_recovery_from_checkpoint_finish
+--trx_rollback_or_clean_recovered
+----trx_rollback_resurrected
+------//case TRX_STATE_COMMITTED_IN_MEMORY:
+------trx_cleanup_at_db_startup
+------trx_free_for_background
+
+设置TRX_STATE_COMMITTED_IN_MEMORY状态
+lock_trx_release_locks
+trx_resurrect_insert
+trx_resurrect_update_in_prepared_state
+
+#0  trx_undo_update_cleanup (trx=0x128662b8, undo_page=0x7fffb6428000 "\256\326\026/", mtr=0x7ffe0a6e9910) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0undo.cc:1931
+#1  0x0000000000c845b5 in trx_write_serialisation_history (trx=0x128662b8, mtr=0x7ffe0a6e9910) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:1003
+#2  0x0000000000c85777 in trx_commit_low (trx=0x128662b8, mtr=0x7ffe0a6e9910) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:1371
+#3  0x0000000000c85820 in trx_commit (trx=0x128662b8) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:1418
+#4  0x0000000000c794e6 in trx_rollback_finish (trx=0x128662b8) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:1320
+#5  0x0000000000c77fe6 in trx_rollback_active (trx=0x128662b8) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:607
+#6  0x0000000000c7831b in trx_rollback_resurrected (trx=0x128662b8, all=1) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:705
+#7  0x0000000000c7856c in trx_rollback_or_clean_recovered (all=1) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:768
+#8  0x0000000000c7869b in trx_rollback_or_clean_all_recovered (arg=0x0) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:809
+#9  0x00007ffff7bc61c3 in ?? ()
+#10 0x0000000000000000 in ?? ()
+
+
+(gdb) info br
+Num     Type           Disp Enb Address            What
+1       breakpoint     keep y   0x0000000000c82550 in trx_free_for_background(trx_t*) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:261
+        breakpoint already hit 11 times
+2       breakpoint     keep y   0x0000000000c781c2 in trx_rollback_resurrected(trx_t*, ulint) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:677
+        breakpoint already hit 90 times
+3       breakpoint     keep y   0x0000000000b6905a in lock_trx_release_locks(trx_t*) at /home/chenhui/mysql-baidu-5623/storage/innobase/lock/lock0lock.cc:6817
+        breakpoint already hit 10 times
+4       breakpoint     keep y   0x0000000000c83388 in trx_resurrect_insert(trx_undo_t*, trx_rseg_t*) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:510
+5       breakpoint     keep y   0x0000000000c835b1 in trx_resurrect_update_in_prepared_state(trx_t*, trx_undo_t const*) 
+                                                   at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:596
+6       breakpoint     keep y   0x0000000000c8e443 in trx_undo_update_cleanup(trx_t*, unsigned char*, mtr_t*) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0undo.cc:1931
+        breakpoint already hit 9 times
+7       breakpoint     keep y   0x0000000000c8582e in trx_cleanup_at_db_startup(trx_t*) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:1431
+(gdb) disable
+
+22.trx_rollback_or_clean_recovered
+
+caller:
+DECLARE_THREAD(trx_rollback_or_clean_all_recovered)
+recv_recovery_from_checkpoint_finish
+
+23.trx_undo_decode_roll_ptr
+callers:
+row_merge_read_clustered_index
+row_sel_build_prev_vers
+row_sel_build_prev_vers_for_mysql
+
+row_sel
+--row_sel_build_prev_vers
+----row_vers_build_for_consistent_read
+------trx_undo_prev_version_build
+--------trx_undo_get_undo_rec
+----------trx_undo_get_undo_rec_low
+------------trx_undo_decode_roll_ptr
+
+
+24.trx_undo_page_report_insert
+//Reports in the undo log of an insert of a clustered index record.
+#5  0x0000000000bbf866 in que_thr_step (thr=0x128bcea8) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1083
+#6  0x0000000000bbfba5 in que_run_threads_low (thr=0x128bcea8) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1167
+#7  0x0000000000bbfd6a in que_run_threads (thr=0x128bcea8) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1208
+#8  0x0000000000bbffd0 in que_eval_sql (info=0x0, 
+    sql=0x1040ae0 <row_merge_drop_temp_indexes()::sql> "PROCEDURE DROP_TEMP_INDEXES_PROC () IS\nixid CHAR;\nfound INT;\nDECLARE CURSOR index_cur IS\n SELECT ID FROM SYS_INDEXES\n WHERE SUBSTR(NAME,0,1)='\377'\nFOR UPDATE;\nBEGIN\nfound := 1;\nOPEN index_cur;\nWHILE fou"..., reserve_dict_mutex=0, trx=0x127d2788) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1285
+#9  0x0000000000bf8886 in row_merge_drop_temp_indexes () at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0merge.cc:2907
+#10 0x0000000000b7bf32 in recv_recovery_rollback_active () at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:3476
+#11 0x0000000000c5880b in innobase_start_or_create_for_mysql () at /home/chenhui/mysql-baidu-5623/storage/innobase/srv/srv0start.cc:2560
+#12 0x0000000000b09022 in innobase_init (p=0x193d7f0) at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:3365
+#13 0x0000000000644ded in ha_initialize_handlerton (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:662
+#14 0x00000000007f12e8 in plugin_initialize (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1137
+#15 0x00000000007f1d5d in plugin_init (argc=0x17fb1c8 <remaining_argc>, argv=0x185d598, flags=0) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1431
+#16 0x000000000062f666 in init_server_components () at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:4849
+#17 0x0000000000630563 in mysqld_main (argc=94, argv=0x185d598) at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:5444
+#18 0x0000000000625bb0 in main (argc=1, argv=0x7fffffffe848) at /home/chenhui/mysql-baidu-5623/sql/main.cc:25
+
+que_eval_sql
+--que_run_threads
+----que_run_threads_low
+------row_ins_step
+--------row_ins
+----------row_ins_index_entry_step
+------------row_ins_clust_index_entry
+--------------row_ins_clust_index_entry_low
+----------------btr_cur_optimistic_insert/btr_cur_pessimistic_insert
+------------------btr_cur_ins_lock_and_undo
+--------------------trx_undo_report_row_operation
+----------------------trx_undo_page_report_insert
+
+-------------------------------------------------------------------------------
+在return前添加下面的内容，insert undo log信息就会打印到MySQL数据库的错误文件中：
+ut_prinit_buf(undo_page + first_free, ptr- undo_page - first_free);
+fprintf(stderr,"\n");
+
+callers of trx_undo_report_row_operation:
+btr_cur_ins_lock_and_undo
+btr_cur_upd_lock_and_undo
+btr_cur_del_mark_set_clust_rec
+
+callers of btr_cur_optimistic_insert：
+btr_insert_on_non_leaf_level_func
+ibuf_insert_low
+row_ins_clust_index_entry_low
+row_ins_sec_index_entry_low
+row_log_apply_op_low
+row_merge_tuple_cmp
+row_undo_mod_del_unmark_sec_and_undo_update
+
+
+callers of row_ins_clust_index_entry:
+row_ins_index_entry
+row_upd_clust_rec_by_insert
+
+callers of row_ins_step:
+ib_insert_row_with_lock_retry
+que_thr_step
+row_insert_for_mysql
+
+//这个是memcached的接口。。
+handler_insert_rec
+--handler::ha_write_row
+----handler::handler
+------ha_innobase::handler
+--------row_insert_for_mysql   
+                   
+//然后就不知道怎么用了？？？                   
+mysql_declare_plugin                   
+--innobase_init
+----/** Set up InnoDB API callback function array */
+----ib_cb_t innodb_api_cb[] = {                     
+----	(ib_cb_t) ib_cursor_insert_row,               
+------ib_cursor_insert_row
+--------ib_execute_insert_query_graph
+----------ib_insert_row_with_lock_retry
+
+
+25.commit函数流程
+ha_commit_trans//in compiler
+--innobase_init
+----ha_innodb.cc::innobase_commit()
+------innobase_commit_low() 
+-------trx_commit_for_mysql
+----------trx_commit()；
+------------trx_commit_low
+--------------trx_write_serialisation_history
+----------------trx_undo_set_state_at_finish
+----------------trx_undo_update_cleanup
+------------------trx_purge_add_update_undo_to_history
+--------------------flst_add_first
+--------------------srv_wake_purge_thread_if_not_active
+------------------UT_LIST_REMOVE(undo_list, rseg->update_undo_list, undo);
+--------------mtr_commit//非主流
+--------------trx_commit_in_memory
+----------------trx_flush_log_if_needed
+------------------trx_flush_log_if_needed_low
+--------------------log_write_up_to
+--
+
+
+
+
+
+
+26.trx_undof_page_add_undo_rec_log
+//记录Undo log的redo log的函数
+
+btr_cur_ins_lock_and_undo
+btr_cur_upd_lock_and_undo
+btr_cur_del_mark_set_clust_rec
+--trx_undo_report_row_operation
+----trx_undo_page_report_modify
+------trx_undof_page_add_undo_rec_log
+--------mlog_write_initial_log_record_fast
+
+
+trx_undo_page_report_insert
+--trx_undo_page_set_next_prev_and_add
+----trx_undof_page_add_undo_rec_log
+------mlog_write_initial_log_record_fast
+
+
+27.rollback 流程
+三种rollback
+- trx_rollback_active
+- trx_rollback_to_savepoint_low
+- pars_rollback_statement
+
+innobase_start_or_create_for_mysql
+--recv_recovery_from_checkpoint_finish//!!!!!!!!!!!!!!!!!
+----//2015-10-12 15:16:34 22020 [Note] InnoDB: Starting an apply batch of log records to the database...
+----//InnoDB: Progress in percent: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99
+----//recv_apply_hashed_log_recs
+----recv_apply_hashed_log_recs
+------buf_page_get
+------recv_recover_page
+----//InnoDB: Starting in background the rollback of uncommitted transactions
+----trx_rollback_or_clean_recovered
+------//case TRX_STATE_COMMITTED_IN_MEMORY:
+------//InnoDB: Cleaning up trx with id 50676317
+------trx_cleanup_at_db_startup
+------trx_free_for_background
+------//case TRX_STATE_ACTIVE:
+------trx_rollback_resurrected
+--------trx_rollback_active
+----------roll_node_create
+------------que_thr_step//type == QUE_NODE_ROLLBACK
+--------------trx_rollback_step
+----------------trx_rollback_start
+------------------trx_roll_graph_build
+--------------------row_undo_node_create
+----------------------que_thr_step
+------------------------row_undo_step
+--------------------------row_undo
+----------------------------trx_roll_pop_top_rec_of_trx
+------------------------------trx_undo_build_roll_ptr
+------------------------------mtr_start(&mtr);
+------------------------------trx_roll_pop_top_rec
+------------------------------trx_undo_arr_store_info
+------------------------------trx_undo_rec_copy
+------------------------------mtr_commit(&mtr);
+------------------------------trx_roll_try_truncate//end here !!!!!!!!!!!!!!!!!!!!!! if (trx->pages_undone >= TRX_ROLL_TRUNC_THRESHOLD)
+--------------------------------trx_undo_truncate_end
+----------------------------------trx_undo_truncate_end_func
+----------------------------row_mysql_freeze_data_dictionary
+----------------------------row_undo_ins
+------------------------------row_undo_ins_parse_undo_rec
+--------------------------------dict_table_open_on_id
+--------------------------------trx_undo_rec_get_row_ref
+--------------------------------row_undo_search_clust_to_pcur
+------------------------------row_undo_ins_remove_sec_rec
+--------------------------------row_build_index_entry
+--------------------------------row_undo_ins_remove_sec
+----------------------------------row_undo_ins_remove_sec_low
+------------------------------------btr_cur_optimistic_delete
+--------------------------------------btr_cur_optimistic_delete_func
+------------------------------row_undo_ins_remove_clust_rec
+--------------------------------dict_index_is_online_ddl
+--------------------------------btr_pcur_restore_position
+--------------------------------btr_pcur_get_btr_cur
+--------------------------------btr_cur_optimistic_delete
+------------------------------dict_table_close
+----------------------------row_undo_mod
+----------------------------btr_pcur_close(&(node->pcur));
+--------trx_rollback_active//middle
+----------que_run_threads(thr);
+----------trx_rollback_finish
+------------trx_commit  
+--------------trx_commit_low  
+----------------trx_write_serialisation_history  
+------------------trx_undo_update_cleanup  
+--------------------trx_purge_add_update_undo_to_history  
+----------------------flst_add_first
+------------------------flst_insert_before
+
+
+28.trx_purge
+
+innobase_start_or_create_for_mysql
+--trx_purge_sys_create
+----trx_purge_graph_build
+------que_fork_create
+------que_thr_create
+------row_purge_node_create
+----read_view_purge_open
+
+DECLARE_THREAD(srv_purge_coordinator_thread)
+--trx_purge
+----read_view_purge_open//用于判断哪些undo日志可以被清理，purge是特殊事务，
+----trx_purge_attach_undo_recs
+------trx_purge_fetch_next_rec
+--------trx_purge_choose_next_log
+--------trx_undo_build_roll_ptr
+--------trx_purge_get_next_rec
+----------trx_purge_rseg_get_next_history_log
+------------trx_purge_get_log_from_hist
+--------------flst_get_prev_addr
+------------ib_bh_push
+----btr_pcur_open_low
+----------trx_purge_choose_next_log
+------------trx_purge_get_rseg_with_min_trx_id
+------------trx_purge_read_undo_rec
+--------------trx_undo_get_first_rec
+----------------trx_undo_page_get_first_rec
+----------mtr_start(&mtr);
+----------trx_undo_page_get_next_rec
+----------trx_undo_rec_get_type
+----------trx_undo_rec_get_cmpl_info
+----------trx_undo_rec_copy
+----------mtr_commit(&mtr);
+------ib_vector_push(node->undo_recs, purge_rec);
+----que_fork_scheduler_round_robin
+------que_thr_init_command
+--------que_thr_move_to_run_state
+----que_run_threads
+------que_run_threads_low
+--------log_free_check
+--------que_thr_step
+----------row_purge_step
+------------row_purge
+--------------row_purge_parse_undo_rec
+----------------trx_undo_rec_get_pars
+----------------trx_undo_update_rec_get_sys_cols
+----------------dict_table_get_first_index
+----------------trx_undo_rec_get_row_ref
+------------------dict_index_get_n_unique
+------------------dict_index_copy_types
+----------------trx_undo_update_rec_get_update
+------------------trx_undo_update_rec_get_n_upd_fields-----
+----------------trx_undo_rec_get_partial_row
+--------------row_purge_record
+----------------row_purge_record_func
+------------------row_purge_del_mark//!!!! TBD !!!!!!!!!
+--------------------dict_table_skip_corrupt_index
+--------------------row_build_index_entry_low
+--------------------row_purge_remove_sec_if_poss
+--------------------row_purge_remove_clust_if_poss
+----------------------row_purge_remove_clust_if_poss_low
+------------------row_purge_upd_exist_or_extern
+--------------------row_purge_upd_exist_or_extern_func
+----------------------/*handle sec indexes first*/
+----------------------dict_table_skip_corrupt_index
+----------------------row_upd_changes_ord_field_binary
+------------------------row_upd_changes_ord_field_binary_func
+----------------------row_build_index_entry_low//IUD修改了cluster index，secondary index 的更新要靠ibuf,这里的purge sec，要考虑ibuf的情况
+----------------------row_purge_remove_sec_if_poss
+------------------------row_purge_remove_sec_if_poss_leaf
+--------------------------log_free_check
+--------------------------mtr_start(&mtr);
+--------------------------row_search_index_entry
+----------------------------btr_pcur_open
+------------------------------btr_pcur_open_low
+--------------------------row_purge_poss_sec
+------------------------row_purge_remove_sec_if_poss_tree
+--------------------------row_search_index_entry
+--------------------------row_purge_poss_sec
+--------------------------btr_cur_pessimistic_delete
+----------------------/* Free possible externally stored fields */
+----------------------if (dfield_is_ext(&ufield->new_val))
+----------------------trx_undo_decode_roll_ptr
+----------------------mtr_start(&mtr);
+----------------------btr_root_get
+----------------------buf_page_get
+----------------------buf_block_get_frame
+----------------------btr_free_externally_stored_field
+----trx_purge_truncate//caller is trx_purge
+------trx_purge_check_limit
+------trx_purge_truncate_history
+--------trx_purge_truncate_rseg_history
+----------mtr_start(&mtr);
+----------trx_rsegf_get
+----------trx_purge_get_log_from_hist
+----------trx_undo_page_get
+----------trx_undo_truncate_start//truncate start 处理undo seg内的page list
+------------trx_undo_free_page
+--------------fseg_free_page
+----------------fseg_free_page_low
+------------trx_undo_empty_header_page
+----------flst_truncate_end//truncate end 处理rseg的history list
+------------mlog_write_ulint
+----------trx_purge_free_segment
+------------trx_rsegf_get
+------------fseg_free_step_not_header
+--------------fseg_free_extent
+--------------fseg_free_page_low
+------------fseg_free_step
+
+
+29.trx_undo_mem_create_at_db_start
+
+
+innobase_start_or_create_for_mysql
+--trx_sys_create_rsegs
+----trx_rseg_create
+
+
+innobase_start_or_create_for_mysql
+--trx_sys_init_at_db_start
+----trx_rseg_array_init
+------trx_rseg_create_instance
+--------trx_rseg_mem_create
+----------trx_undo_lists_init
+------------trx_rsegf_get_new
+------------trx_rsegf_get_nth_undo
+------------trx_undo_mem_create_at_db_start
+--------------trx_undo_page_get
+--------------trx_undo_mem_create
+--------------UT_LIST_ADD_LAST(undo_list, rseg->update_undo_list,undo);
+
+
+
+30.写undo和redo的顺序
+
+que_eval_sql
+--que_run_threads
+----que_run_threads_low
+------row_ins_step
+--------row_ins
+----------row_ins_index_entry_step
+------------row_ins_clust_index_entry
+--------------row_ins_clust_index_entry_low
+----------------btr_cur_optimistic_insert/btr_cur_pessimistic_insert
+------------------btr_cur_ins_lock_and_undo
+--------------------trx_undo_report_row_operation
+----------------------trx_undo_page_report_insert
+------------------page_cur_tuple_insert            
+--------------------page_cur_insert_rec_low        
+----------------------page_cur_insert_rec_write_log
+
+
+31.purge
+
+//完成purge_sys变量的初始化工作，在Innodb的初始化中就需要被调用
+//Creates the global purge system control structure and inits the history mutex. */
+trx_purge_sys_create
+
+
+32.read_view_oldest_copy_or_open_new
+判断哪些undo日志可以被清理。
+
+33.处理undo log record
+row_purge_del_mark
+
+row_purge_upd_exist_or_extern_func
+
+34.解析undo log
+row_purge_parse_undo_rec
+
+35.删除undo log，purge之后
+trx_undo_truncate_start
+
+36.完成purge后，回收undo段
+trx_purge_free_segment
+
+
+
+37.page_lsn在什么时候写？？？
+
+
+
+38.read_view_open_now
+用来初始化read_view_struct数据结构。
+
+callers of trx_assign_read_view:
+ib_create_cursor
+ib_cursor_new_trx
+prepare_inplace_alter_table_dict
+ha_innobase::init_table_handle_for_HANDLER
+innobase_start_trx_and_assign_read_view
+row_sel_step
+row_search_for_mysql
+
+
+--trx_assign_read_view
+----read_view_open_now
+------read_view_open_now_low
+--------read_view_create_low
+--------ut_list_map
+--------read_view_add
+
+39.row_search_for_mysql
+see 14.row.txt
+
+40.read_view_sees_trx_id
+二分查找算法
+
+Functions calling this function: read_view_sees_trx_id
+
+  File         Function                           Line
+0 lock0lock.cc lock_clust_rec_cons_read_sees       545 return(read_view_sees_trx_id(view, trx_id));
+1 row0merge.cc row_merge_read_clustered_index     1450 if (!read_view_sees_trx_id(
+2 row0merge.cc row_merge_is_index_usable          3383 || read_view_sees_trx_id(trx->read_view, index->trx_id)));
+3 row0vers.cc  row_vers_must_preserve_del_marked   347 return(!read_view_sees_trx_id(purge_sys->view, trx_id));
+4 row0vers.cc  row_vers_build_for_consistent_read  542 ut_ad(!read_view_sees_trx_id(view, trx_id));
+5 row0vers.cc  row_vers_build_for_consistent_read  610 if (read_view_sees_trx_id(view, trx_id)) {
+6 trx0rec.cc   trx_undo_get_undo_rec              1458 missing_history = read_view_sees_trx_id(purge_sys->view, trx_id);
+7 trx0rec.cc   trx_undo_prev_version_build        1613 missing_extern = read_view_sees_trx_id(purge_sys->view,
+
+
+41.trx_undo_prev_version_build//未完待续，研究到row_upd_index_replace_new_col_vals
+通过undo记录构造之前记录版本。同时这也是MVCC的实现过程。
+
+sel_node_create//QUE_NODE_SELECT
+
+
+que_thr_step//type == QUE_NODE_SELECT
+--row_sel_step
+----row_sel/row_sel_get_clust_rec
+------row_sel_build_prev_vers
+--------row_vers_build_for_consistent_read
+----------trx_undo_prev_version_build
+------------row_get_rec_roll_ptr
+--------------trx_read_roll_ptr
+------------row_get_rec_trx_id
+------------trx_undo_get_undo_rec
+--------------trx_undo_get_undo_rec_low
+----------------trx_undo_decode_roll_ptr
+------------trx_undo_rec_get_pars
+------------trx_undo_update_rec_get_sys_cols
+------------trx_undo_rec_skip_row_ref
+--------------dict_index_get_n_unique
+--------------trx_undo_rec_get_col_val
+------------trx_undo_update_rec_get_update
+--------------trx_undo_update_rec_get_n_upd_fields
+--------------upd_create
+--------------trx_write_trx_id
+--------------upd_field_set_field_no
+--------------dfield_set_data
+--------------trx_undo_update_rec_get_field_no
+------------row_upd_changes_field_size_or_external
+------------row_upd_changes_disowned_external
+------------read_view_sees_trx_id
+------------row_rec_to_index_entry
+--------------rec_copy
+--------------row_rec_to_index_entry_low
+----------------dtuple_create
+----------------dict_index_copy_types
+--------------dtuple_set_info_bits
+------------row_upd_index_replace_new_col_vals
+--------------row_upd_index_replace_new_col_val
+----------------dfield_copy_data
+----------------row_upd_ext_fetch
+------------------btr_copy_externally_stored_field_prefix
+--------------------btr_copy_externally_stored_field_prefix_low
+----------------------btr_copy_blob_prefix
+------------rec_copy
+------------rec_offs_make_valid
+------------row_upd_rec_in_place
+
+
+
+
+
+Breakpoint 3, sel_node_create (heap=0x7ffc7003f4d0) at /home/chenhui/dba_7-0-48_BRANCH/storage/innobase/row/row0sel.cc:277
+277                     mem_heap_alloc(heap, sizeof(sel_node_t)));
+(gdb) bt
+#0  sel_node_create (heap=0x7ffc7003f4d0) at /home/chenhui/dba_7-0-48_BRANCH/storage/innobase/row/row0sel.cc:277
+#1  0x0000000000c0ad93 in row_prebuild_sel_graph (prebuilt=0x7ffc7003f548) at /home/chenhui/dba_7-0-48_BRANCH/storage/innobase/row/row0mysql.cc:1478
+#2  0x0000000000c3923e in row_search_for_mysql (buf=0x7ffc70011150 "", mode=1, prebuilt=0x7ffc7003f548, match_mode=0, direction=0)
+    at /home/chenhui/dba_7-0-48_BRANCH/storage/innobase/row/row0sel.cc:3797
+#3  0x0000000000b1863c in ha_innobase::index_read (this=0x7ffc70010d60, buf=0x7ffc70011150 "", key_ptr=0x0, key_len=0, find_flag=HA_READ_AFTER_KEY)
+    at /home/chenhui/dba_7-0-48_BRANCH/storage/innobase/handler/ha_innodb.cc:7609
+#4  0x0000000000b1930c in ha_innobase::index_first (this=0x7ffc70010d60, buf=0x7ffc70011150 "") at /home/chenhui/dba_7-0-48_BRANCH/storage/innobase/handler/ha_innodb.cc:7976
+#5  0x0000000000649786 in handler::ha_index_first (this=0x7ffc70010d60, buf=0x7ffc70011150 "") at /home/chenhui/dba_7-0-48_BRANCH/sql/handler.cc:2861
+#6  0x00000000007b2e92 in join_read_first (tab=0x7ffc70006618) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_executor.cc:2532
+#7  0x00000000007b0174 in sub_select (join=0x7ffc70005930, join_tab=0x7ffc70006618, end_of_records=false) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_executor.cc:1256
+#8  0x00000000007afb74 in do_select (join=0x7ffc70005930) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_executor.cc:933
+#9  0x00000000007adb1d in JOIN::exec (this=0x7ffc70005930) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_executor.cc:194
+#10 0x000000000080dd2f in mysql_execute_select (thd=0x128e8660, select_lex=0x128eafa8, free_join=true) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_select.cc:1100
+#11 0x000000000080e021 in mysql_select (thd=0x128e8660, tables=0x7ffc700052f0, wild_num=0, fields=..., conds=0x0, order=0x128eb170, group=0x128eb0a8, having=0x0, select_options=2147748608, 
+    result=0x7ffc70005908, unit=0x128ea960, select_lex=0x128eafa8) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_select.cc:1221
+#12 0x000000000080c122 in handle_select (thd=0x128e8660, result=0x7ffc70005908, setup_tables_done_option=0) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_select.cc:110
+#13 0x00000000007e60a2 in execute_sqlcom_select (thd=0x128e8660, all_tables=0x7ffc700052f0) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_parse.cc:5103
+#14 0x00000000007defa1 in mysql_execute_command (thd=0x128e8660) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_parse.cc:2649
+#15 0x00000000007e8bce in mysql_parse (thd=0x128e8660, rawbuf=0x7ffc70005010 "select count(*) from sbtest", length=27, parser_state=0x7ffff7ea86e0)
+    at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_parse.cc:6357
+#16 0x00000000007dc00f in dispatch_command (command=COM_QUERY, thd=0x128e8660, packet=0x129c8db1 "", packet_length=27) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_parse.cc:1332
+#17 0x00000000007db1b2 in do_command (thd=0x128e8660) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_parse.cc:1034
+#18 0x00000000007a381d in do_handle_one_connection (thd_arg=0x128e8660) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_connect.cc:982
+#19 0x00000000007a3333 in handle_one_connection (arg=0x128e8660) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_connect.cc:898
+#20 0x0000000000afdfe8 in pfs_spawn_thread (arg=0x1298c220) at /home/chenhui/dba_7-0-48_BRANCH/storage/perfschema/pfs.cc:1860
+#21 0x00007ffff7bc61c3 in ?? ()
+#22 0x0000000000000000 in ?? ()
+
+
+Breakpoint 1, row_search_for_mysql (buf=0x7ffc70011150 "", mode=0, prebuilt=0x7ffc7003f548, match_mode=0, direction=1) at /home/chenhui/dba_7-0-48_BRANCH/storage/innobase/row/row0sel.cc:3655
+3655            dict_index_t*   index           = prebuilt->index;
+(gdb) bt
+#0  row_search_for_mysql (buf=0x7ffc70011150 "", mode=0, prebuilt=0x7ffc7003f548, match_mode=0, direction=1) at /home/chenhui/dba_7-0-48_BRANCH/storage/innobase/row/row0sel.cc:3655
+#1  0x0000000000b18ff1 in ha_innobase::general_fetch (this=0x7ffc70010d60, buf=0x7ffc70011150 "", direction=1, match_mode=0)
+    at /home/chenhui/dba_7-0-48_BRANCH/storage/innobase/handler/ha_innodb.cc:7865
+#2  0x0000000000b19215 in ha_innobase::index_next (this=0x7ffc70010d60, buf=0x7ffc70011150 "") at /home/chenhui/dba_7-0-48_BRANCH/storage/innobase/handler/ha_innodb.cc:7927
+#3  0x00000000006494bd in handler::ha_index_next (this=0x7ffc70010d60, buf=0x7ffc70011150 "") at /home/chenhui/dba_7-0-48_BRANCH/sql/handler.cc:2812
+#4  0x00000000007b2ef8 in join_read_next (info=0x7ffc700066a8) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_executor.cc:2546
+#5  0x00000000007b018a in sub_select (join=0x7ffc70005930, join_tab=0x7ffc70006618, end_of_records=false) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_executor.cc:1259
+#6  0x00000000007afb74 in do_select (join=0x7ffc70005930) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_executor.cc:933
+#7  0x00000000007adb1d in JOIN::exec (this=0x7ffc70005930) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_executor.cc:194
+#8  0x000000000080dd2f in mysql_execute_select (thd=0x128e8660, select_lex=0x128eafa8, free_join=true) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_select.cc:1100
+#9  0x000000000080e021 in mysql_select (thd=0x128e8660, tables=0x7ffc700052f0, wild_num=0, fields=..., conds=0x0, order=0x128eb170, group=0x128eb0a8, having=0x0, select_options=2147748608, 
+    result=0x7ffc70005908, unit=0x128ea960, select_lex=0x128eafa8) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_select.cc:1221
+#10 0x000000000080c122 in handle_select (thd=0x128e8660, result=0x7ffc70005908, setup_tables_done_option=0) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_select.cc:110
+#11 0x00000000007e60a2 in execute_sqlcom_select (thd=0x128e8660, all_tables=0x7ffc700052f0) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_parse.cc:5103
+#12 0x00000000007defa1 in mysql_execute_command (thd=0x128e8660) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_parse.cc:2649
+#13 0x00000000007e8bce in mysql_parse (thd=0x128e8660, rawbuf=0x7ffc70005010 "select count(*) from sbtest", length=27, parser_state=0x7ffff7ea86e0)
+    at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_parse.cc:6357
+#14 0x00000000007dc00f in dispatch_command (command=COM_QUERY, thd=0x128e8660, packet=0x129c8db1 "", packet_length=27) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_parse.cc:1332
+#15 0x00000000007db1b2 in do_command (thd=0x128e8660) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_parse.cc:1034
+#16 0x00000000007a381d in do_handle_one_connection (thd_arg=0x128e8660) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_connect.cc:982
+#17 0x00000000007a3333 in handle_one_connection (arg=0x128e8660) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_connect.cc:898
+#18 0x0000000000afdfe8 in pfs_spawn_thread (arg=0x1298c220) at /home/chenhui/dba_7-0-48_BRANCH/storage/perfschema/pfs.cc:1860
+#19 0x00007ffff7bc61c3 in ?? ()
+#20 0x0000000000000000 in ?? ()
+
+
+
+
+btr_cur_search_to_nth_level
+--buf_page_get_gen
+
+
+
+
+
+43.trx_serialisation_number_get
+
+trx_serialisation_number_get
+--trx_sys_get_new_trx_id
+
+trx_sys_init_at_db_start()初始化：
+
+	/* VERY important: after the database is started, max_trx_id value is
+	divisible by TRX_SYS_TRX_ID_WRITE_MARGIN, and the 'if' in
+	trx_sys_get_new_trx_id will evaluate to TRUE when the function
+	is first time called, and the value for trx id will be written
+	to the disk-based header! Thus trx id values will not overlap when
+	the database is repeatedly started! */
+
+	trx_sys->max_trx_id = 2 * TRX_SYS_TRX_ID_WRITE_MARGIN
+		+ ut_uint64_align_up(mach_read_from_8(sys_header
+						   + TRX_SYS_TRX_ID_STORE),
+				     TRX_SYS_TRX_ID_WRITE_MARGIN);
+				     
+				     
+trx_sys_flush_max_trx_id
+--mlog_write_ull(sys_header + TRX_SYS_TRX_ID_STORE,trx_sys->max_trx_id, &mtr);
+
+疑问：
+--1.为什么trx_serialisation_number_get在重启之后，max_trx_id变小？？
+--2.为什么crash recovery之后出现 trx_purge_get_rseg_with_min_trx_id ？？而且没有purge的过程？？？
+
+2121716 2015-12-01 18:41:30 6510 [Note] InnoDB: Starting an apply batch of log records to the database...
+2121717 InnoDB: Progress in percent: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56         57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99
+2121718 InnoDB: Apply batch completed
+2121719 2015-12-01 18:41:53 6510 [Note] InnoDB: 128 rollback segment(s) are active.
+2121720 2015-12-01 18:41:53 6510 [Note] InnoDB: Waiting for purge to start
+2121721 trx_purge_get_rseg_with_min_trx_id() purge_sys->iter.trx_no is:0, purge_sys->rseg is:b768328, rseg->id is:122, last_trx_no is:48440396,
+
+
+#0  buf_page_get_gen (space=0, zip_size=0, offset=5, rw_latch=2, guess=0x0, mode=10, file=0x1062c68 "/home/chenhui/mysql-baidu-5623/storage/innobase/include/trx0sys.ic", line=103, 
+    mtr=0x7fffffff8d20) at /home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0buf.cc:3392
+#1  0x0000000000c7c361 in trx_sysf_get (mtr=0x7fffffff8d20) at /home/chenhui/mysql-baidu-5623/storage/innobase/include/trx0sys.ic:103
+#2  0x0000000000c7d3e8 in trx_rseg_get_n_undo_tablespaces (space_ids=0x7fffffff9260) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0rseg.cc:397
+#3  0x0000000000c57c80 in srv_undo_tablespaces_init (create_new_db=0, n_conf_tablespaces=0, n_opened=0x1532a38 <srv_undo_tablespaces_open>)
+    at /home/chenhui/mysql-baidu-5623/storage/innobase/srv/srv0start.cc:1334
+#4  0x0000000000c59399 in innobase_start_or_create_for_mysql () at /home/chenhui/mysql-baidu-5623/storage/innobase/srv/srv0start.cc:2275
+#5  0x0000000000b091d2 in innobase_init (p=0x19407f0) at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:3365
+#6  0x0000000000644f9d in ha_initialize_handlerton (plugin=0x1932f48) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:662
+#7  0x00000000007f1498 in plugin_initialize (plugin=0x1932f48) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1137
+#8  0x00000000007f1f0d in plugin_init (argc=0x17fe1c8 <remaining_argc>, argv=0x1860598, flags=0) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1431
+#9  0x000000000062f816 in init_server_components () at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:4849
+#10 0x0000000000630713 in mysqld_main (argc=95, argv=0x1860598) at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:5444
+#11 0x0000000000625d60 in main (argc=1, argv=0x7fffffffe758) at /home/chenhui/mysql-baidu-5623/sql/main.cc:25
+
+
+44.purge_sys->rseg->last_trx_no
+
+
+
+trx_purge_get_next_rec
+--trx_purge_rseg_get_next_history_log
+--trx_purge_choose_next_log
+----trx_purge_get_rseg_with_min_trx_id
+
+45.trx_purge_add_update_undo_to_history
+trx_commit  
+--trx_commit_low  
+----trx_write_serialisation_history
+------trx_undo_update_cleanup
+--------trx_purge_add_update_undo_to_history
+
+innobase_start_or_create_for_mysql
+--buf_pool_invalidate
+--recv_recovery_from_checkpoint_start//to be investigated
+--trx_sys_init_at_db_start
+----trx_sysf_get
+------buf_page_get_gen
+------buf_read_page
+--------buf_read_page_low
+----------buf_page_io_complete
+------------recv_recover_page_func
+--recv_recovery_from_checkpoint_finish//
+----recv_apply_hashed_log_recs
+
+46.trans_commit/MYSQL_BIN_LOG::commit/trx_commit的关系
+
+    #8  0x0000000000a329b8 in trx_commit_in_memory (lsn=108671667792, 
+    #9  trx_commit_low (trx=0x7f1e44310598, mtr=0x7f1fcaf24280)
+    #10 0x0000000000a33399 in trx_commit (trx=trx@entry=0x7f1e44310598)
+    #11 0x0000000000a338ca in trx_commit_for_mysql (trx=trx@entry=0x7f1e44310598)
+    #12 0x00000000009635e8 in innobase_commit_low (trx=<optimized out>)
+    #13 innobase_commit (hton=<optimized out>, thd=0xbbaf730, 
+    #14 0x00000000005a9956 in ha_commit_low (thd=thd@entry=0xbbaf730, 
+    #15 0x00000000008a90de in MYSQL_BIN_LOG::process_commit_stage_queue (
+    #16 0x00000000008af168 in MYSQL_BIN_LOG::ordered_commit (
+    #17 0x00000000008af95e in MYSQL_BIN_LOG::commit (
+    #18 0x00000000005aa0f0 in ha_commit_trans (thd=thd@entry=0xbbaf730, 
+    #19 0x0000000000780a69 in trans_commit (thd=thd@entry=0xbbaf730)
+    #20 0x00000000006f7921 in mysql_execute_command (thd=thd@entry=0xbbaf730)
+    #21 0x00000000006f9f38 in mysql_parse (thd=thd@entry=0xbbaf730, 
+    #22 0x00000000006fb4b7 in dispatch_command (command=COM_QUERY, thd=0xbbaf730, 
+    #23 0x00000000006fd114 in do_command (thd=<optimized out>)
+    #24 0x00000000006c32dd in do_handle_one_connection (
+    #25 0x00000000006c3329 in handle_one_connection (arg=arg@entry=0xbbaf730)
+    #26 0x000000000094d780 in pfs_spawn_thread (arg=0xbbe4360)
+    #27 0x00007f21b1f121c3 in start_thread ()
+    #28 0x00007f21b0dec12d in clone () from /opt/compiler/gcc-4.8.2/lib/libc.so.6
+    
+trans_commit
+
+
+==================================================================================================================================
+100.下一步要做的事
+-purge函数流程
+-然后加一个trace，将insert，update，select的全部trace抓出来
+
+
+
+
+
+
+
+
+

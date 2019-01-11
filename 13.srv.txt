@@ -1,0 +1,259 @@
+1.srv_sys->activity_count
+
+srv_inc_activity_count
+
+callers:
+row_undo_step
+srv_active_wake_master_thread
+srv_wake_master_thread
+
+2.srv_active_wake_master_thread
+
+callers:
+
+ib_wake_master_thread
+ha_innobase::commit_inplace_alter_table
+innobase_active_small
+ha_innobase::close
+ha_innobase::create
+trx_rollback_to_savepoint_low
+trx_commit_in_memory
+
+
+ib_cursor_insert_row//用于 memcached plugin
+ib_cursor_update_row
+ib_cursor_delete_row
+--ib_wake_master_thread
+
+
+Sql_cmd_alter_table::execute
+mysql_execute_command
+mysql_recreate_table
+--mysql_alter_table
+----mysql_inplace_alter_table
+------handler::ha_commit_inplace_alter_table
+--------ha_innobase::commit_inplace_alter_table
+
+
+
+ha_innobase::write_row
+ha_innobase::update_row
+ha_innobase::delete_row
+--innobase_active_small
+
+
+3.
+srv_master_do_active_tasks//!!!!
+srv_master_do_idle_tasks//!!!
+srv_master_do_shutdown_tasks//!!!
+
+4.innobase_start_or_create_for_mysql
+启动innoDB引擎，在该函数中InnoDB需要进行如下几步操作：
+
+参数和内存初始化：
+		- InnoDB引擎的配置参数，系统表空间等信息
+		- 内存包括innodb buffer pool， log buffer
+文件的创建加载
+		- 引擎首次启动时，还需要创建全局表空间文件，和redo log file。
+		- 对于非首次启动，需要加载data，log file
+相关数据的恢复
+		- 
+相关事务的回滚
+
+工作线程的创建
+		- 异步数据读写I/O
+		- 事务锁超时监控
+		- 数据的脏页刷新
+		- 无效重做日志的清理
+		
+		
+		
+innobase_start
+--init_table_space_hash
+--init_buffer_pool
+--log_sys_init
+--create_io_threads
+--data file
+----create_data_file(第一次)
+--log file
+----create_log_file(第一次)
+--create_data_file
+----do_recovery
+----init_trx_sys
+----//OR
+---init_space_header
+----init_trx_sys
+----create_dict
+--double write
+--srv_lock_timeout_thread
+--srv_err_monit_thredor
+--srv_master_thread
+
+
+
+5.两种线程
+srv_sys->threads 用于存储引擎内部的线程管理，如master thread
+srv_mysql_table  用于用户线程的管理。
+
+6.srv_conc_enter_innodb
+
+为了解决 srv_thread_concurrency的问题，比如：几个大事务占有进入内核，则其它的小事务也进不来。
+
+该函数为每个事务trx_t添加了 n_tickets_to_enter_innodb，默认500. 事务每操作一行，则ticket减一。为0时，进入等待队列。
+
+
+7.innobase_shutdown_for_mysql
+- 数据持久化
+	Innodb在关闭时，需要确保数据和日志信息都写入磁盘，然后创建检查点（checkpoint），当检查点创建完毕后，Innodb需要把最近检查点的lsn写入到Innodb全局表空间的第一页的页头。
+	这样做的原因是，innodb引擎在启动时，可以判断是否需要进行恢复。
+- 资源释放
+  引擎关闭时，通过调用函数ut_free_all_mem遍历 ut_mem_block_list，对已经申请的内存进行释放。
+
+8.DECLARE_THREAD(srv_master_thread)
+
+DECLARE_THREAD(srv_master_thread)
+--srv_reserve_slot
+--srv_master_sleep
+--srv_master_do_active_tasks
+----row_drop_tables_for_mysql_in_background
+----log_free_check
+----ibuf_contract_in_background
+----srv_sync_log_buffer_in_background
+----srv_master_evict_from_table_cache
+----log_checkpoint(TRUE, FALSE);
+
+--srv_master_do_idle_tasks
+----row_drop_tables_for_mysql_in_background
+----log_free_check
+----ibuf_contract_in_background
+----srv_master_evict_from_table_cache
+----srv_sync_log_buffer_in_background
+----log_checkpoint(TRUE, FALSE);
+
+--srv_master_do_shutdown_tasks
+
+9.srv_inc_activity_count
+
+Functions calling this function: srv_inc_activity_count
+
+  File        Function                      Line
+0 row0undo.cc row_undo_step                  342 srv_inc_activity_count();         
+1 srv0srv.cc  srv_active_wake_master_thread 1918 srv_inc_activity_count();
+2 srv0srv.cc  srv_wake_master_thread        1975 srv_inc_activity_count();
+
+
+que_thr_step
+--row_undo_step
+----srv_inc_activity_count
+
+
+10。MySQL shutdown流程，关闭流程
+clone.
+--start_thread
+----pfs_spawn_thread
+------kill_server_thread
+--------kill_server
+----------unireg_end
+------------clean_up
+--------------clean_up
+----------------plugin_shutdown
+------------------reap_plugins
+--------------------plugin_deinitialize
+----------------------ha_finalize_handlerton
+------------------------innobase_init//innobase_hton->panic = innobase_end;
+--------------------------innobase_end
+----------------------------innobase_shutdown_for_mysql
+------------------------------logs_empty_and_mark_files_at_shutdown
+--------------------------------log_make_checkpoint_at
+------------------------------srv_wake_master_thread
+------------------------------srv_purge_wakeup
+------------------------------os_aio_wake_all_threads_at_shutdown
+------------------------------ibuf_close();
+------------------------------log_shutdown();
+------------------------------lock_sys_close();
+------------------------------trx_sys_file_format_close();
+------------------------------trx_sys_close();
+------------------------------dict_close();         
+------------------------------btr_search_sys_free();
+------------------------------os_aio_free();    
+------------------------------que_close();      
+------------------------------row_mysql_close();
+------------------------------srv_mon_free();   
+------------------------------sync_close();
+--------------------------------pfs_mutex_free_func
+----------------------------------mutex_free_func     
+------------------------------srv_free();       
+------------------------------fil_close();      
+------------------------------os_sync_free
+------------------------------pars_lexer_close();                   
+------------------------------log_mem_free();                       
+------------------------------buf_pool_free(srv_buf_pool_instances);
+--------------------------------buf_pool_free_instance
+----------------------------------buf_page_free_descriptor
+----------------------------------mem_free(buf_pool->chunks);
+----------------------------------ha_clear(buf_pool->page_hash);
+----------------------------------hash_table_free(buf_pool->page_hash);
+----------------------------------hash_table_free(buf_pool->zip_hash);
+------------------------------mem_close();                          
+------------------------------ut_free_all_mem
+
+
+#0  0x00007f7886b94e24 in __lll_lock_wait ()
+#1  0x00007f7886b9229e in _L_lock_12 ()
+#2  0x00007f7886b921b7 in pthread_cond_destroy@@GLIBC_2.3.2 ()
+#3  0x0000000000981a92 in os_cond_destroy (cond=0x14f0160)
+#4  os_event_free (event=0x14f0120)
+#5  0x00000000009e9dfc in mutex_free_func (mutex=0x7f76bd1081c0)
+#6  pfs_mutex_free_func (mutex=0x7f76bd1081c0)
+#7  sync_close ()
+#8  0x00000000009e701b in innobase_shutdown_for_mysql ()
+#9  0x0000000000929f43 in innobase_end (hton=<optimized out>,
+#10 0x00000000005a7adb in ha_finalize_handlerton (plugin=0x147e758)
+#11 0x00000000006ef3b9 in plugin_deinitialize (ref_check=true,
+#12 reap_plugins () at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1023
+#13 0x00000000006f138b in plugin_shutdown ()
+#14 0x000000000059b523 in clean_up (print_message=print_message@entry=true)
+#15 0x000000000059b87d in clean_up (print_message=true)
+#16 unireg_end () at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:1753
+#17 0x00000000005a07ab in kill_server (sig_ptr=0x0)
+#18 0x00000000005a087e in kill_server_thread (arg=arg@entry=0x7f7886ea2de0)
+#19 0x000000000091b403 in pfs_spawn_thread (arg=0x7f7554005250)
+#20 0x00007f7886b8e1c3 in start_thread ()
+#21 0x00007f7885c6912d in clone () from /opt/compiler/gcc-4.8.2/lib/libc.so.6
+
+
+11.srv_fast_shutdown = 2
+
+innobase_shutdown_for_mysql
+--logs_empty_and_mark_files_at_shutdown
+----srv_any_background_threads_are_active
+----log_buffer_flush_to_disk
+----srv_shutdown_state = SRV_SHUTDOWN_LAST_PHASE;
+----fil_close_all_files();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

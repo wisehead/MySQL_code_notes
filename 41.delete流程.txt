@@ -1,0 +1,79 @@
+41.delete流程
+
+1.purge delete
+#0  btr_page_set_next (page=0x7ffeac8b4000 "\345\177\247[", page_zip=0x0, next=2406, mtr=0x7ffe33b34760) at /home/chenhui/mariadb-10.1.14/storage/xtradb/include/btr0btr.ic:191
+#1  0x00007ffff7934fb0 in btr_level_list_remove_func (space=17, zip_size=0, page=0x7ffeac8b0000 "\336\335\250\324", index=0x7ffe04007188, mtr=0x7ffe33b34760)
+    at /home/chenhui/mariadb-10.1.14/storage/xtradb/btr/btr0btr.cc:3587
+#2  0x00007ffff793645c in btr_compress (cursor=0x7ffe43ad1a60, adjust=0, mtr=0x7ffe33b34760) at /home/chenhui/mariadb-10.1.14/storage/xtradb/btr/btr0btr.cc:4070
+#3  0x00007ffff7948cb8 in btr_cur_compress_if_useful (cursor=0x7ffe43ad1a60, adjust=0, mtr=0x7ffe33b34760) at /home/chenhui/mariadb-10.1.14/storage/xtradb/btr/btr0cur.cc:3450
+#4  0x00007ffff794963b in btr_cur_pessimistic_delete (err=0x7ffe33b3441c, has_reserved_extents=0, cursor=0x7ffe43ad1a60, flags=0, rb_ctx=RB_NONE, mtr=0x7ffe33b34760)
+    at /home/chenhui/mariadb-10.1.14/storage/xtradb/btr/btr0cur.cc:3714
+#5  0x00007ffff78a48bf in row_purge_remove_clust_if_poss_low (node=0x7ffe43ad19c8, mode=33) at /home/chenhui/mariadb-10.1.14/storage/xtradb/row/row0purge.cc:171
+#6  0x00007ffff78a49c7 in row_purge_remove_clust_if_poss (node=0x7ffe43ad19c8) at /home/chenhui/mariadb-10.1.14/storage/xtradb/row/row0purge.cc:218
+#7  0x00007ffff78a5418 in row_purge_del_mark (node=0x7ffe43ad19c8) at /home/chenhui/mariadb-10.1.14/storage/xtradb/row/row0purge.cc:587
+#8  0x00007ffff78a5cf3 in row_purge_record_func (node=0x7ffe43ad19c8, undo_rec=0x7ffe24b0c830 "/\f\016\301a\177\037", thr=0x7ffe43af1650, updated_extern=false)
+    at /home/chenhui/mariadb-10.1.14/storage/xtradb/row/row0purge.cc:856
+#9  0x00007ffff78a5f24 in row_purge (node=0x7ffe43ad19c8, undo_rec=0x7ffe24b0c830 "/\f\016\301a\177\037", thr=0x7ffe43af1650)
+    at /home/chenhui/mariadb-10.1.14/storage/xtradb/row/row0purge.cc:912
+#10 0x00007ffff78a61c9 in row_purge_step (thr=0x7ffe43af1650) at /home/chenhui/mariadb-10.1.14/storage/xtradb/row/row0purge.cc:992
+#11 0x00007ffff7843e1a in que_thr_step (thr=0x7ffe43af1650) at /home/chenhui/mariadb-10.1.14/storage/xtradb/que/que0que.cc:1089
+#12 0x00007ffff784401b in que_run_threads_low (thr=0x7ffe43af1650) at /home/chenhui/mariadb-10.1.14/storage/xtradb/que/que0que.cc:1151
+#13 0x00007ffff78441a8 in que_run_threads (thr=0x7ffe43af1650) at /home/chenhui/mariadb-10.1.14/storage/xtradb/que/que0que.cc:1192
+#14 0x00007ffff78f5bfa in trx_purge (n_purge_threads=1, batch_size=300, truncate=false) at /home/chenhui/mariadb-10.1.14/storage/xtradb/trx/trx0purge.cc:1251
+#15 0x00007ffff78d8f30 in srv_do_purge (n_threads=1, n_total_purged=0x7ffe33b34ed8) at /home/chenhui/mariadb-10.1.14/storage/xtradb/srv/srv0srv.cc:3437
+#16 0x00007ffff78d9608 in srv_purge_coordinator_thread (arg=0x0) at /home/chenhui/mariadb-10.1.14/storage/xtradb/srv/srv0srv.cc:3617
+#17 0x00007ffff68e11c3 in ?? ()
+#18 0x0000000000000000 in ?? ()
+(gdb) 
+
+
+2.btr_level_list_remove, 发现btr_node_ptr_delete 会真正的把一个node释放
+
+    536         /* The whole page is merged with the previous page,
+    537         free it. */
+    538         lock_update_merge_left(to_block, orig_pred,
+    539                        from_block);
+    540         btr_search_drop_page_hash_index(from_block);
+    541         btr_level_list_remove(space, zip_size, from_page,
+    542                       index, mtr);
+    543         btr_node_ptr_delete(index, from_block, mtr);
+    544         btr_blob_dbg_remove(from_page, index,
+    545                     "btr_defragment_n_pages");
+
+3.btr_node_ptr_delete
+
+4.btr_discard_page
+
+5.btr_page_free
+
+btr_page_free
+--btr_page_free_low
+----fseg_free_page
+------fseg_free_page_low
+--------fsp_free_page//if (state != XDES_FSEG)
+//只是将XDES的相应page置位，BIT_FREE，当该EXTENT的所有的64个page都被置位为BIT_FREE，这个EXTENT才会被释放。
+--------if (xdes_is_full(descr, mtr)) { 
+--------    /* The fragment is full: move it to another list */
+--------    flst_remove(seg_inode + FSEG_FULL,
+--------            descr + XDES_FLST_NODE, mtr);
+--------    flst_add_last(seg_inode + FSEG_NOT_FULL,
+--------              descr + XDES_FLST_NODE, mtr);
+--------    mlog_write_ulint(seg_inode + FSEG_NOT_FULL_N_USED,
+--------             not_full_n_used + FSP_EXTENT_SIZE - 1,
+--------             MLOG_4BYTES, mtr);
+--------} 
+--------if (xdes_is_free(descr, mtr)) { 
+--------    /* The extent has become free: free it to space */
+--------    flst_remove(seg_inode + FSEG_NOT_FULL,
+--------            descr + XDES_FLST_NODE, mtr);
+--------    fsp_free_extent(space, zip_size, page, mtr);
+--------}
+
+
+
+
+
+
+
+
+

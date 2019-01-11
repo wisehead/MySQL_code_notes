@@ -1,0 +1,150 @@
+1.innobase_start_or_create_for_mysql
+该函数创建对象实例时会创建数据字典系统，包括建立数据字典在表空间中存储的对象以及在内存中的缓存。
+
+2.dict_hdr_create/
+这个函数用于创建数据字典在表空间中存储的对象。用于持久化数据字典的数据。
+
+--创建数据字典系统表空间段对象（segment）
+--初始化段根节点页中的dict_header对象。
+--btr_create
+用于创建InnoDB的四个系统表相应的索引树对象。每个索引树有两个段组成，分别用于存放非叶子节点和叶子节点的数据。
+
+
+
+3.dict_boot
+这个函数用于创建数据字典在在内存中的缓存，用于加速对数据字典的访问。
+
+--dict_init初始化
+	分配dict_sys_t对象、初始化基本字段、包括创建数据字典缓存中给予表名、表ID、表的列名和存储过程名进行哈希的四个哈希表对象
+	创建mutex互斥量和dict_foreign_key_check_lock读写锁对象，并设置对应的级别
+	初始化缓存大小
+	初始化table_LRU链表。
+--row_id值初始化
+--系统表对象的创建
+--插入缓存表对象创建
+--系统表非聚集索引创建
+
+4.dict_load_table
+
+5.dict_load_table_on_id
+
+6.dict_load_indexes
+
+7.dict_load_foreigns
+
+8.row_update_statistics_if_needed
+
+row_update_statistics_if_needed
+--dict_stats_recalc_pool_add
+--dict_stats_update
+----dict_stats_update_transient
+------dict_stats_empty_index
+------dict_stats_update_transient_for_index
+
+9.find_schema_table
+
+10.get_schema_table
+
+11.get_schema_tables_record
+(gdb) bt
+#0  get_schema_tables_record (thd=0x7ffe363941b8, tables=0x7ffe0402dc80, table=0x7ffe0400fe10, res=false, db_name=0x7ffe04024ff8, table_name=0x7ffe04025b30)
+    at /home/chenhui/mariadb-10.1.14/sql/sql_show.cc:5157
+#1  0x00007ffff728db7b in fill_schema_table_by_open (thd=0x7ffe363941b8, is_show_fields_or_keys=false, table=0x7ffe0400fe10, schema_table=0x7ffff82d76c0 <schema_tables+1920>, 
+    orig_db_name=0x7ffe04024ff8, orig_table_name=0x7ffe04025b30, open_tables_state_backup=0x7ffff6b62760, can_deadlock=false) at /home/chenhui/mariadb-10.1.14/sql/sql_show.cc:4203
+#2  0x00007ffff728f0ae in get_all_tables (thd=0x7ffe363941b8, tables=0x7ffe04016790, cond=0x0) at /home/chenhui/mariadb-10.1.14/sql/sql_show.cc:4790
+#3  0x00007ffff729dc25 in get_schema_tables_result (join=0x7ffe04022f30, executed_place=PROCESSED_BY_JOIN_EXEC) at /home/chenhui/mariadb-10.1.14/sql/sql_show.cc:8123
+#4  0x00007ffff723ed2b in JOIN::exec_inner (this=0x7ffe04022f30) at /home/chenhui/mariadb-10.1.14/sql/sql_select.cc:2670
+#5  0x00007ffff723e3c9 in JOIN::exec (this=0x7ffe04022f30) at /home/chenhui/mariadb-10.1.14/sql/sql_select.cc:2518
+#6  0x00007ffff7241a6a in mysql_select (thd=0x7ffe363941b8, rref_pointer_array=0x7ffe363985b8, tables=0x7ffe04016790, wild_num=0, fields=..., conds=0x0, og_num=0, order=0x0, group=0x0, 
+    having=0x0, proc_param=0x0, select_options=2684619520, result=0x7ffe04022ee0, unit=0x7ffe36397bd0, select_lex=0x7ffe363982f0) at /home/chenhui/mariadb-10.1.14/sql/sql_select.cc:3451
+#7  0x00007ffff72373f3 in handle_select (thd=0x7ffe363941b8, lex=0x7ffe36397b08, result=0x7ffe04022ee0, setup_tables_done_option=0) at /home/chenhui/mariadb-10.1.14/sql/sql_select.cc:384
+#8  0x00007ffff720769b in execute_sqlcom_select (thd=0x7ffe363941b8, all_tables=0x7ffe04016790) at /home/chenhui/mariadb-10.1.14/sql/sql_parse.cc:5894
+#9  0x00007ffff71fd57a in mysql_execute_command (thd=0x7ffe363941b8) at /home/chenhui/mariadb-10.1.14/sql/sql_parse.cc:2960
+#10 0x00007ffff720adb4 in mysql_parse (thd=0x7ffe363941b8, rawbuf=0x7ffe0400e680 "show table status", length=17, parser_state=0x7ffff6b64260)
+    at /home/chenhui/mariadb-10.1.14/sql/sql_parse.cc:7314
+#11 0x00007ffff71f97e1 in dispatch_command (command=COM_QUERY, thd=0x7ffe363941b8, packet=0x7ffe363563b9 "show table status", packet_length=17)
+    at /home/chenhui/mariadb-10.1.14/sql/sql_parse.cc:1486
+#12 0x00007ffff71f8513 in do_command (thd=0x7ffe363941b8) at /home/chenhui/mariadb-10.1.14/sql/sql_parse.cc:1107
+#13 0x00007ffff732e983 in do_handle_one_connection (thd_arg=0x7ffe363941b8) at /home/chenhui/mariadb-10.1.14/sql/sql_connect.cc:1350
+#14 0x00007ffff732e6e7 in handle_one_connection (arg=0x7ffe363941b8) at /home/chenhui/mariadb-10.1.14/sql/sql_connect.cc:1262
+#15 0x00007ffff68e11c3 in ?? ()
+#16 0x0000000000000000 in ?? ()
+(gdb) p file->stats
+$20 = {data_file_length = 3150266368, max_data_file_length = 0, index_file_length = 110821376, max_index_file_length = 0, delete_length = 144703488, auto_increment_value = 0, 
+  records = 4888928, deleted = 0, mean_rec_length = 644, create_time = 1464924450, check_time = 0, update_time = 0, block_size = 16384, mrr_length_per_rec = 16}
+
+
+12.fsp_get_available_space_in_free_extents
+
+ha_innobase::info
+ha_innobase::analyze
+--ha_innobase::info_low
+----fsp_get_available_space_in_free_extents
+
+
+13.ha_statistics
+class ha_statistics
+{
+public:
+  ulonglong data_file_length;		/* Length off data file */
+  ulonglong max_data_file_length;	/* Length off data file */
+  ulonglong index_file_length;
+  ulonglong max_index_file_length;
+  ulonglong delete_length;		/* Free bytes */
+  ulonglong auto_increment_value;
+  /*
+    The number of records in the table. 
+      0    - means the table has exactly 0 rows
+    other  - if (table_flags() & HA_STATS_RECORDS_IS_EXACT)
+               the value is the exact number of records in the table
+             else
+               it is an estimate
+  */
+  ha_rows records;
+  ha_rows deleted;			/* Deleted records */
+  ulong mean_rec_length;		/* physical reclength */
+  ulong create_time;			/* When table was created */
+  ulong check_time;
+  ulong update_time;
+  uint block_size;			/* index block size */
+  
+  /*
+    number of buffer bytes that native mrr implementation needs,
+  */
+  uint mrr_length_per_rec; 
+
+  ha_statistics():
+    data_file_length(0), max_data_file_length(0),
+    index_file_length(0), delete_length(0), auto_increment_value(0),
+    records(0), deleted(0), mean_rec_length(0), create_time(0),
+    check_time(0), update_time(0), block_size(0)
+  {}
+}
+
+
+14.data_file_length
+
+dict_stats_update_transient_for_index
+--btr_get_size(index, BTR_TOTAL_SIZE, &mtr)
+--index->stat_index_size = size;
+
+
+dict_stats_update_transient
+--table->stat_clustered_index_size = index->stat_index_size;
+
+info_low
+--ib_table = prebuilt->table;
+--stat_clustered_index_size = ib_table->stat_clustered_index_size;
+--stats.data_file_length = ((ulonglong) stat_clustered_index_size)* page_size;
+
+
+
+
+
+
+
+
+
+
+
+

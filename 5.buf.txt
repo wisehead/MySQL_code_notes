@@ -1,0 +1,1851 @@
+1.buf_LRU_make_block_young
+
+2.buf_LRU_make_block_old
+
+
+3.读一个页buf_read_page
+
+caller:
+buf_page_get_zip
+buf_page_get_gen
+
+-----------------
+buf_read_page
+--fil_space_get_version
+--buf_read_page_low//读取一个页最底层的函数
+----buf_page_init_for_read//从缓冲池内存中，通过LRU算法分配一个对象buf_block_t，加latch
+------ibuf_page
+--------ibuf_page_low
+----------ibuf_bitmap_get_map_page_func
+------------buf_page_get_gen
+----------ibuf_bitmap_page_get_bits
+------------ibuf_bitmap_page_get_bits_low
+------buf_page_hash_get_low
+------buf_page_init
+------buf_LRU_add_block
+------buf_buddy_alloc
+--------buf_buddy_get_slot
+--------buf_buddy_alloc_low
+----------buf_buddy_alloc_zip
+------------buf_buddy_remove_from_free
+----------buf_LRU_get_free_only/Or
+----------buf_LRU_get_free_block/Or
+------------buf_LRU_get_free_only
+------------buf_LRU_scan_and_free_block//从LRU中move一部分block到free list
+--------------buf_LRU_free_from_unzip_LRU_list
+----------------buf_LRU_evict_from_unzip_LRU
+----------------buf_LRU_free_page
+--------------buf_LRU_free_from_common_LRU_list
+----------------buf_LRU_free_page
+------------------buf_LRU_block_remove_hashed//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+--------------------buf_LRU_remove_block
+----------------------UT_LIST_REMOVE(LRU, buf_pool->LRU, bpage);
+----------------------buf_unzip_LRU_remove_block_if_needed
+------------------------buf_page_belongs_to_unzip_LRU
+------------------------UT_LIST_REMOVE(unzip_LRU, buf_pool->unzip_LRU, block);
+--------------------buf_page_hash_get_low
+--------------------HASH_DELETE(buf_page_t, hash, buf_pool->page_hash, fold, bpage);
+--------------------//case BUF_BLOCK_ZIP_PAGE:
+--------------------buf_buddy_free
+----------------------buf_buddy_free_low
+--------------------buf_page_free_descriptor
+----------------------ut_free
+------------------buf_LRU_add_block_low
+------------------buf_flush_relocate_on_flush_list
+------------------buf_pagev_set_sticky
+------------------btr_search_drop_page_hash_index
+------------------buf_page_unset_sticky
+------------------buf_LRU_block_free_hashed_page
+--------------------buf_LRU_block_free_non_file_page
+----------buf_LRU_get_free_block//中间
+------------buf_flush_single_page_from_LRU
+--------------buf_flush_page
+----------------buf_flush_write_block_low
+------------------log_write_up_to
+------------------buf_flush_init_for_writing
+------------------fil_io
+------------------if (sync) fil_flush
+--------------buf_LRU_free_page
+----------buf_buddy_block_register
+----------buf_buddy_alloc_from
+------buf_unzip_LRU_add_block//FILE_PAGE，zip.data != NULL，block 加到unzip_LRU，ZIP_PAGE不加unzip_LRU,
+----fil_io//page分配好了，正式的读内容
+----buf_page_io_complete//释放锁
+------ibuf_merge_or_delete_for_page
+------buf_flush_write_complete
+--------buf_flush_remove
+----------buf_flush_delete_from_flush_rbt
+----------buf_flush_update_hp
+--------buf_dblwr_update
+
+
+
+
+
+buf_read_page_low(
+/*==============*/
+	dberr_t*	err,	/*!< out: DB_SUCCESS or DB_TABLESPACE_DELETED if we are
+			trying to read from a non-existent tablespace, or a
+			tablespace which is just now being dropped */
+	bool	sync,	/*!< in: true if synchronous aio is desired */
+	ulint	mode,	/*!< in: BUF_READ_IBUF_PAGES_ONLY, ...,
+			ORed to OS_AIO_SIMULATED_WAKE_LATER (see below
+			at read-ahead functions) */
+	ulint	space,	/*!< in: space id */
+	ulint	zip_size,/*!< in: compressed page size, or 0 */
+	ibool	unzip,	/*!< in: TRUE=request uncompressed page */
+	ib_int64_t tablespace_version, /*!< in: if the space memory object has
+			this timestamp different from what we are giving here,
+			treat the tablespace as dropped; this is a timestamp we
+			use to stop dangling page reads from a tablespace
+			which we have DISCARDed + IMPORTed back */
+	ulint	offset)	/*!< in: page number */
+	
+	
+
+	count = buf_read_page_low
+	        (&err, 
+	        true, //sync
+	        BUF_READ_ANY_PAGE, //mode
+	        space,
+				  zip_size, 
+				  FALSE,//unzip
+				  tablespace_version, 
+				  offset);
+				  
+
+ibuf_bitmap_page_get_bits_low(
+/*==========================*/
+	const page_t*	page,	/*!< in: bitmap page */
+	ulint		page_no,/*!< in: page whose bits to get */
+	ulint		zip_size,/*!< in: compressed page size in bytes;
+				0 for uncompressed pages */
+#ifdef UNIV_DEBUG
+	ulint		latch_type,
+				/*!< in: MTR_MEMO_PAGE_X_FIX,
+				MTR_MEMO_BUF_FIX, ... */
+	mtr_t*		mtr,	/*!< in: mini-transaction holding latch_type
+				on the bitmap page */
+#endif /* UNIV_DEBUG */
+	ulint		bit)	/*!< in: IBUF_BITMAP_FREE,
+				IBUF_BITMAP_BUFFERED, ... */
+				
+	ret = ibuf_bitmap_page_get_bits
+	        (bitmap_page, //page
+	        page_no, //page_no
+	        zip_size,//zip_size
+					IBUF_BITMAP_IBUF, //bit
+					mtr);
+					
+#  define ibuf_bitmap_page_get_bits(page, offset, zs, bit, mtr)		\
+	ibuf_bitmap_page_get_bits_low(page, offset, zs, bit)
+	
+	
+										
+				  
+4.
+- 随机读取
+- 顺序读取
+- 逻辑读取
+
+5.检查点
+- sharp checkpoint
+- fuzzy checkpoint
+	- Master Thread checkoint
+	- Async/Sync flush
+	- FLUSH_LRU_LIST
+
+
+7..bufferpool刷新
+buf_flush_write_block_low
+buf_flush_ready_for_flush
+
+
+
+
+
+8.buf_flush_try_neighbors//5.6新优化
+
+
+
+buf_do_flush_list_batch/buf_flush_LRU_list_batch
+--buf_flush_page_and_try_neighbors
+----buf_flush_try_neighbors
+
+
+buf_flush_LRU/buf_flush_list
+--buf_flush_batch
+----buf_do_LRU_batch
+------buf_flush_LRU_list_batch
+
+
+最后被两个线程调用，一个用于clean page，另一个用于crash recovery
+DECLARE_THREAD(buf_flush_page_cleaner_thread)/DECLARE_THREAD(recv_writer_thread)
+--buf_flush_LRU_tail
+----buf_flush_LRU
+
+10.buf_do_flush_list_batch
+
+		// This utility flushes dirty blocks from the end of the flush_list.
+		// the calling thread is not allowed to own any latches on pages!
+
+
+page_cleaner_do_flush_batch
+DECLARE_THREAD(buf_flush_page_cleaner_thread)
+buf_flush_list_now_set
+log_preflush_pool_modified_pages
+recv_apply_hashed_log_recs
+innobase_start_or_create_for_mysql
+
+--buf_flush_list
+----buf_flush_batch
+------buf_do_flush_list_batch
+
+11.buf_flush_write_block_low
+
+callers:
+buf_flush_try_neighbors//see bufferpool.txt
+buf_flush_single_page_from_LRU//see bufferpool.txt
+buf_flush_or_remove_page//see bufferpool.txt
+-----------------------------------------
+buf_flush_page
+--buf_flush_write_block_low
+----log_write_up_to
+
+
+buf_LRU_get_free_block//see bufferpool.txt
+--buf_flush_single_page_from_LRU
+
+12.
+//bpage->frame可以是压缩的，也可以是不压缩的
+//bpage->zip.data 是压缩的frame
+
+如果是zip page，则使用bpage->zip.data
+如果是unzip page，则使用bpage->frame，同时也可能使用bpage->zip.data
+
+13.struct buf_page_t{
+			/** @name General fields
+			None of these bit-fields must be modified without holding
+			buf_page_get_mutex() [buf_block_t::mutex or
+			buf_pool->zip_mutex], since they can be stored in the same
+			machine word.  Some of these fields are additionally protected
+			by buf_pool->mutex. */
+			/* @{ */
+		
+			ib_uint32_t	space;		/*!< tablespace id; also protected
+							by buf_pool->mutex. */
+			ib_uint32_t	offset;		/*!< page number; also protected
+							by buf_pool->mutex. */
+			/** count of how manyfold this block is currently bufferfixed */
+		#ifdef PAGE_ATOMIC_REF_COUNT
+			ib_uint32_t	buf_fix_count;
+		
+			/** type of pending I/O operation; also protected by
+			buf_pool->mutex for writes only @see enum buf_io_fix */
+			byte		io_fix;
+		
+			byte		state;
+		#else
+			unsigned	buf_fix_count:19;
+		
+			/** type of pending I/O operation; also protected by
+			buf_pool->mutex for writes only @see enum buf_io_fix */
+			unsigned	io_fix:2;
+		
+			/*!< state of the control block; also protected by buf_pool->mutex.
+			State transitions from BUF_BLOCK_READY_FOR_USE to BUF_BLOCK_MEMORY
+			need not be protected by buf_page_get_mutex(). @see enum buf_page_state.
+			State changes that are relevant to page_hash are additionally protected
+			by the appropriate page_hash mutex i.e.: if a page is in page_hash or
+			is being added to/removed from page_hash then the corresponding changes
+			must also be protected by page_hash mutex. */
+			unsigned	state:BUF_PAGE_STATE_BITS;
+		
+		#endif /* PAGE_ATOMIC_REF_COUNT */
+		
+		#ifndef UNIV_HOTBACKUP
+			unsigned	flush_type:2;	/*!< if this block is currently being
+							flushed to disk, this tells the
+							flush_type.
+							@see buf_flush_t */
+			unsigned	buf_pool_index:6;/*!< index number of the buffer pool
+							that this block belongs to */
+		# if MAX_BUFFER_POOLS > 64
+		#  error "MAX_BUFFER_POOLS > 64; redefine buf_pool_index:6"
+		# endif
+			/* @} */
+		#endif /* !UNIV_HOTBACKUP */
+			page_zip_des_t	zip;		/*!< compressed page; zip.data
+							(but not the data it points to) is
+							also protected by buf_pool->mutex;
+							state == BUF_BLOCK_ZIP_PAGE and
+							zip.data == NULL means an active
+							buf_pool->watch */
+		#ifndef UNIV_HOTBACKUP
+			buf_page_t*	hash;		/*!< node used in chaining to
+							buf_pool->page_hash or
+							buf_pool->zip_hash */
+		#ifdef UNIV_DEBUG
+			ibool		in_page_hash;	/*!< TRUE if in buf_pool->page_hash */
+			ibool		in_zip_hash;	/*!< TRUE if in buf_pool->zip_hash */
+		#endif /* UNIV_DEBUG */
+		
+			/** @name Page flushing fields
+			All these are protected by buf_pool->mutex. */
+			/* @{ */
+		
+			UT_LIST_NODE_T(buf_page_t) list;
+							/*!< based on state, this is a
+							list node, protected either by
+							buf_pool->mutex or by
+							buf_pool->flush_list_mutex,
+							in one of the following lists in
+							buf_pool:
+		
+							- BUF_BLOCK_NOT_USED:	free
+							- BUF_BLOCK_FILE_PAGE:	flush_list
+							- BUF_BLOCK_ZIP_DIRTY:	flush_list
+							- BUF_BLOCK_ZIP_PAGE:	zip_clean
+		
+							If bpage is part of flush_list
+							then the node pointers are
+							covered by buf_pool->flush_list_mutex.
+							Otherwise these pointers are
+							protected by buf_pool->mutex.
+		
+							The contents of the list node
+							is undefined if !in_flush_list
+							&& state == BUF_BLOCK_FILE_PAGE,
+							or if state is one of
+							BUF_BLOCK_MEMORY,
+							BUF_BLOCK_REMOVE_HASH or
+							BUF_BLOCK_READY_IN_USE. */
+		
+		#ifdef UNIV_DEBUG
+			ibool		in_flush_list;	/*!< TRUE if in buf_pool->flush_list;
+							when buf_pool->flush_list_mutex is
+							free, the following should hold:
+							in_flush_list
+							== (state == BUF_BLOCK_FILE_PAGE
+							    || state == BUF_BLOCK_ZIP_DIRTY)
+							Writes to this field must be
+							covered by both block->mutex
+							and buf_pool->flush_list_mutex. Hence
+							reads can happen while holding
+							any one of the two mutexes */
+			ibool		in_free_list;	/*!< TRUE if in buf_pool->free; when
+							buf_pool->mutex is free, the following
+							should hold: in_free_list
+							== (state == BUF_BLOCK_NOT_USED) */
+		#endif /* UNIV_DEBUG */
+			lsn_t		newest_modification;
+							/*!< log sequence number of
+							the youngest modification to
+							this block, zero if not
+							modified. Protected by block
+							mutex */
+			lsn_t		oldest_modification;
+							/*!< log sequence number of
+							the START of the log entry
+							written of the oldest
+							modification to this block
+							which has not yet been flushed
+							on disk; zero if all
+							modifications are on disk.
+							Writes to this field must be
+							covered by both block->mutex
+							and buf_pool->flush_list_mutex. Hence
+							reads can happen while holding
+							any one of the two mutexes */
+			/* @} */
+			/** @name LRU replacement algorithm fields
+			These fields are protected by buf_pool->mutex only (not
+			buf_pool->zip_mutex or buf_block_t::mutex). */
+			/* @{ */
+		
+			UT_LIST_NODE_T(buf_page_t) LRU;
+							/*!< node of the LRU list */
+		#ifdef UNIV_DEBUG
+			ibool		in_LRU_list;	/*!< TRUE if the page is in
+							the LRU list; used in
+							debugging */
+		#endif /* UNIV_DEBUG */
+			unsigned	old:1;		/*!< TRUE if the block is in the old
+							blocks in buf_pool->LRU_old */
+			unsigned	freed_page_clock:31;/*!< the value of
+							buf_pool->freed_page_clock
+							when this block was the last
+							time put to the head of the
+							LRU list; a thread is allowed
+							to read this for heuristic
+							purposes without holding any
+							mutex or latch */
+			/* @} */
+			unsigned	access_time;	/*!< time of first access, or
+							0 if the block was never accessed
+							in the buffer pool. Protected by
+							block mutex */
+		# if defined UNIV_DEBUG_FILE_ACCESSES || defined UNIV_DEBUG
+			ibool		file_page_was_freed;
+							/*!< this is set to TRUE when
+							fsp frees a page in buffer pool;
+							protected by buf_pool->zip_mutex
+							or buf_block_t::mutex. */
+		# endif /* UNIV_DEBUG_FILE_ACCESSES || UNIV_DEBUG */
+		#endif /* !UNIV_HOTBACKUP */
+		}
+
+14.压缩和解压缩相关算法
+
+page->zip.data是保存在磁盘上的，也是压缩的。
+在读的过程中，如果上层需要读相应的page的内容，则需要建立一个block数据结构，将其加入到unzip_LRU,用于解码。但是原来的page->zip.data的数据不变，还在那里。
+
+释放page的时候，buf_LRU_block_remove_hashed，如果是ZIP_PAGE，直接delete hash list，deconstructor page.
+如果是FILE_PAGE,buf_page_set_state(bpage, BUF_BLOCK_REMOVE_HASH);
+if (FILE_PAGE && zip)
+buf_buddy_free(page->zip.dat)
+
+block_list,也就是unzip_LRU一般是不删除的，只是将状态设置为BUF_BLOCK_REMOVE_HASH
+
+page->zip.data是从buddy中分配的。。。
+
+unzip_LRU和LRU的区别
+
+UT_LIST_BASE_NODE_T(buf_page_t) LRU;的单位是buf_page_t，page
+UT_LIST_BASE_NODE_T(buf_block_t) unzip_LRU;的单位是buf_block_t
+
+
+innodb_buffer_pool_evict_uncompressed
+
+buf_unzip_LRU_add_block
+
+innodb_buffer_pool_evict_uncompressed
+
+callers:
+
+
+buf_page_init_for_read
+buf_LRU_add_block_to_end_low
+buf_LRU_add_block_low
+--buf_unzip_LRU_add_block//插入LRU的同时，如果满足条件，也插入unzip_LRU
+
+
+
+buf_page_get_gen
+	case BUF_BLOCK_ZIP_PAGE:
+	case BUF_BLOCK_ZIP_DIRTY:
+--buf_unzip_LRU_add_block
+--buf_zip_decompress
+----page_zip_decompress
+
+两个地方做解压工作：
+buf_page_get_gen
+buf_page_io_complete
+
+
+buf_page_get_gen//这个接口返回给用户的就是FILE_PAGE,而且是解压的。。
+--buf_zip_decompress
+
+
+buf_read_page
+--fil_space_get_version
+--buf_read_page_low//读取一个页最底层的函数
+----buf_page_init_for_read//从缓冲池内存中，通过LRU算法分配一个对象buf_block_t，加latch
+----buf_page_io_complete//最后，如果是FILE_PAGE,顺便就解压了。。。
+
+15.buf_page_get_gen
+
+
+buf_page_get_gen
+--buf_page_hash_get_low//不好说，可能是ZIP_PAGE,也可能是FILE_PAGE。因为不管是哪种，都会插入到hash_table中的。。。
+--buf_read_page//在这个流程下，返回的是zip page
+--buf_read_ahead_random
+    //如果得到的page是FILE_PAGE，直接返回? ?buf_read_page已经处理好
+    //如果是ZIP_PAGE/ZIP_DIRTY，需要再解压一下，分配一个block，放到unzip_LRU
+--buf_LRU_get_free_block//又获取了一个free block
+--buf_relocate
+--buf_block_init_low
+--buf_flush_relocate_on_flush_list
+--buf_unzip_LRU_add_block//把新的block加入到unzip_LRU
+--buf_page_free_descriptor(bpage);//释放旧的page
+--buf_zip_decompress
+----page_zip_decompress(&block->page.zip, block->frame, TRUE)) //解压缩到block->frame
+--buf_page_make_young_if_needed
+--buf_read_ahead_linear
+
+
+		Functions calling this function: buf_page_get_gen
+		
+		  File          Function                              Line
+		0 btr0cur.cc    btr_cur_search_to_nth_level            609 block = buf_page_get_gen(
+		1 btr0cur.cc    btr_cur_open_at_index_side_func        894 block = buf_page_get_gen(space, zip_size, page_no,
+		2 btr0cur.cc    btr_cur_open_at_rnd_pos_func          1032 block = buf_page_get_gen(space, zip_size, page_no,
+		3 btr0cur.cc    btr_estimate_n_rows_in_range_on_level 3568 block = buf_page_get_gen(space, zip_size, page_no, RW_S_LATCH,
+		4 btr0sea.cc    btr_search_drop_page_hash_when_freed  1276 block = buf_page_get_gen(space, zip_size, page_no, RW_X_LATCH, NULL,
+		5 dict0stats.cc dict_stats_analyze_index_below_cur    1501 block = buf_page_get_gen(space, zip_size, page_no, RW_S_LATCH,
+		6 ibuf0ibuf.cc  ibuf_bitmap_get_map_page_func          856 block = buf_page_get_gen(space, zip_size,
+		7 buf0buf.h     buf_page_get                           334 #define buf_page_get(SP, ZS, OF, LA, MTR) buf_page_get_gen(\
+		8 buf0buf.h     buf_page_get_with_no_latch             343 #define buf_page_get_with_no_latch(SP, ZS, OF, MTR) buf_page_get_gen(\
+		9 buf0buf.h     buf_relocate                           419 buf_page_get_gen(
+		a buf0buf.h     buf_page_alloc_descriptor              419 buf_page_get_gen(
+		b buf0buf.h     buf_page_free_descriptor               419 buf_page_get_gen(
+		c lock0lock.cc  lock_print_info_all_transactions      5398 buf_page_get_gen(space, zip_size, page_no,
+		d lock0lock.cc  lock_rec_block_validate               5835 block = buf_page_get_gen(
+		e trx0rec.cc    trx_undo_report_row_operation         1293 undo_block = buf_page_get_gen(
+
+
+16.buffer pool的几种list
+
+	UT_LIST_BASE_NODE_T(buf_page_t) free;
+					/*!< base node of the free
+					block list */
+					
+	UT_LIST_BASE_NODE_T(buf_page_t) LRU;
+					/*!< base node of the LRU list */
+
+	UT_LIST_BASE_NODE_T(buf_block_t) unzip_LRU;
+					/*!< base node of the
+					
+	UT_LIST_BASE_NODE_T(buf_page_t) flush_list;
+					/*!< base node of the modified block
+					list */
+					
+	hash_table_t*	page_hash;	/*!< hash table of buf_page_t or
+					buf_block_t file pages,
+					buf_page_in_file() == TRUE,
+					indexed by (space_id, offset).
+					page_hash is protected by an
+					array of mutexes.
+					Changes in page_hash are protected
+					by buf_pool->mutex and the relevant
+					page_hash mutex. Lookups can happen
+					while holding the buf_pool->mutex or
+					the relevant page_hash mutex. */
+					
+									
+操作 LRU的函数
+buf_LRU_add_block
+
+Cscope tag: buf_LRU_add_block
+   #   line  filename / context / line
+   1   3586  storage/innobase/buf/buf0buf.cc <<buf_page_init_for_read>>
+             buf_LRU_add_block(bpage, TRUE );
+   2   3716  storage/innobase/buf/buf0buf.cc <<buf_page_init_for_read>>
+             buf_LRU_add_block(bpage, TRUE );
+   3   3820  storage/innobase/buf/buf0buf.cc <<buf_page_create>>
+             buf_LRU_add_block(&block->page, FALSE);
+   4    173  storage/innobase/include/buf0lru.h <<buf_LRU_free_page>>
+             buf_LRU_add_block(
+   5    173  storage/innobase/include/buf0lru.h <<buf_LRU_scan_and_free_block>>
+             buf_LRU_add_block(
+   6    173  storage/innobase/include/buf0lru.h <<buf_LRU_get_free_block>>
+             buf_LRU_add_block(
+             
+buf_page_create
+--buf_page_init		
+----buf_block_init_low
+----buf_page_init_low							
+--buf_LRU_add_block
+
+buf_page_init_for_read		
+
+//如果是ZIP_PAGE类型,unzip=false，直接将page插入hash_list，不需要block
+--buf_buddy_alloc
+--buf_page_init_low
+--HASH_INSERT(buf_page_t, hash, buf_pool->page_hash, fold, bpage);
+--buf_LRU_add_block
+
+//如果是FILE_PAGE，unzip=true;
+--buf_LRU_get_free_block
+--buf_page_init
+----buf_block_init_low
+----buf_page_init_low
+----HASH_INSERT(buf_page_t, hash, buf_pool->page_hash, fold, &block->page);
+--buf_LRU_add_block
+--data = buf_buddy_alloc(buf_pool, zip_size, &lru);
+--buf_unzip_LRU_add_block(block, TRUE);
+
+
+
+bpage->zip.data -- buf_buddy_alloc(buf_pool, zip_size, &lru);
+bpage = buf_page_alloc_descriptor();
+										
+17.buf_page_get_zip
+跟之前理解的不一样，zip指的是整个page都是compressed的，这种page，只用于blob
+
+一般的普通page，在page->zip.data中保存压缩数据，page header不压缩
+
+
+btr_copy_zblob_prefix
+--buf_page_get_zip
+----buf_block_try_discard_uncompressed
+------buf_LRU_free_page//zip=false; FILE_PAGE
+      将block->frame释放。
+      进去的时候是FILE_PAGE，出来的时候变成ZIP_PAGE
+      //目的就是把FILE_PAGE释放，删除hash_list,重新插入到LRU，hash_table
+----buf_page_make_young_if_needed
+
+18.todo List
+
+- 逻辑读取 buf_get_hash_get
+- 随机预读
+- 线性预读
+- 哈希表和自适应哈希
+- LRU算法
+  buf_block_make_young
+  LRU_old_ajust_len
+  buf_LRU_add_block
+  buf_LRU_make_block_old
+  
+- checkpoint
+- flush page
+  buf_flush_write_block_low
+  buf_flush_try_neighbors
+  
+19.buf_flush_write_block_low										
+
+1 buf0flu.cc buf_flush_try_neighbors        1275 && buf_flush_page(
+2 buf0flu.cc buf_flush_single_page_from_LRU 1991 ibool flushed = buf_flush_page(
+3 buf0lru.cc buf_flush_or_remove_page        499 && buf_flush_page(
+
+buf_flush_page
+--buf_flush_write_block_low
+
+
+
+
+
+21.buf_LRU_remove_block
+
+buf_read_page
+--buf_read_page_low//读取一个页最底层的函数
+----buf_page_init_for_read//从缓冲池内存中，通过LRU算法分配一个对象buf_block_t，加latch
+------buf_page_hash_get_low
+------buf_page_init
+------buf_LRU_add_block
+------buf_buddy_alloc
+--------buf_buddy_get_slot
+--------buf_buddy_alloc_low
+----------buf_buddy_alloc_zip
+------------buf_buddy_remove_from_free
+----------buf_LRU_get_free_only/Or
+----------buf_LRU_get_free_block/Or
+------------buf_LRU_get_free_only
+------------buf_LRU_scan_and_free_block//从LRU中move一部分block到free list
+--------------buf_LRU_free_from_unzip_LRU_list
+----------------buf_LRU_evict_from_unzip_LRU
+----------------buf_LRU_free_page
+--------------buf_LRU_free_from_common_LRU_list
+----------------buf_LRU_free_page
+------------------buf_LRU_block_remove_hashed//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+--------------------buf_LRU_remove_block
+----------------------UT_LIST_REMOVE(LRU, buf_pool->LRU, bpage);
+----------------------buf_unzip_LRU_remove_block_if_needed//删除的时候是一块删除的。但删除和释放还不太一样。。
+--------------------HASH_DELETE(buf_page_t, hash, buf_pool->page_hash, fold, bpage);
+--------------------if (BUF_BLOCK_ZIP_PAGE) buf_buddy_free
+--------------------if (BUF_BLOCK_FILE_PAGE) buf_page_set_state(bpage, BUF_BLOCK_REMOVE_HASH);if (zip) buf_buddy_free
+------------------if (BUF_BLOCK_FILE_PAGE) b->state = BUF_BLOCK_ZIP_PAGE; 
+                                           HASH_INSERT(buf_page_t, hash,buf_pool->page_hash, fold, b);
+                                           buf_flush_relocate_on_flush_list
+                                           UT_LIST_INSERT_AFTER(LRU, buf_pool->LRU,prev_b, b);//or buf_LRU_add_block_low
+                                           buf_LRU_block_free_hashed_page
+------------------buf_LRU_block_free_hashed_page//page放到free list
+                                           
+22.buf page state
+
+enum buf_page_state {
+	BUF_BLOCK_POOL_WATCH,		/*!< a sentinel for the buffer pool
+					watch, element of buf_pool->watch[] */
+	BUF_BLOCK_ZIP_PAGE,		/*!< contains a clean
+					compressed page */
+	BUF_BLOCK_ZIP_DIRTY,		/*!< contains a compressed
+					page that is in the
+					buf_pool->flush_list */
+
+	BUF_BLOCK_NOT_USED,		/*!< is in the free list;
+					must be after the BUF_BLOCK_ZIP_
+					constants for compressed-only pages
+					@see buf_block_state_valid() */
+	BUF_BLOCK_READY_FOR_USE,	/*!< when buf_LRU_get_free_block
+					returns a block, it is in this state */
+	BUF_BLOCK_FILE_PAGE,		/*!< contains a buffered file page *///unzip page,但是frame可能是zip???
+	BUF_BLOCK_MEMORY,		/*!< contains some main memory
+					object */
+	BUF_BLOCK_REMOVE_HASH		/*!< hash index should be removed
+					before putting to the free list */
+};                                           
+                                           
+
+
+23.buf_flush_or_remove_page
+
+buf_LRU_flush_or_remove_pages
+--buf_LRU_remove_pages
+----buf_flush_dirty_pages
+------buf_flush_or_remove_pages
+--------buf_flush_or_remove_page
+
+
+Functions calling this function: buf_LRU_flush_or_remove_pages
+
+  File           Function                Line   
+0 fil0fil.cc     fil_close_tablespace    2649 buf_LRU_flush_or_remove_pages(id, BUF_REMOVE_FLUSH_WRITE, trx);
+1 fil0fil.cc     fil_delete_tablespace   2745 buf_LRU_flush_or_remove_pages(id, buf_remove, 0);
+2 row0import.cc  row_import_for_mysql    3756 buf_LRU_flush_or_remove_pages(
+3 row0quiesce.cc row_quiesce_table_start  547 buf_LRU_flush_or_remove_pages(
+
+
+
+
+24.buf_flush_try_neighbors
+
+buf_flush_page_and_try_neighbors
+--buf_flush_try_neighbors
+----buf_flush_check_neighbor
+----buf_flush_ready_for_flush
+----buf_flush_page
+
+
+Functions calling this function: buf_flush_page_and_try_neighbors
+
+  File       Function                 Line      
+0 buf0flu.cc buf_flush_LRU_list_batch 1498 if (!buf_flush_page_and_try_neighbors(
+1 buf0flu.cc buf_do_flush_list_batch  1624 buf_flush_page_and_try_neighbors(
+
+----------------------
+buf_flush_LRU_list_batch
+
+buf_flush_batch
+--//case BUF_FLUSH_LRU:
+--buf_do_LRU_batch
+----buf_LRU_evict_from_unzip_LRU
+----buf_free_from_unzip_LRU_list_batch
+------(buf_LRU_free_page(&block->page, false))
+----buf_flush_LRU_list_batch
+------buf_flush_page_and_try_neighbors
+--//case BUF_FLUSH_LIST:
+--buf_do_flush_list_batch
+----buf_flush_page_and_try_neighbors
+
+-----------------------------------------------------------------
+Functions calling this function: buf_flush_batch
+
+  File       Function       Line                
+0 buf0flu.cc buf_flush_LRU  1860 page_count = buf_flush_batch(buf_pool, BUF_FLUSH_LRU, min_n, 0);
+1 buf0flu.cc buf_flush_list 1936 page_count = buf_flush_batch(
+
+DECLARE_THREAD(buf_flush_page_cleaner_thread)
+DECLARE_THREAD(recv_writer_thread)
+--buf_flush_LRU_tail
+----buf_flush_LRU
+------buf_flush_start
+------buf_flush_batch
+------buf_flush_end
+------buf_flush_common
+
+
+buf_flush_list
+--buf_flush_start
+--buf_flush_batch
+--buf_flush_end
+--buf_flush_common
+
+
+
+26.buf_LRU_make_block_young
+
+buf_page_make_young_if_needed
+--buf_page_peek_if_too_old
+----
+--buf_page_make_young
+----buf_LRU_make_block_young
+------buf_LRU_remove_block
+------buf_LRU_add_block_low
+--------UT_LIST_ADD_FIRST(LRU, buf_pool->LRU, bpage);
+--------buf_unzip_LRU_add_block
+
+
+Functions calling this function: buf_page_make_young_if_needed
+
+  File       Function                  Line                
+0 buf0buf.cc buf_page_get_zip          2115 buf_page_make_young_if_needed(bpage);
+1 buf0buf.cc buf_page_get_gen          2989 buf_page_make_young_if_needed(&fix_block->page);
+2 buf0buf.cc buf_page_optimistic_get   3092 buf_page_make_young_if_needed(&block->page);
+3 buf0buf.cc buf_page_get_known_nowait 3213 buf_page_make_young_if_needed(&block->page);
+
+
+
+27.buf_LRU_make_block_old
+
+无caller。。。。。。
+
+buf_LRU_make_block_old
+--buf_LRU_remove_block
+--buf_LRU_add_block_to_end_low
+----UT_LIST_ADD_LAST(LRU, buf_pool->LRU, bpage);
+
+28.buf_flush_list
+
+callers:
+page_cleaner_do_flush_batch
+DECLARE_THREAD(buf_flush_page_cleaner_thread)
+buf_flush_list_now_set//debug
+log_preflush_pool_modified_pages
+recv_apply_hashed_log_recs
+innobase_start_or_create_for_mysql
+
+buf_flush_list/buf_flush_LRU
+--buf_flush_start
+--buf_flush_batch
+----//case BUF_FLUSH_LRU:
+----buf_do_LRU_batch
+------buf_LRU_evict_from_unzip_LRU
+------buf_free_from_unzip_LRU_list_batch
+--------(buf_LRU_free_page(&block->page, false))
+------buf_flush_LRU_list_batch
+--------buf_flush_page_and_try_neighbors
+----//case BUF_FLUSH_LIST:
+----buf_do_flush_list_batch
+------buf_flush_page_and_try_neighbors
+--------buf_flush_try_neighbors
+----------buf_flush_check_neighbor
+----------buf_flush_ready_for_flush
+----------buf_flush_page
+--buf_flush_end
+--buf_flush_common
+
+
+29.page_cleaner_do_flush_batch
+
+DECLARE_THREAD(buf_flush_page_cleaner_thread)
+--//if (srv_check_activity)
+--page_cleaner_flush_pages_if_needed//每1秒调用一次
+----page_cleaner_do_flush_batch
+--//else
+--page_cleaner_do_flush_batch
+
+
+
+25.page cleaner thread
+
+DECLARE_THREAD(buf_flush_page_cleaner_thread)
+  //如果其他线程正忙，不捣乱，sleep
+--page_cleaner_sleep_if_needed
+  //if (srv_check_activity(last_activity))
+--buf_flush_LRU_tail
+----buf_flush_LRU//PAGE_CLEANER_LRU_BATCH_CHUNK_SIZE=100
+------buf_flush_start
+------buf_flush_batch
+--------buf_do_LRU_batch
+----------buf_free_from_unzip_LRU_list_batch
+------------buf_LRU_free_page(&block->page, false)
+----------buf_flush_LRU_list_batch
+------------buf_LRU_free_page
+------------buf_flush_page_and_try_neighbors or
+------buf_flush_end
+------buf_flush_common
+----buf_flush_wait_batch_end
+--page_cleaner_flush_pages_if_needed//1秒调用一次
+----af_get_pct_for_dirty
+----af_get_pct_for_lsn
+------log_get_max_modified_age_async
+----page_cleaner_do_flush_batch
+  //else if (srv_check_activity)
+--page_cleaner_do_flush_batch
+----buf_flush_list
+------buf_flush_start
+------buf_flush_batch
+--------buf_do_flush_list_batch
+----------buf_flush_page_and_try_neighbors
+------buf_flush_end
+------buf_flush_common
+  //while (srv_shutdown_state == SRV_SHUTDOWN_CLEANUP)
+  //退出清理阶段
+--page_cleaner_do_flush_batch
+--buf_flush_wait_batch_end
+--buf_flush_wait_LRU_batch_end
+  //最后收尾工作
+--buf_flush_list
+--buf_flush_wait_batch_end
+
+buf_flush_LRU底层是一个一个地调用 buf_LRU_free_page 或 buf_flush_page_and_try_neighbors
+buf_flush_list的底层是buf_flush_page_and_try_neighbors
+
+26.剑英改的地方
+
+buf_flush_single_page_from_LRU()
+/* The following call will release the buffer pool
+   and block mutex. */
+ibool sync_flag = true;
+if (srv_flush_single_page_async)
+	sync_flag = false;
+
+ibool flushed = buf_flush_page(
+  buf_pool, bpage, BUF_FLUSH_SINGLE_PAGE, sync_flag);       
+	
+27.buf_flush_single_page_from_LRU
+
+buf_read_page
+--buf_read_page_low//读取一个页最底层的函数
+----buf_page_init_for_read//从缓冲池内存中，通过LRU算法分配一个对象buf_block_t，加latch
+------buf_page_hash_get_low
+------buf_page_init
+------buf_LRU_add_block
+------buf_buddy_alloc
+--------buf_buddy_get_slot
+--------buf_buddy_alloc_low
+----------buf_buddy_alloc_zip
+------------buf_buddy_remove_from_free
+----------buf_LRU_get_free_block
+------------buf_flush_single_page_from_LRU
+------------buf_LRU_scan_and_free_block
+------------buf_flush_single_page_from_LRU
+--------------buf_flush_ready_for_flush
+--------------buf_flush_page
+----------------buf_flush_write_block_low//!!!!!!!!!!!!
+------------------log_write_up_to
+------------------if ZIP_PAGE, update LSN, checksum
+------------------if FILE_PAGE, buf_flush_init_for_writing
+------------------fil_io//这里可以写压缩页，也可以写非压缩页。这取决于上层控制。如果是压缩表，需要压缩一下，再写入磁盘吗？？？？
+------------------fil_flush//if sync
+------------------buf_page_io_complete//if sync
+--------------buf_flush_ready_for_replace
+--------------buf_LRU_evict_from_unzip_LRU
+--------------buf_LRU_free_page	
+
+28.log_preflush_pool_modified_pages
+
+
+row_discard_tablespace_end//discard tablespace
+row_ins_clust_index_entry_low//debug_execute_if
+row_import_cleanup//import
+recv_reset_logs//reset content of log files
+logs_empty_and_mark_files_at_shutdown//shutdown
+
+log_make_checkpoint_at
+--log_preflush_pool_modified_pages
+--log_checkpoint
+
+
+
+callers:
+que_run_threads_low
+row_ins_clust_index_entry
+row_ins_sec_index_entry
+row_log_table_apply_ops
+row_log_apply_ops
+row_log_apply
+row_merge_insert_index_tuples
+row_purge_remove_clust_if_poss_low
+row_purge_remove_sec_if_poss_tree
+row_purge_remove_sec_if_poss_leaf
+row_undo_ins_remove_sec_low
+row_undo_ins
+row_undo_mod_clust
+row_undo_mod_del_mark_or_remove_sec_low
+row_undo_mod_del_unmark_sec_and_undo_update
+row_upd_sec_index_entry
+row_upd
+srv_master_do_active_tasks//!!!!
+srv_master_do_idle_tasks//!!!
+srv_master_do_shutdown_tasks//!!!
+
+
+log_free_check
+--log_check_margins
+----log_flush_margin
+----log_checkpoint_margin
+------log_preflush_pool_modified_pages
+--------buf_flush_list
+----------buf_do_flush_list_batch
+------------buf_flush_page_and_try_neighbors
+--------------buf_flush_try_neighbors
+----------------buf_flush_check_neighbor
+----------------buf_flush_ready_for_flush
+----------------buf_flush_page
+------log_checkpoint
+
+
+29. log_sys->check_flush_or_checkpoint 的地方
+修改 log_sys->check_flush_or_checkpoint 的地方
+log_close//每次写log，都要open/close
+log_init//只调用一次
+log_checkpoint_margin
+
+
+读log_sys->check_flush_or_checkpoint 的地方
+log_free_check
+log_check_margins
+log_checkpoint_margin
+
+
+30.buf_flush_page_and_try_neighbors
+
+buf_flush_LRU_list_batch
+buf_do_flush_list_batch
+--buf_flush_page_and_try_neighbors
+----buf_flush_ready_for_flush
+----buf_flush_try_neighbors
+------buf_flush_check_neighbor
+------buf_flush_ready_for_flush
+------buf_flush_page(buf_pool, bpage, flush_type, false)//FLUSH_LIST
+--------buf_flush_write_block_low(false)
+----------log_write_up_to
+----------buf_flush_init_for_writing
+----------fil_io
+----------if (sync) fil_flush
+
+
+log_preflush_pool_modified_pages
+--buf_flush_list
+----buf_do_flush_list_batch
+------buf_flush_page_and_try_neighbors
+--------buf_flush_ready_for_flush
+--------buf_flush_try_neighbors
+----------buf_flush_check_neighbor
+----------buf_flush_ready_for_flush
+----------buf_flush_page(buf_pool, bpage, flush_type, false)//FLUSH_LIST
+------------buf_flush_write_block_low(false)
+--------------log_write_up_to
+--------------buf_flush_init_for_writing
+--------------fil_io
+--------------if (sync) fil_flush
+
+31.
+mmaa                   :max_modified_age_async =     7/8 * total_redo_log_file_size
+mmac                   :max_modified_age_sync  =   15/16 * total_redo_log_file_size
+mcaa	                 :max_checkpoint_age_async = 31/32 * total_redo_log_file_size
+mca                    :max_checkpoint_age_sync  =     1 * total_redo_log_file_size
+
+
+
+
+33.
+buf_flush_write_block_low
+--buf_flush_init_for_writing
+----buf_calc_page_new_checksum
+
+34.fil_flush_file_spaces
+
+buf_dblwr_flush_buffered_writes
+--buf_dblwr_sync_datafiles
+----fil_flush_file_spaces
+------fil_flush
+--------os_file_flush
+----------os_file_flush_func
+------------os_file_fsync
+--------------fsync
+
+
+#0 0x00007f062130f3cc in pthread_cond_wait@@GLIBC_2.3.2 ()
+#1 0x00000000009fbba1 in os_cond_wait (fast_mutex=0x6d5bef50,
+#2 os_event_wait_low (event=0x6d5bef50, reset_sig_count=<optimized out>,
+#3 0x0000000000b03d3f in fil_flush (space_id=<optimized out>)
+#4 0x0000000000b04bf5 in fil_flush_file_spaces (purpose=purpose@entry=501)
+#5 0x0000000000ac13b4 in buf_dblwr_sync_datafiles ()
+#6 buf_dblwr_flush_buffered_writes ()
+#7 0x0000000000ac71fb in buf_flush_common (flush_type=BUF_FLUSH_LIST,
+#8 buf_flush_list (min_n=<optimized out>, min_n@entry=18446744073709551614,
+#9 0x00000000009e7042 in log_preflush_pool_modified_pages (
+#10 log_checkpoint_margin ()
+#11 log_check_margins ()
+#12 0x0000000000a54d55 in log_free_check ()
+#13 row_upd (thr=0x7ef384077368, node=0x7ef384077068)
+#14 row_upd_step (thr=thr@entry=0x7ef384077368)
+#15 0x0000000000a39fad in row_update_for_mysql (
+#16 0x00000000009b442e in ha_innobase::update_row (this=0x7ef384075c10,
+#17 0x00000000005aefa3 in handler::ha_update_row (this=0x7ef384075c10,
+#18 0x0000000000763125 in mysql_update (thd=thd@entry=0x6e0ad6c0,
+#19 0x00000000006f43bc in mysql_execute_command (thd=0x6e0ad6c0)
+#20 0x000000000070a13e in Prepared_statement::execute (
+#21 0x000000000070a352 in Prepared_statement::execute_loop (
+#22 0x000000000070a607 in mysqld_stmt_execute (thd=thd@entry=0x6e0ad6c0,
+#23 0x00000000006fa46f in dispatch_command (command=COM_STMT_EXECUTE,
+#24 0x00000000006fb364 in do_command (thd=<optimized out>)
+#25 0x00000000006c152d in do_handle_one_connection (
+#26 0x00000000006c1579 in handle_one_connection (arg=arg@entry=0x6e0ad6c0)
+#27 0x0000000000945fb0 in pfs_spawn_thread (arg=0x6e0b5720)
+#28 0x00007f062130b1c3 in start_thread ()
+#29 0x00007f06201e512d in clone () from /opt/compiler/gcc-4.8.2/lib/libc.so.6
+
+log_checkpoint
+--fil_flush_file_spaces
+
+
+35.buf_dblwr_create
+创建double write buffer
+
+
+36.区分 BUF_BLOCK_FILE_PAGE 和 BUF_BLOCK_ZIP_PAGE
+
+设置BUF_BLOCK_FILE_PAGE的地方
+
+buf_page_get_gen
+	case BUF_BLOCK_ZIP_PAGE:
+	case BUF_BLOCK_ZIP_DIRTY:
+  block->page.state = BUF_BLOCK_FILE_PAGE;
+  buf_zip_decompress()
+
+buf_page_init_for_backup_restore
+	block->page.state	= BUF_BLOCK_FILE_PAGE;
+	
+buf_block_set_file_page
+
+row_import_for_mysql
+--fil_tablespace_iterate
+----fil_iterate
+------buf_block_set_file_page
+
+buf_page_init_for_read/buf_page_create
+--buf_page_init
+----buf_block_set_file_page
+
+
+37.BUF_BLOCK_ZIP_PAGE
+设置BUF_BLOCK_ZIP_PAGE的地方
+buf_pool_watch_set
+buf_page_init_for_read
+buf_flush_remove
+buf_LRU_free_page
+
+
+39.srv_checksum_algorithm
+ 从MySQL5.6.3开始 ，Innodb引入了新的checksum计算方式，checksum算法由新参数 innodb_checksum_algorithm来控制，默认为crc32算法，主要有两种算法，
+ 一种是老的计算方法(innodb_checksum_algorithm=innodb)，使用这种算法是兼容老版本的MySQL。
+ 但如果使用crc32算法，则会无法兼容老版本，因为使用了不同的算法计算checksum，会导致校验page失败。 
+ 
+ 
+ 38.buf_page_is_corrupted
+buf_page_get_gen
+--buf_read_page
+----buf_read_page_low//读取一个页最底层的函数
+------buf_page_io_complete//释放锁
+--------buf_page_is_corrupted
+ 
+(gdb) bt
+#0 0x00007f786a89a8ac in pthread_kill () from /lib64/libpthread.so.0
+#1 0x00000000006511c8 in handle_fatal_signal (sig=6) at /home/cds/mysql-baidu-5623/sql/signal_handler.cc:230
+#2 <signal handler called>
+#3 0x00007f7869749925 in raise () from /lib64/libc.so.6
+#4 0x00007f786974b105 in abort () from /lib64/libc.so.6
+#5 0x0000000000a8b686 in buf_page_get_gen (space=12, zip_size=0, offset=1424350, rw_latch=1, guess=<value optimized out>, mode=10, file=0xce7aa0 "/home/cds/mysql-baidu-5623/storage/innobase/row/row0sel.cc", line=4138, mtr=0x7f76adb1c560) at /home/cds/mysql-baidu-5623/storage/innobase/buf/buf0buf.cc:2646
+#6 0x0000000000a74992 in btr_cur_search_to_nth_level (index=0x7f7688021648, level=0, tuple=0x7f763405c018, mode=2, latch_mode=1, cursor=0x7f763405bd10, has_search_latch=0, file=0xce7aa0 "/home/cds/mysql-baidu-5623/storage/innobase/row/row0sel.cc", line=4138, mtr=0x7f76adb1c560) at /home/cds/mysql-baidu-5623/storage/innobase/btr/btr0cur.cc:611
+#7 0x0000000000a268f5 in btr_pcur_open_with_no_init_func (buf=0x7f763405b3e0 "\377", mode=2, prebuilt=0x7f763405bc98, match_mode=<value optimized out>, 
+direction=<value optimized out>) at /home/cds/mysql-baidu-5623/storage/innobase/include/btr0pcur.ic:485
+#8 row_search_for_mysql (buf=0x7f763405b3e0 "\377", mode=2, prebuilt=0x7f763405bc98, match_mode=<value optimized out>, direction=<value optimized out>)
+at /home/cds/mysql-baidu-5623/storage/innobase/row/row0sel.cc:4138
+#9 0x000000000098a798 in ha_innobase::index_read (this=0x7f763405aff0, buf=0x7f763405b3e0 "\377", key_ptr=<value optimized out>, key_len=4, find_flag=<value optimized out>) at /home/cds/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:7579
+#10 0x0000000000594b4e in ha_index_read_map (this=0x7f763405aff0, start_key=<value optimized out>, end_key=<value optimized out>, eq_range_arg=<value optimized out>, sorted=<value optimized out>) at /home/cds/mysql-baidu-5623/sql/handler.cc:2752
+#11 handler::read_range_first (this=0x7f763405aff0, start_key=<value optimized out>, end_key=<value optimized out>, eq_range_arg=<value optimized out>, sorted=<value optimized out>) at /home/cds/mysql-baidu-5623/sql/handler.cc:6693
+#12 0x00000000005950c8 in multi_range_read_next (this=<value optimized out>, range_info=0x7f76adb1cec8) at /home/cds/mysql-baidu-5623/sql/handler.cc:5864
+#13 DsMrr_impl::dsmrr_next (this=<value optimized out>, range_info=0x7f76adb1cec8) at /home/cds/mysql-baidu-5623/sql/handler.cc:6223
+#14 0x00000000007f1642 in QUICK_RANGE_SELECT::get_next (this=0x7f766c05c2b0) at /home/cds/mysql-baidu-5623/sql/opt_range.cc:10639
+#15 0x000000000081694b in rr_quick (info=0x7f76adb1d2f0) at /home/cds/mysql-baidu-5623/sql/records.cc:367
+#16 0x0000000000744642 in mysql_update (thd=0xcd2e8f0, table_list=0x7f766c020ec0, fields=..., values=..., conds=0x7f766c004f20, order_num=0, order=0x7f76adb1d2f0, limit=18446744073709551615, handle_duplicates=DUP_ERROR, ignore=false, found_return=0x7f76adb1e0d0, updated_return=0x7f76adb1e0c8)
+at /home/cds/mysql-baidu-5623/sql/sql_update.cc:742
+#17 0x00000000006d89ca in mysql_execute_command (thd=0xcd2e8f0) at /home/cds/mysql-baidu-5623/sql/sql_parse.cc:3307
+#18 0x00000000006e97a2 in Prepared_statement::execute (this=0x7f766c01f820, expanded_query=<value optimized out>, open_cursor=<value optimized out>)
+at /home/cds/mysql-baidu-5623/sql/sql_prepare.cc:4015
+#19 0x00000000006eda1a in Prepared_statement::execute_loop (this=0x7f766c01f820, expanded_query=0x7f76adb1e370, open_cursor=<value optimized out>, packet=<value optimized out>, packet_end=<value optimized out>) at /home/cds/mysql-baidu-5623/sql/sql_prepare.cc:3663
+#20 0x00000000006ee0e4 in mysqld_stmt_execute (thd=0xcd2e8f0, packet_arg=0xcd328f1 "\003", packet_length=<value optimized out>) at /home/cds/mysql-baidu-5623/sql/sql_prepare.cc:2700
+#21 0x00000000006dccc4 in dispatch_command (command=COM_STMT_EXECUTE, thd=0xcd2e8f0, packet=0xcd328f1 "\003", packet_length=<value optimized out>)
+at /home/cds/mysql-baidu-5623/sql/sql_parse.cc:1279
+#22 0x00000000006a4b6d in do_handle_one_connection (thd_arg=<value optimized out>) at /home/cds/mysql-baidu-5623/sql/sql_connect.cc:982
+#23 0x00000000006a4ca2 in handle_one_connection (arg=0xcd2e8f0) at /home/cds/mysql-baidu-5623/sql/sql_connect.cc:898
+#24 0x000000000092bf57 in pfs_spawn_thread (arg=0xccbbe80) at /home/cds/mysql-baidu-5623/storage/perfschema/pfs.cc:1860
+#25 0x00007f786a8959d1 in start_thread () from /lib64/libpthread.so.0
+#26 0x00007f78697ffb5d in clone () from /lib64/libc.so.6
+
+6.double writes
+
+//页写入前，将其复制到doublewrite buffer中，当收集满128个页，其会强制刷新到表空间中的doublewrite 段中，然后再将缓冲池中的页面刷新到磁盘。
+buf_flush_post_to_doublewrite_buf
+
+//将缓冲池中的页面刷新到磁盘。
+buf_flush_buffered_writes
+
+40.buf_dblwr_flush_buffered_writes
+
+Functions calling this function: buf_dblwr_flush_buffered_writes
+
+  File         Function               Line         
+0 buf0dblwr.cc buf_dblwr_add_to_batch  999 buf_dblwr_flush_buffered_writes();
+1 buf0dblwr.cc buf_dblwr_add_to_batch 1037 buf_dblwr_flush_buffered_writes();
+2 buf0flu.cc   buf_flush_page         1060 buf_dblwr_flush_buffered_writes();         
+3 buf0flu.cc   buf_flush_common       1731 buf_dblwr_flush_buffered_writes();  
+
+buf_flush_write_block_low
+--buf_dblwr_add_to_batch
+----buf_dblwr_flush_buffered_writes
+------buf_dblwr_sync_datafiles//not use doublewrite
+------buf_dblwr_check_block
+------buf_dblwr_check_page_lsn
+------fil_io
+------fil_flush(TRX_SYS_SPACE);
+------buf_dblwr_write_block_to_datafile
+------os_aio_simulated_wake_handler_threads
+
+
+
+
+
+41.buf_dblwr_write_single_page
+buf_dblwr_write_single_page
+--buf_dblwr_check_block
+--buf_dblwr_check_page_lsn
+
+
+buf_read_page
+--buf_read_page_low//读取一个页最底层的函数
+----buf_page_init_for_read//从缓冲池内存中，通过LRU算法分配一个对象buf_block_t，加latch
+------buf_page_hash_get_low
+------buf_page_init
+------buf_LRU_add_block
+------buf_buddy_alloc
+--------buf_buddy_get_slot
+--------buf_buddy_alloc_low
+----------buf_buddy_alloc_zip
+------------buf_buddy_remove_from_free
+----------buf_LRU_get_free_block
+------------buf_flush_single_page_from_LRU
+------------buf_LRU_scan_and_free_block
+------------buf_flush_single_page_from_LRU
+--------------buf_flush_ready_for_flush
+--------------buf_flush_page
+----------------buf_flush_write_block_low//!!!!!!!!!!!!
+------------------log_write_up_to
+------------------if ZIP_PAGE, update LSN, checksum
+------------------if FILE_PAGE, buf_flush_init_for_writing
+------------------fil_io//这里可以写压缩页，也可以写非压缩页。这取决于上层控制。如果是压缩表，需要压缩一下，再写入磁盘吗？？？？
+------------------fil_flush//if sync
+------------------buf_page_io_complete//if sync
+--------------buf_flush_ready_for_replace
+--------------buf_LRU_evict_from_unzip_LRU
+--------------buf_LRU_free_page	
+
+
+42.buf_dblwr_add_to_batch
+
+log_preflush_pool_modified_pages
+--buf_flush_list
+----buf_do_flush_list_batch
+------buf_flush_page_and_try_neighbors
+--------buf_flush_ready_for_flush
+--------buf_flush_try_neighbors
+----------buf_flush_check_neighbor
+----------buf_flush_ready_for_flush
+----------buf_flush_page(buf_pool, bpage, flush_type, false)//FLUSH_LIST
+------------buf_flush_write_block_low(false)
+--------------log_write_up_to
+--------------buf_flush_init_for_writing
+--------------fil_io
+--------------if (sync) fil_flush
+
+
+43.添加free list
+buf_LRU_block_free_non_file_page
+--UT_LIST_ADD_FIRST(list, buf_pool->free, (&block->page));
+
+Functions calling this function: buf_LRU_block_free_non_file_page
+
+  File         Function                       Line
+0 buf0buddy.cc buf_buddy_block_free            392 buf_LRU_block_free_non_file_page(block);
+1 buf0buf.cc   buf_page_get_gen               2768 buf_LRU_block_free_non_file_page(block);
+2 buf0buf.cc   buf_page_init_for_read         3549 buf_LRU_block_free_non_file_page(block);
+3 buf0lru.cc   buf_LRU_block_free_hashed_page 2375 buf_LRU_block_free_non_file_page(block);
+4 buf0buf.ic   buf_block_free                  895 buf_LRU_block_free_non_file_page(block);
+5 buf0lru.h    buf_LRU_free_page               163 buf_LRU_block_free_non_file_page(
+6 buf0lru.h    buf_LRU_scan_and_free_block     163 buf_LRU_block_free_non_file_page(
+7 buf0lru.h    buf_LRU_get_free_block          163 buf_LRU_block_free_non_file_page(
+
+
+
+
+bpage = UT_LIST_GET_LAST(buf_pool->LRU);
+
+44.double write flush完成
+DECLARE_THREAD(io_handler_thread)(
+--fil_aio_wait
+----buf_page_io_complete
+------buf_flush_write_complete
+--------buf_dblwr_update
+----------fil_flush_file_spaces(FIL_TABLESPACE);
+----------buf_dblwr->first_free = 0;
+----------buf_dblwr->batch_running = false;
+
+
+
+45.buf_flush_try_yield
+
+ha_innobase::discard_or_import_tablespace
+--row_import_for_mysql/row_import_error
+----row_import_cleanup
+------row_import_discard_changes
+--------fil_close_tablespace/fil_delete_tablespace/row_import_for_mysql/row_quiesce_table_start
+----------buf_LRU_flush_or_remove_pages
+------------buf_LRU_remove_pages
+--------------buf_flush_dirty_pages
+----------------buf_flush_or_remove_pages
+------------------buf_flush_try_yield
+--------------------buf_flush_yield
+----------------------buf_page_set_sticky
+----------------------os_thread_yield
+----------------------buf_page_unset_sticky
+
+
+46.buf_pool中的几个重要list
+
+	hash_table_t*	page_hash; //hash table	
+	        /*!< hash table of buf_page_t or
+					buf_block_t file pages,
+					buf_page_in_file() == TRUE,
+					indexed by (space_id, offset).
+					page_hash is protected by an
+					array of mutexes.
+					Changes in page_hash are protected
+					by buf_pool->mutex and the relevant
+					page_hash mutex. Lookups can happen
+					while holding the buf_pool->mutex or
+					the relevant page_hash mutex. */
+	hash_table_t*	zip_hash;	
+					/*!< hash table of buf_block_t blocks
+					whose frames are allocated to the
+					zip buddy system,
+					indexed by block->frame */
+
+	UT_LIST_BASE_NODE_T(buf_page_t) flush_list;
+					/*!< base node of the modified block
+					list */
+										
+  //free page 没有zip.data，只有descriptor，//存的其实是block，block的frame已经分配了一个page，但是没有数据。
+	UT_LIST_BASE_NODE_T(buf_page_t) free;
+					/*!< base node of the free
+					block list */
+	UT_LIST_BASE_NODE_T(buf_page_t) LRU;
+					/*!< base node of the LRU list */
+					
+										
+	UT_LIST_BASE_NODE_T(buf_block_t) unzip_LRU;//注意，这个存的是block，不是page
+					/*!< base node of the
+					unzip_LRU list */										
+
+
+	UT_LIST_BASE_NODE_T(buf_buddy_free_t) zip_free[BUF_BUDDY_SIZES_MAX];
+					/*!< buddy free lists */
+
+47.hash_table_t*	zip_hash;	
+
+					/*!< hash table of buf_block_t blocks
+					whose frames are allocated to the
+					zip buddy system,
+					indexed by block->frame */
+					
+48.buf_buddy_block_register
+
+buf_buddy_alloc_low
+--buf_buddy_block_register
+----buf_block_set_state(block, BUF_BLOCK_MEMORY);
+
+49.buf_buddy_block_free
+buf_page_init_for_read
+buf_LRU_block_free_non_file_page
+buf_LRU_block_remove_hashed
+--buf_buddy_free
+----buf_buddy_free_low
+------buf_buddy_block_free
+--------HASH_DELETE(buf_page_t, hash, buf_pool->zip_hash, fold, bpage);
+--------buf_LRU_block_free_non_file_page
+
+
+50.buf_LRU_block_free_non_file_page
+
+51.buf_LRU_get_free_only
+
+buf_LRU_get_free_block
+--buf_LRU_get_free_only
+--buf_LRU_scan_and_free_block
+----buf_LRU_free_from_unzip_LRU_list
+------buf_LRU_free_page(&block->page, false);//关联page保留，只删除frame
+--------buf_LRU_block_remove_hashed//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+----------buf_LRU_remove_block
+----------buf_page_hash_get_low
+----------buf_buddy_free
+------------buf_buddy_free_low
+--------buf_flush_relocate_on_flush_list
+--------btr_search_drop_page_hash_index
+--------buf_LRU_block_free_hashed_page
+----------buf_LRU_block_free_non_file_page
+
+----buf_LRU_free_from_common_LRU_list
+--buf_flush_single_page_from_LRU
+
+
+
+
+
+48.buf_pool->watch
+BUF_BLOCK_POOL_WATCH
+
+49.这两个状态研究一下
+	case BUF_BLOCK_MEMORY:
+	case BUF_BLOCK_READY_FOR_USE:
+
+
+50.debugging 。。。。buf_LRU_free_page
+
+51.是不是zip or unzip是由 buf_page_get_gen 的 caller zip_size参数决定的。
+
+caller中最终是由这个函数决定的：zip_size = dict_table_zip_size(index->table);
+
+caller
+--buf_page_get_gen
+----buf_read_page
+------buf_read_page_low
+--------buf_page_init_for_read
+----------buf_page_init(zip_size=0)
+------------buf_block_set_file_page(block, space, offset);
+----------OR(zip_size > 0)
+----------bpage->state    = BUF_BLOCK_ZIP_PAGE;
+
+
+
+52.buf_pool->watch
+Insert BUffer用
+
+buf_pool_watch_is_sentinel
+buf_pool_watch_set
+buf_pool_watch_unset
+buf_pool_watch_occurred
+buf_pool_watch_remove
+
+53.buf_pool_init（percona 5.1代码）
+innobase_start_or_create_for_mysql
+--buf_pool_init
+----buf_chunk_init
+------os_shm_alloc
+------hash_create_init
+------hash_create_reuse//mysqld进程重启？？？
+
+
+53.buf_pool_free（percona 5.1代码）
+
+innobase_shutdown_for_mysql
+--buf_pool_free
+----memcpy(&(shm_info->buf_pool_backup), buf_pool, sizeof(buf_pool_t));
+----memcpy(&(shm_info->chunk_backup), chunk, sizeof(buf_chunk_t));
+----os_shm_free
+------shmdt
+
+54. 搞清楚zip_hash，zip_hash和zip_free配合着用，用于buddy算法。zip_clean是用于压缩的
+
+只用于使用了zip.data的block，也就是使用了buddy内存的block，这里没有实质性的作用，多用于debug
+
+buf_buddy_block_register 将page插入zip_hash
+
+buf_buddy_alloc
+--buf_buddy_alloc_low
+----buf_buddy_block_register
+
+buf_buddy_block_free 将page从zip_hash删除
+
+buf_LRU_block_remove_hashed
+--buf_buddy_free
+----buf_buddy_free_low
+------buf_buddy_block_free
+
+
+buf_LRU_block_free_non_file_page
+--buf_buddy_free
+----buf_buddy_free_low
+------buf_buddy_block_free
+
+55.zip_free到底干嘛用的？？
+用于分配 block->page.zip.data 的内存
+
+
+56.buf_flush_init_flush_rbt
+
+recv_sys_init
+--buf_flush_init_flush_rbt
+
+#0  buf_flush_init_flush_rbt () at /home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0flu.cc:314
+#1  0x0000000000b773a8 in recv_sys_init (available_memory=6442418176) at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:394
+#2  0x0000000000c57a60 in innobase_start_or_create_for_mysql () at /home/chenhui/mysql-baidu-5623/storage/innobase/srv/srv0start.cc:2060
+#3  0x0000000000b09022 in innobase_init (p=0x193d7f0) at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:3365
+#4  0x0000000000644ded in ha_initialize_handlerton (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:662
+#5  0x00000000007f12e8 in plugin_initialize (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1137
+#6  0x00000000007f1d5d in plugin_init (argc=0x17fb1c8 <remaining_argc>, argv=0x185d598, flags=0) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1431
+#7  0x000000000062f666 in init_server_components () at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:4849
+#8  0x0000000000630563 in mysqld_main (argc=94, argv=0x185d598) at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:5444
+#9  0x0000000000625bb0 in main (argc=1, argv=0x7fffffffe848) at /home/chenhui/mysql-baidu-5623/sql/main.cc:25
+
+
+
+57.buf_flush_validate_low
+
+(gdb) bt
+#0  buf_flush_validate_low (buf_pool=0x7ffe268d9058) at /home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0flu.cc:2875
+#1  0x0000000000cf544d in buf_flush_validate (buf_pool=0x7ffe268d9058) at /home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0flu.cc:2943
+#2  0x0000000000ce51a6 in buf_pool_validate_instance (buf_pool=0x7ffe268d9058) at /home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0buf.cc:5413
+#3  0x0000000000ce520b in buf_validate () at /home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0buf.cc:5433
+#4  0x0000000000ce1bea in buf_page_get_known_nowait (rw_latch=2, block=0x7ffe367ab368, mode=52, file=0x1027108 "/home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc", 
+    line=1644, mtr=0x7fffffff9c50) at /home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0buf.cc:3964
+#5  0x0000000000b79374 in recv_recover_page_func (just_read_in=0, block=0x7ffe367ab368) at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:1645
+#6  0x0000000000b79b8f in recv_apply_hashed_log_recs (allow_ibuf=1) at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:1910
+#7  0x0000000000b7bd7f in recv_recovery_from_checkpoint_finish () at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:3380
+#8  0x0000000000c5837d in innobase_start_or_create_for_mysql () at /home/chenhui/mysql-baidu-5623/storage/innobase/srv/srv0start.cc:2443
+#9  0x0000000000b09022 in innobase_init (p=0x193d7f0) at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:3365
+#10 0x0000000000644ded in ha_initialize_handlerton (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:662
+#11 0x00000000007f12e8 in plugin_initialize (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1137
+#12 0x00000000007f1d5d in plugin_init (argc=0x17fb1c8 <remaining_argc>, argv=0x185d598, flags=0) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1431
+#13 0x000000000062f666 in init_server_components () at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:4849
+#14 0x0000000000630563 in mysqld_main (argc=94, argv=0x185d598) at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:5444
+#15 0x0000000000625bb0 in main (argc=1, argv=0x7fffffffe848) at /home/chenhui/mysql-baidu-5623/sql/main.cc:25
+
+
+
+58.
+buf_flush_insert_in_flush_rbt
+buf_flush_insert_into_flush_list
+buf_flush_insert_sorted_into_flush_list
+buf_flush_relocate_on_flush_list
+
+
+59.buf_flush_insert_in_flush_rbt
+
+mtr_commit
+--mtr_log_reserve_and_write
+----mtr_add_dirtied_pages_to_flush_list
+------mtr_memo_note_modifications
+--------mtr_memo_slot_note_modification
+----------buf_flush_note_modification
+------------buf_flush_insert_into_flush_list/buf_flush_recv_note_modification
+--------------buf_flush_insert_sorted_into_flush_list
+----------------buf_flush_insert_in_flush_rbt
+
+
+buf_flush_relocate_on_flush_list
+--buf_flush_insert_in_flush_rbt
+
+60.buf_flush_note_modification
+
+(gdb) bt
+#0  buf_flush_note_modification (block=0x7ffe370d9168, mtr=0x7fffffffa070) at /home/chenhui/mysql-baidu-5623/storage/innobase/include/buf0flu.ic:63
+#1  0x0000000000b8598f in mtr_memo_slot_note_modification (mtr=0x7fffffffa070, slot=0x7fffffffa088) at /home/chenhui/mysql-baidu-5623/storage/innobase/mtr/mtr0mtr.cc:156
+#2  0x0000000000b85af9 in mtr_memo_note_modifications (mtr=0x7fffffffa070) at /home/chenhui/mysql-baidu-5623/storage/innobase/mtr/mtr0mtr.cc:193
+#3  0x0000000000b85bde in mtr_add_dirtied_pages_to_flush_list (mtr=0x7fffffffa070) at /home/chenhui/mysql-baidu-5623/storage/innobase/mtr/mtr0mtr.cc:224
+#4  0x0000000000b85d1d in mtr_log_reserve_and_write (mtr=0x7fffffffa070) at /home/chenhui/mysql-baidu-5623/storage/innobase/mtr/mtr0mtr.cc:270
+#5  0x0000000000b85fac in mtr_commit (mtr=0x7fffffffa070) at /home/chenhui/mysql-baidu-5623/storage/innobase/mtr/mtr0mtr.cc:324
+#6  0x0000000000c7e009 in trx_sys_flush_max_trx_id () at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0sys.cc:188
+#7  0x0000000000c81ad9 in trx_sys_get_new_trx_id () at /home/chenhui/mysql-baidu-5623/storage/innobase/include/trx0sys.ic:459
+#8  0x0000000000c840bb in trx_start_low (trx=0x127c61c8) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:873
+#9  0x0000000000c874eb in trx_start_if_not_started_xa_low (trx=0x127c61c8) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:2233
+#10 0x0000000000c2d57f in row_sel_step (thr=0x12892468) at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0sel.cc:2062
+#11 0x0000000000bbf866 in que_thr_step (thr=0x12892468) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1083
+#12 0x0000000000bbfba5 in que_run_threads_low (thr=0x12892468) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1167
+#13 0x0000000000bbfd6a in que_run_threads (thr=0x12892468) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1208
+#14 0x0000000000bbffd0 in que_eval_sql (info=0x0, 
+    sql=0x1040ae0 <row_merge_drop_temp_indexes()::sql> "PROCEDURE DROP_TEMP_INDEXES_PROC () IS\nixid CHAR;\nfound INT;\nDECLARE CURSOR index_cur IS\n SELECT ID FROM SYS_INDEXES\n WHERE SUBSTR(NAME,0,1)='\377'\nFOR UPDATE;\nBEGIN\nfound := 1;\nOPEN index_cur;\nWHILE fou"..., reserve_dict_mutex=0, trx=0x127c61c8) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1285
+#15 0x0000000000bf8886 in row_merge_drop_temp_indexes () at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0merge.cc:2907
+#16 0x0000000000b7bf32 in recv_recovery_rollback_active () at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:3476
+#17 0x0000000000c5880b in innobase_start_or_create_for_mysql () at /home/chenhui/mysql-baidu-5623/storage/innobase/srv/srv0start.cc:2560
+#18 0x0000000000b09022 in innobase_init (p=0x193d7f0) at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:3365
+#19 0x0000000000644ded in ha_initialize_handlerton (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:662
+#20 0x00000000007f12e8 in plugin_initialize (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1137
+#21 0x00000000007f1d5d in plugin_init (argc=0x17fb1c8 <remaining_argc>, argv=0x185d598, flags=0) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1431
+#22 0x000000000062f666 in init_server_components () at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:4849
+#23 0x0000000000630563 in mysqld_main (argc=94, argv=0x185d598) at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:5444
+#24 0x0000000000625bb0 in main (argc=1, argv=0x7fffffffe848) at /home/chenhui/mysql-baidu-5623/sql/main.cc:25
+
+
+(gdb) bt
+#0  buf_flush_note_modification (block=0x7ffe36f77e28, mtr=0x7ffe0a6e2250) at /home/chenhui/mysql-baidu-5623/storage/innobase/include/buf0flu.ic:63
+#1  0x0000000000b8598f in mtr_memo_slot_note_modification (mtr=0x7ffe0a6e2250, slot=0x7ffe0a6e2268) at /home/chenhui/mysql-baidu-5623/storage/innobase/mtr/mtr0mtr.cc:156
+#2  0x0000000000b85af9 in mtr_memo_note_modifications (mtr=0x7ffe0a6e2250) at /home/chenhui/mysql-baidu-5623/storage/innobase/mtr/mtr0mtr.cc:193
+#3  0x0000000000b85bde in mtr_add_dirtied_pages_to_flush_list (mtr=0x7ffe0a6e2250) at /home/chenhui/mysql-baidu-5623/storage/innobase/mtr/mtr0mtr.cc:224
+#4  0x0000000000b85d1d in mtr_log_reserve_and_write (mtr=0x7ffe0a6e2250) at /home/chenhui/mysql-baidu-5623/storage/innobase/mtr/mtr0mtr.cc:270
+#5  0x0000000000b85fac in mtr_commit (mtr=0x7ffe0a6e2250) at /home/chenhui/mysql-baidu-5623/storage/innobase/mtr/mtr0mtr.cc:324
+#6  0x0000000000c8c705 in trx_undo_truncate_end_func (trx=0x128473a8, undo=0x128003e8, limit=0) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0undo.cc:1132
+#7  0x0000000000c78be3 in trx_roll_try_truncate (trx=0x128473a8) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:1015
+#8  0x0000000000c78f01 in trx_roll_pop_top_rec_of_trx (trx=0x128473a8, limit=0, roll_ptr=0x7ffe0a6e2d10, heap=0x7ffe04028560)
+    at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:1130
+#9  0x0000000000c365df in row_undo (node=0x7ffe04028068, thr=0x7ffe04027eb0) at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0undo.cc:269
+#10 0x0000000000c367fc in row_undo_step (thr=0x7ffe04027eb0) at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0undo.cc:350
+#11 0x0000000000bbf964 in que_thr_step (thr=0x7ffe04027eb0) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1103
+#12 0x0000000000bbfba5 in que_run_threads_low (thr=0x7ffe04027eb0) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1167
+#13 0x0000000000bbfd6a in que_run_threads (thr=0x7ffe04027eb0) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1208
+#14 0x0000000000c77fce in trx_rollback_active (trx=0x128473a8) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:605
+#15 0x0000000000c7831b in trx_rollback_resurrected (trx=0x128473a8, all=1) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:705
+#16 0x0000000000c7856c in trx_rollback_or_clean_recovered (all=1) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:768
+#17 0x0000000000c7869b in trx_rollback_or_clean_all_recovered (arg=0x0) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:809
+#18 0x00007ffff7bc61c3 in ?? ()
+#19 0x0000000000000000 in ?? ()
+
+(gdb) p *block
+$5 = {
+		
+		page = {space = 0, offset = 311, buf_fix_count = 2, io_fix = 0 '\000', state = 5 '\005', flush_type = 0, buf_pool_index = 0, 
+						zip = {data = 0x0, m_start = 0, m_external = false, m_end = 0, m_nonempty = 0, n_blobs = 0, ssize = 0}, hash = 0x0, in_page_hash = 1, in_zip_hash = 0, list = {prev = 0x7ffe370bd3e8, next = 0x7ffe36f78ea8}, in_flush_list = 1, in_free_list = 0, 
+    newest_modification = 38101125039, oldest_modification = 38098852285, LRU = {prev = 0x7ffe36f74f68, next = 0x7ffe36f7a4a8}, in_LRU_list = 1, old = 0, freed_page_clock = 0, 
+    access_time = 1523810423, file_page_was_freed = 0}, 
+    
+    
+    frame = 0x7fffb50b8000 "", unzip_LRU = {prev = 0x0, next = 0x0}, in_unzip_LRU_list = 0, 
+    
+    mutex = {event = 0x12639d50, lock_word = 0 '\000', 
+    waiters = 0, list = {prev = 0x7ffe36f78198, next = 0x7ffe36f77c18}, file_name = 0x1071f20 "/home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0buf.cc", line = 2997, level = 146, 
+    cfile_name = 0x1071f20 "/home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0buf.cc", cline = 1092, count_os_wait = 0, thread_id = 18446744073709551615, magic_n = 979585, 
+    cmutex_name = 0x0, ib_mutex_type = 0, pfs_psi = 0x0}, 
+    
+    lock = {lock_word = 0, waiters = 0, recursive = 1, writer_thread = 140729073415936, event = 0x12639de0, wait_ex_event = 0x12639e70, 
+    list = {prev = 0x7ffe36f78048, next = 0x7ffe36f77d88}, debug_list = {count = 1, start = 0x7ffe04028818, end = 0x7ffe04028818}, level = 2000, pfs_psi = 0x0, count_os_wait = 0, 
+    cfile_name = 0x1071f20 "/home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0buf.cc", last_s_file_name = 0x105f7f8 "/home/chenhui/mysql-baidu-5623/storage/innobase/include/trx0undo.ic", 
+    last_x_file_name = 0x1063520 "/home/chenhui/mysql-baidu-5623/storage/innobase/include/trx0undo.ic", writer_is_wait_ex = 0, cline = 1094, last_s_line = 191, last_x_line = 171, 
+    magic_n = 22643}, 
+    
+    lock_hash_val = 483641, check_index_page_at_flush = 0, modify_clock = 0, n_hash_helps = 0, n_fields = 1, n_bytes = 0, left_side = 1, n_pointers = 0, curr_n_fields = 0, 
+  curr_n_bytes = 0, curr_left_side = 0, index = 0x0, 
+  
+  debug_latch = {lock_word = 1048575, waiters = 0, recursive = 0, writer_thread = 0, event = 0x12639f00, wait_ex_event = 0x12639f90, list = {
+      prev = 0x7ffe36f78218, next = 0x7ffe36f77f58}, debug_list = {count = 1, start = 0x7ffe04028758, end = 0x7ffe04028758}, level = 3000, pfs_psi = 0x0, count_os_wait = 0, 
+    cfile_name = 0x1071f20 "/home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0buf.cc", last_s_file_name = 0x1063520 "/home/chenhui/mysql-baidu-5623/storage/innobase/include/trx0undo.ic", 
+    last_x_file_name = 0x105a1a0 "not yet reserved", writer_is_wait_ex = 0, cline = 1098, last_s_line = 171, last_x_line = 0, magic_n = 22643}}
+    
+    
+61.buf_LRU_free_one_page//直接释放掉一个page，无条件
+
+buf_read_page_handle_error
+--buf_LRU_free_one_page
+----buf_LRU_block_remove_hashed
+----buf_LRU_block_free_hashed_page
+
+62.buf_LRU_block_free_non_file_page
+
+buf_LRU_block_free_non_file_page
+--buf_block_set_state(block, BUF_BLOCK_NOT_USED);
+
+63.buf_LRU_insert_zip_clean
+
+BUF_BLOCK_ZIP_PAGE--应该对应为只读的page，在LRU，但是不在free list，也不在flush_list.
+
+在MySQL5.6中，已经被定义为DEBUG模式专用
+#if defined UNIV_DEBUG || defined UNIV_BUF_DEBUG
+
+
+Functions calling this function: buf_LRU_insert_zip_clean
+
+  File       Function               Line  
+0 buf0buf.cc buf_page_init_for_read 4466 buf_LRU_insert_zip_clean(bpage);
+1 buf0flu.cc buf_flush_remove        619 buf_LRU_insert_zip_clean(bpage);  
+2 buf0lru.cc buf_LRU_free_page      2148 buf_LRU_insert_zip_clean(b);
+
+buf_flush_remove
+--//case BUF_BLOCK_ZIP_DIRTY:
+--buf_page_set_state(bpage, BUF_BLOCK_ZIP_PAGE);
+--UT_LIST_REMOVE(flush_list, buf_pool->flush_list, bpage);
+--buf_LRU_insert_zip_clean(bpage);
+
+buf_LRU_free_page
+
+
+读接口
+buf_page_get_gen
+--UT_LIST_REMOVE(list, buf_pool->zip_clean,&block->page);
+
+
+64.enum buf_page_state {
+	BUF_BLOCK_POOL_WATCH,		/*!< a sentinel for the buffer pool
+					watch, element of buf_pool->watch[] */
+	BUF_BLOCK_ZIP_PAGE,		/*!< contains a clean
+					compressed page */
+	BUF_BLOCK_ZIP_DIRTY,		/*!< contains a compressed
+					page that is in the
+					buf_pool->flush_list */
+
+	BUF_BLOCK_NOT_USED,		/*!< is in the free list;
+					must be after the BUF_BLOCK_ZIP_
+					constants for compressed-only pages
+					@see buf_block_state_valid() */
+	BUF_BLOCK_READY_FOR_USE,	/*!< when buf_LRU_get_free_block
+					returns a block, it is in this state */
+	BUF_BLOCK_FILE_PAGE,		/*!< contains a buffered file page *///unzip page,但是frame可能是zip???
+	BUF_BLOCK_MEMORY,		/*!< contains some main memory
+					object */
+	BUF_BLOCK_REMOVE_HASH		/*!< hash index should be removed
+					before putting to the free list */
+};
+
+
+65. buf_buddy_block_free
+
+buf_page_init_for_read
+buf_LRU_block_free_non_file_page
+buf_LRU_block_remove_hashed
+--buf_buddy_free
+----buf_buddy_free_low
+------buf_buddy_block_free
+--------HASH_DELETE(buf_page_t, hash, buf_pool->zip_hash, fold, bpage);
+--------buf_LRU_block_free_non_file_page//Puts a block back to the free list. */
+----------buf_block_set_state(block, BUF_BLOCK_NOT_USED);
+----------buf_buddy_free
+----------UT_LIST_ADD_FIRST(list, buf_pool->free, (&block->page));
+
+---------------------------
+buf_LRU_block_remove_hashed 中的BUF_BLOCK_ZIP_PAGE流程：
+buf_flush_single_page_from_LRU
+--buf_LRU_evict_from_unzip_LRU == true
+--buf_LRU_free_page
+----buf_LRU_block_remove_hashed
+------buf_LRU_remove_block
+--------UT_LIST_REMOVE(LRU, buf_pool->LRU, bpage);
+--------buf_unzip_LRU_remove_block_if_needed
+------HASH_DELETE(buf_page_t, hash, buf_pool->page_hash, fold, bpage);
+------buf_buddy_free(bpage->zip.data)//注意buddy free的都是zip.data，不是frame
+------buf_page_free_descriptor
+
+-----------------------------
+buf_LRU_block_remove_hashed 中的BUF_BLOCK_FILE_PAGE流程，zip == false， page.zip.data != NULL.
+buf_LRU_free_from_unzip_LRU_list
+--buf_LRU_free_page
+----buf_page_alloc_descriptor
+----memcpy(b, bpage, sizeof *b);
+----buf_LRU_block_remove_hashed
+------buf_LRU_remove_block
+--------UT_LIST_REMOVE(LRU, buf_pool->LRU, bpage);
+--------buf_unzip_LRU_remove_block_if_needed
+------memcpy(bpage->zip.data, page,zip_size);
+------HASH_DELETE(buf_page_t, hash, buf_pool->page_hash, fold, bpage);
+------memset(((buf_block_t*) bpage)->frame + FIL_PAGE_OFFSET, 0xff, 4);
+------buf_page_set_state(bpage, BUF_BLOCK_REMOVE_HASH);
+----b->state = b->oldest_modification? BUF_BLOCK_ZIP_DIRTY	: BUF_BLOCK_ZIP_PAGE;
+----HASH_INSERT(buf_page_t, hash,buf_pool->page_hash, fold, b);
+----UT_LIST_INSERT_AFTER(LRU, buf_pool->LRU,prev_b, b);
+----bpage->zip.data = NULL;//b正指向zip.data的值，不要重复释放
+----buf_flush_relocate_on_flush_list//if BUF_BLOCK_ZIP_DIRTY
+----buf_LRU_block_free_hashed_page((buf_block_t*) bpage);
+------buf_block_set_state(block, BUF_BLOCK_MEMORY);//用于zip.data
+------buf_LRU_block_free_non_file_page
+--------buf_block_set_state(block, BUF_BLOCK_NOT_USED);
+--------memset(block->frame + FIL_PAGE_OFFSET, 0xfe, 4);
+--------UT_LIST_ADD_FIRST(list, buf_pool->free, (&block->page));
+
+--------------------------------
+buf_LRU_block_remove_hashed 中的BUF_BLOCK_FILE_PAGE流程，zip == true page.zip.data != NULL.
+buf_LRU_free_from_common_LRU_list/buf_page_get_gen
+--buf_LRU_free_page
+----buf_LRU_block_remove_hashed
+------buf_LRU_remove_block
+------HASH_DELETE(buf_page_t, hash, buf_pool->page_hash, fold, bpage);
+------memset(((buf_block_t*) bpage)->frame + FIL_PAGE_OFFSET, 0xff, 4);
+------buf_page_set_state(bpage, BUF_BLOCK_REMOVE_HASH);
+------buf_buddy_free
+----buf_LRU_block_free_hashed_page
+------buf_block_set_state(block, BUF_BLOCK_MEMORY);
+------memset(block->frame + FIL_PAGE_OFFSET, 0xfe, 4);
+------UT_LIST_ADD_FIRST(list, buf_pool->free, (&block->page));
+
+
+----------------------------------
+zip.data == NULL的情况
+--buf_LRU_free_page
+----buf_LRU_block_remove_hashed
+------buf_LRU_remove_block
+--------UT_LIST_REMOVE(LRU, buf_pool->LRU, bpage);
+--------buf_unzip_LRU_remove_block_if_needed//zip.data == NULL，不可能在unzip_LRU
+------HASH_DELETE(buf_page_t, hash, buf_pool->page_hash, fold, bpage);
+------memset(((buf_block_t*) bpage)->frame + FIL_PAGE_OFFSET, 0xff, 4);
+------buf_page_set_state(bpage, BUF_BLOCK_REMOVE_HASH);
+----buf_LRU_block_free_hashed_page
+------buf_block_set_state(block, BUF_BLOCK_MEMORY);
+------buf_LRU_block_free_non_file_page
+--------buf_block_set_state(block, BUF_BLOCK_NOT_USED);
+--------memset(block->frame + FIL_PAGE_OFFSET, 0xfe, 4);
+--------UT_LIST_ADD_FIRST(list, buf_pool->free, (&block->page));
+
+
+
+
+
+66.ut_malloc
+
+callers:
+buf_page_init_for_read
+buf_LRU_free_page
+
+--buf_page_alloc_descriptor
+----ut_malloc
+------ut_malloc_low
+
+buf_page_init_for_read中的BUF_BLOCK_ZIP_PAGE流程：
+buf_page_get_gen
+--buf_read_page
+----buf_read_page_low//控制要不要解压
+------buf_page_init_for_read
+--------//if 需要zip数据，不需要解压
+--------buf_buddy_alloc//分配page.data.zip
+--------buf_page_alloc_descriptor
+--------bpage->state	= BUF_BLOCK_ZIP_PAGE;
+--------HASH_INSERT(buf_page_t, hash, buf_pool->page_hash, fold, bpage);
+--------buf_LRU_add_block
+--buf_page_hash_get_low
+--buf_LRU_get_free_block
+----buf_LRU_get_free_only
+----buf_block_set_state(block, BUF_BLOCK_READY_FOR_USE);
+--buf_relocate
+--buf_block_init_low
+--block->page.state = BUF_BLOCK_FILE_PAGE;
+--buf_unzip_LRU_add_block
+--buf_page_free_descriptor
+--buf_zip_decompress
+
+
+buf_page_init_for_read 中的BUF_BLOCK_ZIP_PAGE流程：
+
+buf_read_recv_pages/buf_read_ibuf_merge_pages
+--buf_read_page_low//控制要不要解压
+----buf_page_init_for_read
+------buf_LRU_get_free_block
+------buf_page_init
+------buf_LRU_add_block
+------block->page.zip.data = buf_buddy_alloc(buf_pool, zip_size, &lru);
+------buf_unzip_LRU_add_block
+----fil_io
+----buf_page_io_complete
+------buf_zip_decompress
+--------page_zip_decompress//解压到block->frame中
+
+
+两个地方做解压工作：
+buf_page_get_gen
+buf_page_io_complete
+
+
+buf_page_get_gen//这个接口返回给用户的就是FILE_PAGE,而且是解压的。。
+--buf_zip_decompress
+
+
+buf_read_page
+--fil_space_get_version
+--buf_read_page_low//读取一个页最底层的函数
+----buf_page_init_for_read//从缓冲池内存中，通过LRU算法分配一个对象buf_block_t，加latch
+----buf_page_io_complete//最后，如果是FILE_PAGE,顺便就解压了。。。
+
+
+67.os_large_page_size, #ifdef HAVE_LARGE_PAGES,
+
+HAVE_LARGE_PAGES是OS底层的page大小，和数据库的page_size不是一回事
+
+buf_chunk_init
+--os_mem_alloc_large
+
+innobase_init
+os_mem_alloc_large
+os_mem_free_large
+
+
+======================================================================================
+100.遗留问题
+--1.free list中的frame是释放的吗？？？
+--2.研究BUF_BLOCK_ZIP_DIRTY和其它的TYPE
+--3.buf_LRU_free_page
+--4.buf_LRU_free_page分情况讨论。

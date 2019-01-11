@@ -1,0 +1,475 @@
+============================= 书第六章 ==========================
+1.同步io函数
+os_file_write
+os_file_read
+
+底层
+Posix：
+pwrite/pread
+
+若OS不支持上述操作，
+则通过互斥变量与文件操作函数lseek, read, write来完成原子的文件读写操作。
+
+2.四个异步io线程，
+- aysnc read
+- async write
+- insert buffer IO
+- redo log io
+
+
+3.异步io创建与使用流程
+innobase_start_or_create_for_mysql
+--io_handler_thread
+----fil_aio_wait
+------os_aio_simulated_handle/os_aio_posix_handle
+--------log_io_complete
+--------buf_page_io_complete
+
+4.bufferpool刷新
+buf_flush_write_block_low
+buf_flush_ready_for_flush
+
+
+6.
+innodb_status_variables_export
+--show_innodb_vars//callback function
+----innodb_export_status
+------srv_export_innodb_status
+
+
+UNIV_INTERN srv_stats_t	srv_stats;
+
+/* structure to pass status variables to MySQL */
+UNIV_INTERN export_var_t export_vars;
+
+7.
+innodb_status_variables
+
+show_innodb_vars(
+/*=============*/
+	THD*		thd,
+	SHOW_VAR*	var,
+	char*		buff)
+{
+	innodb_export_status();
+	var->type = SHOW_ARRAY;
+	var->value = (char*) &innodb_status_variables;
+
+	return(0);
+}
+
+
+8.innodb_status_variables_export跟innodb的存储引擎接口定义有关系。。。。。
+mysql_declare_plugin(innobase)
+{
+  MYSQL_STORAGE_ENGINE_PLUGIN,
+  &innobase_storage_engine,
+  innobase_hton_name,
+  plugin_author,
+  "Supports transactions, row-level locking, and foreign keys",
+  PLUGIN_LICENSE_GPL,
+  innobase_init, /* Plugin Init */
+  NULL, /* Plugin Deinit */
+  INNODB_VERSION_SHORT,
+  innodb_status_variables_export,/* status variables             */
+  innobase_system_variables, /* system variables */
+  NULL, /* reserved */
+  0,    /* flags */
+},
+
+9.fil_io vs. fil_flush
+
+fil_io是读写数据，异步的
+fil_flush是写磁盘。
+
+10.fil_io
+
+fil_io
+--os_aio
+----os_aio_func
+------os_file_read_func//OS_AIO_SYNC
+------os_file_write_func
+------os_aio_array_reserve_slot
+------os_aio_simulated_wake_handler_thread
+
+
+		fil_io(OS_FILE_WRITE | OS_FILE_LOG, //type
+		       true, //sync
+		       group->space_id, //space_id
+		       0,//zip_size
+		       (ulint) (next_offset / UNIV_PAGE_SIZE),//block_offset
+		       (ulint) (next_offset % UNIV_PAGE_SIZE),//byte_offset 
+		       write_len,//len 
+		       buf,//buf
+		       group);//message
+		       
+fil_io(
+/*===*/
+	ulint	type,		/*!< in: OS_FILE_READ or OS_FILE_WRITE,
+				ORed to OS_FILE_LOG, if a log i/o
+				and ORed to OS_AIO_SIMULATED_WAKE_LATER
+				if simulated aio and we want to post a
+				batch of i/os; NOTE that a simulated batch
+				may introduce hidden chances of deadlocks,
+				because i/os are not actually handled until
+				all have been posted: use with great
+				caution! */
+	bool	sync,		/*!< in: true if synchronous aio is desired */
+	ulint	space_id,	/*!< in: space id */
+	ulint	zip_size,	/*!< in: compressed page size in bytes;
+				0 for uncompressed pages */
+	ulint	block_offset,	/*!< in: offset in number of blocks */
+	ulint	byte_offset,	/*!< in: remainder of offset in bytes; in
+				aio this must be divisible by the OS block
+				size */
+	ulint	len,		/*!< in: how many bytes to read or write; this
+				must not cross a file boundary; in aio this
+				must be a block size multiple */
+	void*	buf,		/*!< in/out: buffer where to store read data
+				or from where to write; in aio this must be
+				appropriately aligned */
+	void*	message)	/*!< in: message for aio handler if non-sync
+				aio used, else ignored */
+				
+						       
+11.os_aio_array_create
+数据结构 os_aio_array_struct 的初始化由函数 os_aio_array_create 完成，每个对象包含多个 os_aio_array_slot 成员。
+对于使用OS内核支持的异步I/O, 其共有32个 os_aio_array_slot成员，否则有128个槽对象。
+
+
+12.os_get_array_and_local_segment
+
+用于将全局的 global segment 转化为 local segment。 但由于当前各类型异步 I/O都仅有一个线程，因此其转换为的 local segment值都是1.
+
+
+
+
+14.libaio开关
+
+---------
+开关是LINUX_NATIVE_AIO宏定义
+----------
+
+/* If this flag is TRUE, then we will use the native aio of the
+OS (provided we compiled Innobase with it in), otherwise we will
+use simulated aio we build below with threads.
+Currently we support native aio on windows and linux */
+UNIV_INTERN my_bool	srv_use_native_aio = TRUE;
+
+in innobase_start_or_create_for_mysql()
+#ifdef __WIN__
+...
+...
+#elif defined(LINUX_NATIVE_AIO)
+
+	if (srv_use_native_aio) {
+		ib_logf(IB_LOG_LEVEL_INFO, "Using Linux native AIO");
+	}
+#else
+	/* Currently native AIO is supported only on windows and linux
+	and that also when the support is compiled in. In all other
+	cases, we ignore the setting of innodb_use_native_aio. */
+	srv_use_native_aio = FALSE;
+#endif /* __WIN__ */
+
+
+os_aio_init()
+{
+	os_io_init_simple();
+
+#if defined(LINUX_NATIVE_AIO)
+	/* Check if native aio is supported on this system and tmpfs */
+	if (srv_use_native_aio && !os_aio_native_aio_supported()) {
+
+		ib_logf(IB_LOG_LEVEL_WARN, "Linux Native AIO disabled.");
+
+		srv_use_native_aio = FALSE;
+	}
+#endif /* LINUX_NATIVE_AIO */
+
+15.自己总结
+
+
+buf_flush_single_page_from_LRU
+
+
+
+
+
+
+17.怎么使用linux native libaio
+fil_io
+
+
+----------buf_LRU_get_free_block//中间
+------------buf_flush_single_page_from_LRU
+--------------buf_flush_page
+----------------buf_flush_write_block_low
+------------------log_write_up_to
+------------------buf_flush_init_for_writing
+------------------fil_io//默认OS_AIO_SIMULATED_WAKE_LATER
+------------------if (sync) fil_flush
+--------------buf_LRU_free_page
+
+
+18.flush_List
+
+
+
+19.
+fil_io
+--fil_node_prepare_for_io
+--os_aio/os_file_write/os_file_read //depends on HOTBACKUP
+----os_aio_func
+------os_file_write_func/os_file_read_func //if (mode == OS_AIO_SYNC)
+------os_file_write_func
+--------os_file_pwrite
+----------#if defined(HAVE_PWRITE)
+----------pwrite(file, buf, (ssize_t) n, offs);
+----------#else
+----------lseek(file, offs, SEEK_SET);
+----------write(file, buf, (ssize_t) n);
+----
+
+callers in buffer pool:
+buf_flush_write_block_low
+buf_read_page_low
+
+
+calllers in file system:
+fil_read
+fil_write
+
+logs_empty_and_mark_files_at_shutdown
+innobase_start_or_create_for_mysql
+--fil_write_flushed_lsn_to_data_files
+----fil_write_lsn_and_arch_no_to_file
+------fil_write
+
+fil_write_lsn_and_arch_no_to_file
+--fil_read
+
+fil_extend_tablespaces_to_stored_len//#ifdef UNIV_HOTBACKUP
+--fil_read
+
+
+20.buf_read_page_low
+buf_read_page
+--fil_space_get_version
+--buf_read_page_low//读取一个页最底层的函数
+----buf_page_init_for_read//从缓冲池内存中，通过LRU算法分配一个对象buf_block_t，加latch
+----fil_io//page分配好了，正式的读内容
+----buf_page_io_complete//释放锁
+
+21.buf_flush_write_block_low
+log_preflush_pool_modified_pages
+--buf_flush_list
+----buf_do_flush_list_batch
+------buf_flush_page_and_try_neighbors
+--------buf_flush_ready_for_flush
+--------buf_flush_try_neighbors
+----------buf_flush_check_neighbor
+----------buf_flush_ready_for_flush
+----------buf_flush_page(buf_pool, bpage, flush_type, false)//FLUSH_LIST
+------------buf_flush_write_block_low(false)
+--------------log_write_up_to
+--------------buf_flush_init_for_writing
+--------------fil_io
+--------------if (sync) fil_flush
+
+22.os_file_create_func
+
+os_file_create_func
+--file = ::open(name, create_flag, os_innodb_umask);
+
+23.os_file_read_func
+
+os_file_read_func
+--os_file_pread
+----lseek
+----read
+
+    
+    ret_offset = lseek(file, offs, SEEK_SET);
+
+		if (ret_offset < 0) {
+			ret = -1;
+		} else {
+			ret = read(file, buf, (ssize_t) n);
+		}
+
+16. libaio,初始化
+三要素：
+- #if defined(LINUX_NATIVE_AIO)
+- srv_use_native_aio
+- os_aio_native_aio_supported()
+
+srv_n_file_io_threads = srv_n_read_io_threads + srv_n_write_io_threads +2.
+
+innobase_start_or_create_for_mysql
+--os_aio_init
+----os_aio_native_aio_supported
+------os_aio_linux_create_io_ctx
+--------io_setup
+------innobase_mysql_tmpfile
+--------mysql_tmpfile
+----------create_temp_file
+------io_prep_pwrite
+------io_prep_pread
+------io_submit
+----srv_reset_io_thread_op_info
+----os_aio_array_create
+
+24.fil_aio_wait--libaio等待处理
+DECLARE_THREAD(io_handler_thread)
+--io_handler_thread
+----fil_aio_wait
+------srv_set_io_thread_op_info
+------os_aio_linux_handle
+--------os_aio_get_array_and_local_segment
+--------os_aio_linux_collect
+----------io_getevents
+--------os_aio_array_free_slot
+------fil_node_complete_io
+------buf_page_io_complete//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 研究到这了
+--------buf_flush_write_complete
+----------buf_flush_remove
+------------buf_flush_delete_from_flush_rbt
+------------buf_flush_update_hp
+----------buf_dblwr_update
+------------fil_flush_file_spaces(FIL_TABLESPACE);
+------------buf_dblwr->first_free = 0;
+------------buf_dblwr->batch_running = false;
+------log_io_complete
+
+25.os_aio_func
+
+buf_read_page_low//传入bpage，这里bpage设置为BUF_BLOCK_FILE_PAGE 和 BUF_BLOCK_ZIP_PAGE是由上层函数决定的，看它是要zip的还是unzip解压的。
+--buf_page_init_for_read
+--fil_io
+----os_aio
+------os_aio_func
+--------os_aio_array_reserve_slot
+----------io_prep_pread
+----------io_prep_pwrite
+--------os_aio_linux_dispatch
+----------io_submit
+--------os_aio_array_free_slot
+
+Functions calling this function: fil_io
+
+  File         Function                                 Line
+0 buf0dblwr.cc buf_dblwr_process                         514 fil_io(OS_FILE_READ, true, space_id, zip_size,
+1 buf0dblwr.cc buf_dblwr_process                         566 fil_io(OS_FILE_WRITE, true, space_id,
+2 buf0dblwr.cc buf_dblwr_process                         585 fil_io(OS_FILE_WRITE, true, space_id,
+3 buf0dblwr.cc buf_dblwr_write_block_to_datafile         796 fil_io(flags, sync, buf_page_get_space(bpage),
+4 buf0dblwr.cc buf_dblwr_write_block_to_datafile         811 fil_io(flags, sync, buf_block_get_space(block), 0,
+5 buf0dblwr.cc buf_dblwr_flush_buffered_writes           906 fil_io(OS_FILE_WRITE, true, TRX_SYS_SPACE, 0,
+6 buf0dblwr.cc buf_dblwr_flush_buffered_writes           922 fil_io(OS_FILE_WRITE, true, TRX_SYS_SPACE, 0,
+7 buf0dblwr.cc buf_dblwr_write_single_page              1150 fil_io(OS_FILE_WRITE, true, TRX_SYS_SPACE, 0,
+8 buf0dblwr.cc buf_dblwr_write_single_page              1157 fil_io(OS_FILE_WRITE, true, TRX_SYS_SPACE, 0,
+9 buf0flu.cc   buf_flush_write_block_low                 953 fil_io(OS_FILE_WRITE | OS_AIO_SIMULATED_WAKE_LATER,
+a buf0rea.cc   buf_read_page_low                         198 *err = fil_io(OS_FILE_READ | wake_later
+b buf0rea.cc   buf_read_page_low                         205 *err = fil_io(OS_FILE_READ | wake_later
+c fil0fil.cc   fil_read                                  437 return(fil_io(OS_FILE_READ, sync, space_id, zip_size, block_offset,
+d fil0fil.cc   fil_write                                 468 return(fil_io(OS_FILE_WRITE, sync, space_id, zip_size, block_offset,
+e log0log.cc   log_group_file_header_flush              1271 fil_io(OS_FILE_WRITE | OS_FILE_LOG, true, group->space_id, 0,
+f log0log.cc   log_group_write_buf                      1400 fil_io(OS_FILE_WRITE | OS_FILE_LOG, true, group->space_id, 0,
+g log0log.cc   log_group_checkpoint                     1982 fil_io(OS_FILE_WRITE | OS_FILE_LOG, false, group->space_id, 0,
+h log0log.cc   log_group_read_checkpoint_info           2064 fil_io(OS_FILE_READ | OS_FILE_LOG, true, group->space_id, 0,
+i log0log.cc   log_group_read_log_seg                   2357 fil_io(OS_FILE_READ | OS_FILE_LOG, sync, group->space_id, 0,
+j log0log.cc   log_group_archive_file_header_write      2421 fil_io(OS_FILE_WRITE | OS_FILE_LOG, true, group->archive_space_id,
+k log0log.cc   log_group_archive_completed_header_write 2456 fil_io(OS_FILE_WRITE | OS_FILE_LOG, true, group->archive_space_id,
+l log0log.cc   log_group_archive                        2585 fil_io(OS_FILE_WRITE | OS_FILE_LOG, false, group->archive_space_id,
+m log0recv.cc  recv_apply_log_recs_for_backup           2078 error = fil_io(OS_FILE_READ, true,
+n log0recv.cc  recv_apply_log_recs_for_backup           2087 error = fil_io(OS_FILE_READ, true,
+o log0recv.cc  recv_apply_log_recs_for_backup           2116 error = fil_io(OS_FILE_WRITE, true,
+p log0recv.cc  recv_apply_log_recs_for_backup           2122 error = fil_io(OS_FILE_WRITE, true,
+q log0recv.cc  log_group_recover_from_archive_file      3745 fil_io(OS_FILE_READ | OS_FILE_LOG, true, group->archive_space_id, 0, 0,
+r log0recv.cc  log_group_recover_from_archive_file      3817 fil_io(OS_FILE_READ | OS_FILE_LOG, true,
+
+24.buf_dblwr_sync_datafiles
+
+flush_list在这里等flush同步返回。
+
+buf_dblwr_flush_buffered_writes
+--buf_dblwr_sync_datafiles
+----fil_flush_file_spaces
+------fil_flush
+--------os_file_flush
+----------os_file_flush_func
+------------os_file_fsync
+--------------fsync
+
+
+#0 0x00007f062130f3cc in pthread_cond_wait@@GLIBC_2.3.2 ()
+#1 0x00000000009fbba1 in os_cond_wait (fast_mutex=0x6d5bef50,
+#2 os_event_wait_low (event=0x6d5bef50, reset_sig_count=<optimized out>,
+#3 0x0000000000b03d3f in fil_flush (space_id=<optimized out>)
+#4 0x0000000000b04bf5 in fil_flush_file_spaces (purpose=purpose@entry=501)
+#5 0x0000000000ac13b4 in buf_dblwr_sync_datafiles ()
+#6 buf_dblwr_flush_buffered_writes ()
+#7 0x0000000000ac71fb in buf_flush_common (flush_type=BUF_FLUSH_LIST,
+#8 buf_flush_list (min_n=<optimized out>, min_n@entry=18446744073709551614,
+#9 0x00000000009e7042 in log_preflush_pool_modified_pages (
+#10 log_checkpoint_margin ()
+#11 log_check_margins ()
+#12 0x0000000000a54d55 in log_free_check ()
+#13 row_upd (thr=0x7ef384077368, node=0x7ef384077068)
+#14 row_upd_step (thr=thr@entry=0x7ef384077368)
+#15 0x0000000000a39fad in row_update_for_mysql (
+#16 0x00000000009b442e in ha_innobase::update_row (this=0x7ef384075c10,
+#17 0x00000000005aefa3 in handler::ha_update_row (this=0x7ef384075c10,
+#18 0x0000000000763125 in mysql_update (thd=thd@entry=0x6e0ad6c0,
+#19 0x00000000006f43bc in mysql_execute_command (thd=0x6e0ad6c0)
+#20 0x000000000070a13e in Prepared_statement::execute (
+#21 0x000000000070a352 in Prepared_statement::execute_loop (
+#22 0x000000000070a607 in mysqld_stmt_execute (thd=thd@entry=0x6e0ad6c0,
+#23 0x00000000006fa46f in dispatch_command (command=COM_STMT_EXECUTE,
+#24 0x00000000006fb364 in do_command (thd=<optimized out>)
+#25 0x00000000006c152d in do_handle_one_connection (
+#26 0x00000000006c1579 in handle_one_connection (arg=arg@entry=0x6e0ad6c0)
+#27 0x0000000000945fb0 in pfs_spawn_thread (arg=0x6e0b5720)
+#28 0x00007f062130b1c3 in start_thread ()
+#29 0x00007f06201e512d in clone () from /opt/compiler/gcc-4.8.2/lib/libc.so.6
+
+
+24.os_aio_array_free
+innobase_shutdown_for_mysql
+--os_aio_wake_all_threads_at_shutdown
+--os_aio_free
+----os_aio_array_free
+
+25.simulated aio
+
+--fil_io
+----os_aio
+------os_aio_func
+--------os_aio_array_reserve_slot
+----------io_prep_pread
+----------io_prep_pwrite
+--------os_aio_simulated_wake_handler_thread
+----------event = os_aio_segment_wait_events[global_segment];
+----------os_event_set(event);
+
+
+
+26.os_aio_simulated_handle
+
+DECLARE_THREAD(io_handler_thread)
+--fil_aio_wait
+----os_aio_simulated_handle//实现merge io算法, os_aio_linux_handle只负责扫描slot，收集结果，没有merge和write/read的操作。
+------srv_set_io_thread_op_info
+------os_file_write/os_file_read
+--------os_file_write_func
+----------os_file_pwrite
+------------#if defined(HAVE_PWRITE)
+------------pwrite(file, buf, (ssize_t) n, offs);
+------------#else
+------------lseek(file, offs, SEEK_SET);
+------------write(file, buf, (ssize_t) n);
+------os_aio_array_free_slot//slot_io_done
+------os_event_wait(os_aio_segment_wait_events[global_segment]);//wait for io
+----fil_node_complete_io
+----buf_page_io_complete
+----log_io_complete

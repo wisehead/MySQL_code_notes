@@ -1,0 +1,28 @@
+1.MySQL5.7新文件
+sql ls |grep -i parse
+event_parse_data.cc
+event_parse_data.h
+parse_file.cc
+parse_file.h
+parse_location.h
+parse_tree_helpers.cc
+parse_tree_helpers.h
+parse_tree_items.cc
+parse_tree_items.h
+parse_tree_node_base.cc
+parse_tree_node_base.h
+parse_tree_nodes.cc
+parse_tree_nodes.h
+sql_parse.cc
+sql_parse.h
+
+2.MySQL5.6文件列表
+
+[chenhui@sh01-mco-ssdwise259.sh01.baidu.com sql]$ ls|grep -i parse
+event_parse_data.cc
+event_parse_data.h
+parse_file.cc
+parse_file.h
+sql_parse.cc
+sql_parse.h
+

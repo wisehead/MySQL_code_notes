@@ -1,0 +1,555 @@
+0.mini-trx的使用
+
+mtr_t mtr;
+mtr_start(&mtr)
+...
+mtr_commit(&mtr);
+
+1.mtr_start
+//初始化变量mtr
+/*Starts a mini-transaction. */
+mtr_start
+--dyn_array_create(&(mtr->memo));
+--dyn_array_create(&(mtr->log));
+
+2.mtr_commit
+
+按顺序执行下面的步骤：
+--1.若 mtr->modified 为 true，调用函数 log_reserve_and_write_fast 或者 log_write_low 将mtr中保存的日志按先进先出的顺序写入到 redo log buffer中，
+    这时需要持有 log_sys->mutxt.
+--2.调用函数 mtr_memo_pop_all 释放mtr 持有的所有latch
+--3.若mtr->modified为TRUE，调用函数 log_release释放步骤1所持有的 log_sys->mutex.
+
+可以看到 InnoDB存储引擎首先修改缓冲池中的页，之后再释放 log_sys->mutex。这样做的目的是为了保证党释放 log_sys->mutex时，所有的脏页都完成更新。
+当执行函数 log_checkpoint,以及插入到脏页列表时，页的lsn修改操作都已经完成。
+
+mtr_commit
+--mtr_log_reserve_and_write
+----mlog_catenate_ulint
+------dyn_array_push(mlog, type);
+------mach_write_to_1
+----log_reserve_and_write_fast/log_write_low
+----mtr_add_dirtied_pages_to_flush_list
+------log_release
+--------mutex_exit(&(log_sys->mutex));//释放log_sys->mutex here
+------mtr_memo_note_modifications
+--------mtr_memo_slot_note_modification
+----------buf_flush_note_modification
+------------block->page.newest_modification = mtr->end_lsn;
+------------buf_flush_insert_into_flush_list
+--mtr_memo_pop_all(mtr);
+----mtr_memo_slot_release
+------buf_page_release
+------rw_lock_s_unlock
+------rw_lock_x_unlock
+
+
+3.总结所有的redo log 的类型
+mtr0mtr.h
+
+		|//** @name Log item types
+		|The log items are declared 'byte' so that the compiler can warn if val
+		|and type parameters are switched in a call to mlog_write_ulint. NOTE!
+		|For 1 - 8 bytes, the flag value must give the length also! @{ */
+		|#define	MLOG_SINGLE_REC_FLAG	128		/*!< if the mtr contains only
+		|						one log record for one page,
+		|						i.e., write_initial_log_record
+		|						has been called only once,
+		|						this flag is ORed to the type
+		|						of that first log record */
+		|#define	MLOG_1BYTE		(1)		/*!< one byte is written */
+		|#define	MLOG_2BYTES		(2)		/*!< 2 bytes ... */
+		|#define	MLOG_4BYTES		(4)		/*!< 4 bytes ... */
+		|#define	MLOG_8BYTES		(8)		/*!< 8 bytes ... */
+		|#define	MLOG_REC_INSERT		((byte)9)	/*!< record insert */
+		|#define	MLOG_REC_CLUST_DELETE_MARK ((byte)10)	/*!< mark clustered index record
+		|						deleted */
+		|#define	MLOG_REC_SEC_DELETE_MARK ((byte)11)	/*!< mark secondary index record
+		|						deleted */
+		|#define MLOG_REC_UPDATE_IN_PLACE ((byte)13)	/*!< update of a record,
+		|						preserves record field sizes */
+		|#define MLOG_REC_DELETE		((byte)14)	/*!< delete a record from a
+		|						page */
+		|#define	MLOG_LIST_END_DELETE	((byte)15)	/*!< delete record list end on
+		|						index page */
+		|#define	MLOG_LIST_START_DELETE	((byte)16)	/*!< delete record list start on
+		|						index page */
+		|#define	MLOG_LIST_END_COPY_CREATED ((byte)17)	/*!< copy record list end to a
+		|						new created index page */
+		|#define	MLOG_PAGE_REORGANIZE	((byte)18)	/*!< reorganize an
+		|						index page in
+		|						ROW_FORMAT=REDUNDANT */
+		|#define MLOG_PAGE_CREATE	((byte)19)	/*!< create an index page */
+		|#define	MLOG_UNDO_INSERT	((byte)20)	/*!< insert entry in an undo
+		|						log */
+		|#define MLOG_UNDO_ERASE_END	((byte)21)	/*!< erase an undo log
+		|						page end */
+		|#define	MLOG_UNDO_INIT		((byte)22)	/*!< initialize a page in an
+		|						undo log */
+		|#define MLOG_UNDO_HDR_DISCARD	((byte)23)	/*!< discard an update undo log
+		|						header */
+		|#define	MLOG_UNDO_HDR_REUSE	((byte)24)	/*!< reuse an insert undo log
+		|						header */
+		|#define MLOG_UNDO_HDR_CREATE	((byte)25)	/*!< create an undo
+		|						log header */
+		|#define MLOG_REC_MIN_MARK	((byte)26)	/*!< mark an index
+		|						record as the
+		|						predefined minimum
+		|						record */
+		|#define MLOG_IBUF_BITMAP_INIT	((byte)27)	/*!< initialize an
+		|						ibuf bitmap page */
+		|/*#define	MLOG_FULL_PAGE	((byte)28)	full contents of a page */
+		|#ifdef UNIV_LOG_LSN_DEBUG
+		|# define MLOG_LSN		((byte)28)	/* current LSN */
+		|#endif
+		|#define MLOG_INIT_FILE_PAGE	((byte)29)	/*!< this means that a
+		|						file page is taken
+		|						into use and the prior
+		|						contents of the page
+		|						should be ignored: in
+		|						recovery we must not
+		|						trust the lsn values
+		|						stored to the file
+		|						page */
+		|#define MLOG_WRITE_STRING	((byte)30)	/*!< write a string to
+		|						a page */
+		|#define	MLOG_MULTI_REC_END	((byte)31)	/*!< if a single mtr writes
+		|						several log records,
+		|						this log record ends the
+		|						sequence of these records */
+		|#define MLOG_DUMMY_RECORD	((byte)32)	/*!< dummy log record used to
+		|						pad a log block full */
+		|#define MLOG_FILE_CREATE	((byte)33)	/*!< log record about an .ibd
+		|						file creation */
+		|#define MLOG_FILE_RENAME	((byte)34)	/*!< log record about an .ibd
+		|						file rename */
+		|#define MLOG_FILE_DELETE	((byte)35)	/*!< log record about an .ibd
+		|						file deletion */
+		|#define MLOG_COMP_REC_MIN_MARK	((byte)36)	/*!< mark a compact
+		|						index record as the
+		|						predefined minimum
+		|						record */
+		|#define MLOG_COMP_PAGE_CREATE	((byte)37)	/*!< create a compact
+		|						index page */
+		|#define MLOG_COMP_REC_INSERT	((byte)38)	/*!< compact record insert */
+		|#define MLOG_COMP_REC_CLUST_DELETE_MARK ((byte)39)
+		|						/*!< mark compact
+		|						clustered index record
+		|						deleted */
+		|#define MLOG_COMP_REC_SEC_DELETE_MARK ((byte)40)/*!< mark compact
+		|						secondary index record
+		|						deleted; this log
+		|						record type is
+		|						redundant, as
+		|						MLOG_REC_SEC_DELETE_MARK
+		|						is independent of the
+		|						record format. */
+		|#define MLOG_COMP_REC_UPDATE_IN_PLACE ((byte)41)/*!< update of a
+		|						compact record,
+		|						preserves record field
+		|						sizes */
+		|#define MLOG_COMP_REC_DELETE	((byte)42)	/*!< delete a compact record
+		|						from a page */
+		|#define MLOG_COMP_LIST_END_DELETE ((byte)43)	/*!< delete compact record list
+		|						end on index page */
+		|#define MLOG_COMP_LIST_START_DELETE ((byte)44)	/*!< delete compact record list
+		|						start on index page */
+		|#define MLOG_COMP_LIST_END_COPY_CREATED ((byte)45)
+		|						/*!< copy compact
+		|						record list end to a
+		|						new created index
+		|						page */
+		|#define MLOG_COMP_PAGE_REORGANIZE ((byte)46)	/*!< reorganize an index page */
+		|#define MLOG_FILE_CREATE2	((byte)47)	/*!< log record about creating
+		|						an .ibd file, with format */
+		|#define MLOG_ZIP_WRITE_NODE_PTR	((byte)48)	/*!< write the node pointer of
+		|						a record on a compressed
+		|						non-leaf B-tree page */
+		|#define MLOG_ZIP_WRITE_BLOB_PTR	((byte)49)	/*!< write the BLOB pointer
+		|						of an externally stored column
+		|						on a compressed page */
+		|#define MLOG_ZIP_WRITE_HEADER	((byte)50)	/*!< write to compressed page
+		|						header */
+		|#define MLOG_ZIP_PAGE_COMPRESS	((byte)51)	/*!< compress an index page */
+		|#define MLOG_ZIP_PAGE_COMPRESS_NO_DATA	((byte)52)/*!< compress an index page
+		|						without logging it's image */
+		|#define MLOG_ZIP_PAGE_REORGANIZE ((byte)53)	/*!< reorganize a compressed
+		|						page */
+		|#define MLOG_BIGGEST_TYPE	((byte)53)	/*!< biggest value (used in
+		|						assertions) */
+		|/* @} */
+		
+		
+4.mtr->modifications
+
+mlog_open
+		
+Functions calling this function: mlog_open
+
+  File        Function                         Line
+0 btr0cur.cc  btr_cur_del_mark_set_sec_rec_log 3004 log_ptr = mlog_open(mtr, 11 + 1 + 2);
+1 fil0fil.cc  fil_op_write_log                 2238 log_ptr = mlog_open(mtr, 11 + 2 + 1);
+2 fil0fil.cc  fil_op_write_log                 2265 log_ptr = mlog_open(mtr, 2 + len);
+3 mtr0log.ic  mlog_catenate_ulint_compressed    132 log_ptr = mlog_open(mtr, 10);
+4 mtr0log.ic  mlog_catenate_ull_compressed      156 log_ptr = mlog_open(mtr, 15);
+5 mtr0log.cc  mlog_write_initial_log_record      81 log_ptr = mlog_open(mtr, 11);
+6 mtr0log.cc  mlog_write_ulint                  269 byte* log_ptr = mlog_open(mtr, 11 + 2 + 5);
+7 mtr0log.cc  mlog_write_ull                    302 byte* log_ptr = mlog_open(mtr, 11 + 2 + 9);
+8 mtr0log.cc  mlog_log_string                   357 log_ptr = mlog_open(mtr, 30);
+9 mtr0log.cc  mlog_open_and_write_index         453 log_start = log_ptr = mlog_open(mtr, 11 + size);
+a mtr0log.cc  mlog_open_and_write_index         470 log_start = log_ptr = mlog_open(mtr, alloc);
+b mtr0log.cc  mlog_open_and_write_index         508 log_start = log_ptr = mlog_open(mtr, alloc);
+c mtr0log.cc  mlog_open_and_write_index         523 log_ptr = mlog_open(mtr, size);
+d page0cur.cc page_cur_insert_rec_write_log     665 log_ptr = mlog_open(mtr, 11
+e page0cur.cc page_cur_insert_rec_write_log     684 log_ptr = mlog_open(mtr, 5 + 1 + 5 + 5 + MLOG_BUF_MARGIN);
+f page0zip.cc page_zip_compress_write_log       352 log_ptr = mlog_open(mtr, 11 + 2 + 2);
+g page0zip.cc page_zip_write_blob_ptr          4054 byte* log_ptr = mlog_open(
+h page0zip.cc page_zip_write_node_ptr          4196 byte* log_ptr = mlog_open(mtr,
+i page0zip.cc page_zip_write_header_log        4720 byte* log_ptr = mlog_open(mtr, 11 + 1 + 1);
+j row0upd.cc  row_upd_index_write_log           699 log_ptr = mlog_open(mtr, MLOG_BUF_MARGIN);
+k row0upd.cc  row_upd_index_write_log           726 log_ptr = mlog_open(mtr, MLOG_BUF_MARGIN);
+l trx0rec.cc  trx_undof_page_add_undo_rec_log    65 log_ptr = mlog_open(mtr, 11 + 13 + MLOG_BUF_MARGIN);
+
+
+5.btr_cur_del_mark_set_sec_rec_log
+
+btr_cur_del_mark_set_sec_rec
+--btr_cur_get_block
+--btr_cur_get_rec
+--lock_sec_rec_modify_check_and_lock
+----lock_rec_lock
+----page_update_max_trx_id
+--btr_rec_set_deleted_flag
+----rec_set_deleted_flag_new
+--btr_cur_del_mark_set_sec_rec_log
+
+6.
+/* Types for the mlock objects to store in the mtr memo; NOTE that the
+first 3 values must be RW_S_LATCH, RW_X_LATCH, RW_NO_LATCH */
+#define	MTR_MEMO_PAGE_S_FIX	RW_S_LATCH
+#define	MTR_MEMO_PAGE_X_FIX	RW_X_LATCH
+#define	MTR_MEMO_BUF_FIX	RW_NO_LATCH
+#ifdef UNIV_DEBUG
+# define MTR_MEMO_MODIFY	54
+#endif /* UNIV_DEBUG */
+#define	MTR_MEMO_S_LOCK		55
+#define	MTR_MEMO_X_LOCK		56
+
+
+=========================================================================================================
+思路：重点关注 MTR_MEMO_PAGE_X_FIX 的地方，都有可能修改page。其他类型的latch，仔细鉴别。。。。。。。
+
+6.开始研究所有用到mini-transaction的地方
+--(1) get_page
+--(2) restore latch//eg. mtr_x_lock(fil_space_get_latch(0, NULL), &mtr);
+--(3) mlog_read/mlog_write
+
+7. ib_cursor_delete_row
+ib_cursor_delete_row
+--mtr_start
+--btr_pcur_restore_position(BTR_SEARCH_LEAF, pcur, &mtr)
+----btr_pcur_restore_position_func
+------btr_pcur_get_btr_cur//or
+------buf_page_optimistic_get
+------btr_pcur_open_with_no_init_func
+------btr_pcur_store_position
+--mtr_commit
+
+8.row_search_for_mysql
+row_search_for_mysql
+--mtr_start
+--row_sel_try_search_shortcut_for_mysql
+----btr_pcur_open_with_no_init
+------btr_pcur_open_with_no_init_func
+--------btr_cur_search_to_nth_level
+----------ad(mtr_memo_contains)
+------------dict_index_get_lock
+----------mtr_set_savepoint
+------------dyn_array_get_data_size
+----------mtr_x_lock(dict_index_get_lock(index), mtr);
+------------mtr_x_lock_func
+--------------mtr_memo_push(mtr, lock, MTR_MEMO_X_LOCK);
+----------mtr_s_lock(dict_index_get_lock(index), mtr);
+----------buf_page_get_gen
+------------ibuf_inside
+------------mtr_memo_push(mtr, fix_block, fix_type);
+----------btr_page_get_level
+----------btr_cur_latch_leaves
+------------//case BTR_SEARCH_LEAF:
+------------//case BTR_MODIFY_LEAF:
+------------btr_block_get
+------------//case BTR_MODIFY_TREE:
+------------btr_page_get_prev(page, mtr);
+------------btr_block_get
+------------btr_page_get_next
+------------//case BTR_SEARCH_PREV:
+------------//case BTR_MODIFY_PREV:
+------------btr_page_get_prev
+------------btr_block_get
+----------mtr_release_s_latch_at_savepoint
+----------btr_block_get
+------------btr_block_get_func
+--------------buf_page_get_gen
+--mtr_commit
+
+9.ib_cursor_read_row
+ib_cursor_read_row
+--ib_cursor_is_positioned
+--mtr_start
+--btr_pcur_restore_position(BTR_SEARCH_LEAF, pcur, &mtr)
+----btr_pcur_restore_position_func
+------btr_pcur_get_btr_cur//or
+------buf_page_optimistic_get
+--------mtr_memo_push(mtr, block, fix_type);
+------btr_pcur_open_with_no_init_func
+--------btr_cur_search_to_nth_level(see No.8)
+------btr_pcur_store_position
+--btr_pcur_get_rec
+--ib_read_tuple
+--mtr_commit
+
+10.btr_root_adjust_on_import
+callers:
+row_import_adjust_root_pages_of_secondary_indexes
+row_import_for_mysql
+
+--btr_root_adjust_on_import
+----mtr_start(&mtr);
+----mtr_set_log_mode(&mtr, MTR_LOG_NO_REDO);
+----btr_block_get
+----btr_root_fseg_adjust_on_import
+------mlog_write_ulint(seg_header + FSEG_HDR_SPACE,
+----mtr_commit(&mtr);
+
+11.btr_free_but_not_root
+
+btr_free_but_not_root
+--mtr_start
+--btr_page_get
+--fseg_free_step
+----latch = fil_space_get_latch(space, &flags);
+----mtr_x_lock(latch, mtr);
+----xdes_get_descriptor
+------buf_page_get
+------xdes_get_descriptor_with_space_hdr
+--------xdes_calc_descriptor_page
+--------buf_page_get
+----fseg_inode_try_get
+------fut_get_ptr
+--------buf_page_get
+----fseg_get_first_extent
+------flst_get_len
+--------mtr_read_ulint//some asserts
+----------mach_read_ulint
+------flst_get_first
+--------flst_read_addr
+----------mtr_read_ulint
+------xdes_lst_get_descriptor
+--------fut_get_ptr
+----------buf_page_get
+----fseg_free_extent
+------xdes_get_descriptor
+------xdes_mtr_get_bit
+------btr_search_drop_page_hash_when_freed
+------xdes_is_full
+--------xdes_get_n_used
+----------xdes_mtr_get_bit
+------xdes_is_free
+------flst_remove
+--------buf_ptr_get_fsp_addr
+--------flst_get_prev_addr
+----------flst_read_addr
+------------mtr_read_ulint
+--------flst_get_next_addr
+--------fut_get_ptr
+--------flst_write_addr
+----------mlog_write_ulint
+------fsp_free_extent
+--------fsp_get_space_header
+----------buf_page_get
+--------xdes_get_descriptor_with_space_hdr
+--------xdes_init
+----------mlog_write_ulint
+----------xdes_set_state
+------------mlog_write_ulint
+--------flst_add_last
+----------flst_get_len
+----------flst_get_last
+----------buf_ptr_get_fsp_addr
+----------fut_get_ptr
+----------flst_insert_after
+----fseg_find_last_used_frag_page_slot
+------fseg_get_nth_frag_page_no
+--------mach_read_from_4
+----fseg_free_page_low
+------btr_search_drop_page_hash_when_freed
+------xdes_get_state
+------fseg_get_nth_frag_page_no
+------fseg_set_nth_frag_page_no
+------fsp_free_page
+--------fsp_get_space_header
+--------xdes_get_descriptor_with_space_hdr
+--------xdes_get_state
+--------xdes_set_bit(descr, XDES_FREE_BIT
+--------mlog_write_ulint
+--------xdes_is_free
+--------flst_remove
+--------fsp_free_extent
+----fsp_free_seg_inode
+------fsp_get_space_header
+------fsp_seg_inode_page_find_free
+--------fsp_seg_inode_page_get_nth_inode
+------flst_remove
+------flst_add_last
+------fsp_seg_inode_page_find_used
+--------fsp_seg_inode_page_get_nth_inode
+------flst_remove
+------fsp_free_page
+--mtr_commit
+
+12.btr_print_size
+
+btr_print_size
+--mtr_start
+--btr_root_get
+----btr_root_block_get
+------btr_block_get
+--fseg_print
+----mtr_x_lock(fil_space_get_latch(space, &flags), mtr);
+----fseg_inode_get
+------fseg_inode_try_get
+--------fut_get_ptr
+----fseg_print_low
+
+13.btr_print_recursive
+
+btr_print_recursive
+--mtr_start
+--btr_node_ptr_get_child
+----btr_block_get
+--btr_print_recursive
+--mtr_commit
+
+14.btr_print_index
+
+btr_print_index
+--mtr_start
+--btr_root_block_get
+--btr_print_recursive
+--mtr_commit
+
+
+15.btr_validate_level
+
+16.trx_purge_free_segment
+
+DECLARE_THREAD(srv_purge_coordinator_thread)
+--trx_purge
+----trx_purge_truncate
+------trx_purge_truncate_history
+--------trx_purge_truncate_rseg_history
+----------trx_purge_free_segment
+------------mtr_start
+------------trx_rsegf_get
+--------------buf_page_get
+------------trx_undo_page_get
+------------fseg_free_step_not_header
+------------flst_get_len
+------------flst_cut_end
+------------fseg_free_step
+------------mtr_commit
+
+
+==========================================================================================================
+
+31.使用 RW_X_LATCH latch的函数。
+
+btr_block_get
+btr_page_get
+btr_root_block_get
+
+buf_page_get
+buf_page_get_gen
+
+buf_page_optimistic_get
+buf_page_get_known_nowait
+
+fut_get_ptr
+
+trx_undo_page_get
+
+trx_undo_get_first_rec
+
+
+32.mtr_commit的时候清楚flag
+#define	MTR_MEMO_PAGE_X_FIX	RW_X_LATCH
+
+mtr_commit
+--mtr_log_reserve_and_write
+----mtr_add_dirtied_pages_to_flush_list
+------mtr_memo_note_modifications
+--------mtr_memo_slot_note_modification
+----------buf_flush_note_modification
+
+    102 //B_chenhui2
+    103     //block->dirty_flag_in_mtr = 0;
+    104     mtr_reset_block_clean(block, mtr);
+    105 //E_chenhui2
+    
+33.mtr_memo_push
+
+callers:
+buf_page_get_gen							//MTR_MEMO_PAGE_X_FIX, MTR_MEMO_PAGE_S_FIX, MTR_MEMO_BUF_FIX
+buf_page_optimistic_get				//MTR_MEMO_PAGE_X_FIX, MTR_MEMO_PAGE_S_FIX
+buf_page_get_known_nowait			//MTR_MEMO_PAGE_X_FIX, MTR_MEMO_PAGE_S_FIX
+buf_page_try_get_func					//MTR_MEMO_PAGE_X_FIX, MTR_MEMO_PAGE_S_FIX
+buf_page_create								//MTR_MEMO_BUF_FIX
+fsp_page_create								//MTR_MEMO_PAGE_X_FIX
+mlog_write_initial_log_record_fast//MTR_MEMO_MODIFY
+mtr_s_lock_func										//MTR_MEMO_S_LOCK
+mtr_x_lock_func										//MTR_MEMO_X_LOCK
+
+
+MTR_MEMO_X_LOCK:
+callers:
+mtr_x_lock(dict_index_get_lock(index), &mtr);
+mtr_x_lock(fil_space_get_latch(space, &flags), mtr);
+--mtr_x_lock
+----mtr_x_lock_func
+
+
+mtr_memo_push
+--dyn_array_push
+
+34.block rw_lock的释放
+
+mtr_memo_release/mtr_memo_pop_all
+--mtr_memo_slot_release
+----mtr_memo_slot_release_func
+------buf_page_release
+--------rw_lock_x_unlock
+
+
+mtr_commit
+--mtr_memo_pop_all
+
+
+mtr_memo_release
+
+Functions calling this function: mtr_memo_release
+
+  File       Function                  Line
+0 btr0btr.cc btr_height_get             799 mtr_memo_release(mtr, root_block, MTR_MEMO_PAGE_S_FIX);
+1 btr0btr.cc btr_page_split_and_insert 3135 mtr_memo_release(mtr, dict_index_get_lock(cursor->index),
+2 btr0btr.ic btr_leaf_page_release      285 mtr_memo_release(mtr, block,
+3 trx0trx.cc trx_resurrect_table_locks  461 if (!mtr_memo_release(&mtr,
+
+btr_leaf_page_release//MTR_MEMO_PAGE_X_FIX
+--mtr_memo_release
+
+trx_resurrect_table_locks
+--mtr_memo_release
+
+35.写mlog
+mlog_write_initial_log_record
+--mlog_write_initial_log_record_fast

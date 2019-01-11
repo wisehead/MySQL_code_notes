@@ -1,0 +1,439 @@
+0.如果发现redo log是性能瓶颈。
+可以在函数trx_commit_off_kernel处，人为地进行休眠操作。然而这样做虽然可以提高组提交的比例，但可能降低事务的响应时间。
+
+
+1.trx_commit_off_kernel//5.6不存在
+
+see trx_flush_log_if_needed_low
+
+
+2.commit函数流程
+ha_innodb.cc::innobase_commit()
+--innobase_commit_low() 
+---trx_commit_for_mysql
+------trx_commit()；
+--------trx_commit_low
+----------mtr_commit//非主流
+----------trx_commit_in_memory
+------------trx_flush_log_if_needed
+--------------trx_flush_log_if_needed_low
+----------------log_write_up_to
+
+callers:
+ha_innobase::write_row
+ha_innobase::external_lock
+
+3.log_write_up_to
+
+log_write_up_to
+--log_group_write_buf
+--fil_flush
+----os_file_flush
+------os_file_flush
+--------os_file_flush_func
+----------os_file_fsync
+------------fsync
+
+
+5.log_write_up_to
+
+/** Wait modes for log_write_up_to @{ */
+#define LOG_NO_WAIT		91
+#define LOG_WAIT_ONE_GROUP	92
+#define	LOG_WAIT_ALL_GROUPS	93
+
+callers:
+
+buf_flush_write_block_low//see blow - LOG_WAIT_ALL_GROUPS, TRUE
+//buffer page在flush到disk之前，一定要保证相应的log 写到disk上。。。。。
+
+log_buffer_flush_to_disk//see blow - LOG_WAIT_ALL_GROUPS, TRUE
+//必须要flush log buffer的操作，如log_buffer_extend，commit_inplace_alter_table
+
+log_buffer_sync_in_background//see below - LOG_NO_WAIT, flush
+//master thread每一秒触发一次flush
+
+
+log_flush_margin//see blow - LOG_NO_WAIT, FALSE
+
+//if (log->buf_free > log->max_buf_free)，尽量腾出地方
+
+///***********************************************************************//**
+//Checks if there is need for a log buffer flush or a new checkpoint, and does
+//this if yes. Any database operation should call this when it has modified
+//more than about 4 pages. NOTE that this function may only be called when the
+//OS thread owns no synchronization objects except the dictionary mutex. */
+//--------------------------------------------------------------------------------
+
+
+log_checkpoint//see blow - LOG_WAIT_ALL_GROUPS, TRUE
+
+trx_flush_log_if_needed_low//commit, see above - LOG_WAIT_ONE_GROUP
+
+
+
+ibuf_delete_rec//debug 可忽略
+log_archive_do//#ifdef UNIV_LOG_ARCHIVE
+
+
+6.buf_flush_write_block_low//LOG_WAIT_ALL_GROUPS
+
+callers:
+buf_flush_try_neighbors//see bufferpool.txt
+buf_flush_single_page_from_LRU//see bufferpool.txt
+buf_flush_or_remove_page//see bufferpool.txt
+-----------------------------------------
+buf_flush_page
+--buf_flush_write_block_low
+----log_write_up_to
+
+
+buf_LRU_get_free_block//see bufferpool.txt
+--buf_flush_single_page_from_LRU
+
+
+7.log_buffer_flush_to_disk//LOG_WAIT_ALL_GROUPS
+		//个人理解，要清空log buffer
+
+callers:
+
+commit_inplace_alter_table
+innobase_flush_logs//向上接口
+ha_innobase::create
+ha_innobase::delete_table
+innobase_drop_database
+innobase_rename_table
+ibuf_insert_to_index_page
+log_buffer_extend
+log_reserve_and_open
+logs_empty_and_mark_files_at_shutdown
+row_drop_table_for_mysql_in_background
+innobase_start_or_create_for_mysql
+
+
+
+8.log_buffer_sync_in_background//LOG_NO_WAIT
+
+
+srv_master_do_active_tasks
+srv_master_do_idle_tasks
+srv_master_do_shutdown_tasks
+---------------------------------
+srv_sync_log_buffer_in_background
+--log_buffer_sync_in_background
+
+9.log_flush_margin//LOG_NO_WAIT
+
+
+/***********************************************************************//**
+Checks if there is need for a log buffer flush or a new checkpoint, and does
+this if yes. Any database operation should call this when it has modified
+more than about 4 pages. NOTE that this function may only be called when the
+OS thread owns no synchronization objects except the dictionary mutex. */
+--------------------------------------------------------------------------------
+log_free_check
+--log_check_margins
+----log_flush_margin
+
+
+10.log_checkpoint//LOG_WAIT_ALL_GROUPS
+
+callers:
+
+log_make_checkpoint_at
+log_checkpoint_margin
+srv_master_do_active_tasks
+srv_master_do_idle_tasks
+srv_master_do_shutdown_tasks
+
+11.sync mode 
+/** Alternatives for the file flush option in Unix; see the InnoDB manual
+about what these mean */
+enum {
+	SRV_UNIX_FSYNC = 1,	/*!< fsync, the default */
+	SRV_UNIX_O_DSYNC,	/*!< open log files in O_SYNC mode */
+	SRV_UNIX_LITTLESYNC,	/*!< do not call os_file_flush()
+				when writing data files, but do flush
+				after writing to log files */
+	SRV_UNIX_NOSYNC,	/*!< do not flush after writing */
+	SRV_UNIX_O_DIRECT,	/*!< invoke os_file_set_nocache() on
+				data files. This implies using
+				non-buffered IO but still using fsync,
+				the reason for which is that some FS
+				do not flush meta-data when
+				unbuffered IO happens */
+	SRV_UNIX_O_DIRECT_NO_FSYNC
+				/*!< do not use fsync() when using
+				direct IO i.e.: it can be set to avoid
+				the fsync() call that we make when
+				using SRV_UNIX_O_DIRECT. However, in
+				this case user/DBA should be sure about
+				the integrity of the meta-data */
+};
+
+
+
+12. redo log buffer
+
+/** Redo log buffer */
+struct log_t{
+...
+...
+	ulint		buf_free;	/*!< first free offset within the log
+					buffer */
+					
+					
+	ulint		buf_next_to_write;/*!< first offset in the log buffer
+					where the byte content may not exist
+					written to file, e.g., the start
+					offset of a log record catenated
+					later; this is advanced when a flush
+					operation is completed to all the log
+					groups */
+					
+					
+next_to_write可能还没有写入到log file，
+数据的状态：
+- 写入到log buffer
+- 写入到log file， write
+- 写入到disk，flush
+
+
+	os_event_t	no_flush_event;	/*!< this event is in the reset state
+					when a flush or a write is running;
+					a thread should wait for this without
+					owning the log mutex, but NOTE that
+					to set or reset this event, the
+					thread MUST own the log mutex! */
+					
+	os_event_t	one_flushed_event;/*!< this event is reset when the
+					flush or write has not yet completed
+					for any log group; e.g., this means
+					that a transaction has been committed
+					when this is set; a thread should wait
+					for this without owning the log mutex,
+					but NOTE that to set or reset this
+					event, the thread MUST own the log
+					mutex! */
+				
+	lsn_t		lsn;		/*!< log sequence number */
+						
+	lsn_t		write_lsn;	/*!< end lsn for the current running
+					write */					
+					
+	lsn_t		current_flush_lsn;/*!< end lsn for the current running
+					write + flush operation */
+
+	lsn_t		flushed_to_disk_lsn;
+					/*!< how far we have written the log
+					AND flushed to disk */
+
+	ulint		n_pending_writes;/*!< number of currently
+					pending flushes or writes */					
+					
+	lsn_t		written_to_some_lsn;
+					/*!< first log sequence number not yet
+					written to any log group; for this to
+					be advanced, it is enough that the
+					write i/o has been completed for any
+					one log group */
+					
+	lsn_t		written_to_all_lsn;
+					/*!< first log sequence number not yet
+					written to some log group; for this to
+					be advanced, it is enough that the
+					write i/o has been completed for all
+					log groups.
+					Note that since InnoDB currently
+					has only one log group therefore
+					this value is redundant. Also it
+					is possible that this value
+					falls behind the
+					flushed_to_disk_lsn transiently.
+					It is appropriate to use either
+					flushed_to_disk_lsn or
+					write_lsn which are always
+					up-to-date and accurate. */
+					
+					
+	ibool		one_flushed;	/*!< during a flush, this is
+					first FALSE and becomes TRUE
+					when one log group has been
+					written or flushed */
+					
+	ib_uint64_t	next_checkpoint_no;
+					/*!< next checkpoint number */
+										
+	ulint		n_log_ios;	/*!< number of log i/os initiated thus
+					far */										
+
+	ulint		write_end_offset;/*!< the data in buffer has
+					been written up to this offset
+					when the current write ends:
+					this field will then be copied
+					to buf_next_to_write */	
+					
+	ibool		check_flush_or_checkpoint;
+					/*!< this is set to TRUE when there may
+					be need to flush the log buffer, or
+					preflush buffer pool pages, or make
+					a checkpoint; this MUST be TRUE when
+					lsn - last_checkpoint_lsn >
+					max_checkpoint_age; this flag is
+					peeked at by log_free_check(), which
+					does not reserve the log mutex */
+					
+	lsn_t		last_checkpoint_lsn;
+					/*!< latest checkpoint lsn */
+					
+					
+	/** Fields involved in checkpoints @{ */
+	lsn_t		log_group_capacity; /*!< capacity of the log group; if
+					the checkpoint age exceeds this, it is
+					a serious error because it is possible
+					we will then overwrite log and spoil
+					crash recovery */
+	lsn_t		max_modified_age_async;
+					/*!< when this recommended
+					value for lsn -
+					buf_pool_get_oldest_modification()
+					is exceeded, we start an
+					asynchronous preflush of pool pages */
+	lsn_t		max_modified_age_sync;
+					/*!< when this recommended
+					value for lsn -
+					buf_pool_get_oldest_modification()
+					is exceeded, we start a
+					synchronous preflush of pool pages */
+					
+																													
+																													
+13.log_group_write_buf(
+
+log_write_up_to	
+--log_group_write_buf
+----log_group_calc_lsn_offset
+----log_block_store_checksum
+----log_group_check_flush_completion
+----log_sys_check_flush_completion
+----log_flush_do_unlocks
+					
+		log_group_write_buf(
+			group, 
+			log_sys->buf + area_start,//buf
+			area_end - area_start,    //len
+			ut_uint64_align_down(log_sys->written_to_all_lsn, OS_FILE_LOG_BLOCK_SIZE),//start_lsn
+			start_offset - area_start);                                               //net_data_offset
+			
+UNIV_INTERN
+void
+log_group_write_buf(
+/*================*/
+	log_group_t*	group,		/*!< in: log group */
+	byte*		buf,		/*!< in: buffer */
+	ulint		len,		/*!< in: buffer len; must be divisible
+					by OS_FILE_LOG_BLOCK_SIZE */
+	lsn_t		start_lsn,	/*!< in: start lsn of the buffer; must
+					be divisible by
+					OS_FILE_LOG_BLOCK_SIZE */
+	ulint		new_data_offset)/*!< in: start offset of new data in
+					buf: this parameter is used to decide
+					if we have to write a new log file
+					header */			
+								
+14.fil_io/see io.txt
+		fil_io(OS_FILE_WRITE | OS_FILE_LOG, true, group->space_id, 0,
+		       (ulint) (next_offset / UNIV_PAGE_SIZE),
+		       (ulint) (next_offset % UNIV_PAGE_SIZE), write_len, buf,
+		       group);
+		       
+		       					
+		       					
+15.innobase_srv_conc_force_exit_innodb
+
+innobase_commit
+--innobase_srv_conc_force_exit_innodb
+----srv_conc_force_exit_innodb
+------srv_conc_exit_innodb_without_atomics
+
+
+
+16.innodb_thread_concurrency限制行的并发度,但是在提交阶段innodb的结构和锁争用很严重的。
+MySQL从 5.0 就开始引进的innodb_commit_concurrency,这个参数设置了同一时刻允许同时commit的线程数。默认是0即不限制，取值范围0-1000，不可动态修改。 
+
+innodb_commit_concurrency
+
+17.innodb_flush_log_at_trx_commit
+- 1. 每次commit都flush
+- 0. master thread每隔一秒，flush
+- 2. 只写入到file system。
+
+18.检查一下锁的情况
+
+log_sys->mutex
+- 在进入log_write_up_to时获得
+- 写完后释放，注意这时还没有flush
+
+其他线程：
+  //log_sys->n_pending_writes && log_sys->no_flush_event
+  //如果一个应用发现已经有人在写，而且，写的lsn小于自己，则等待它写完。等待log_sys->no_flush_event
+	if (log_sys->n_pending_writes > 0) {
+		/* A write (+ possibly flush to disk) is running */
+
+		mutex_exit(&(log_sys->mutex));
+
+		/* Wait for the write to complete and try to start a new
+		write */
+
+		os_event_wait(log_sys->no_flush_event);
+
+		goto loop;
+	}
+	
+	
+flush线程：
+  //获取mutex
+  mutex_enter(&(log_sys->mutex));
+  
+  //开始写，标志
+  log_sys->n_pending_writes++;
+  	
+	写的线程会将log_sys->no_flush_event设置为false
+	os_event_reset(log_sys->no_flush_event);
+	os_event_reset(log_sys->one_flushed_event);
+	
+	//设置one_flushed
+	log_sys->one_flushed = FALSE;
+	
+	//写入FS
+	log_group_write_buf
+	
+	//释放mutex
+	mutex_exit(&(log_sys->mutex));
+	
+	//刷盘、
+	fil_flush(group->space_id);
+	
+	//再次获取mutex
+	mutex_enter(&(log_sys->mutex));
+
+	log_sys->n_pending_writes--;
+
+	unlock = log_group_check_flush_completion(group);
+		//log_sys->written_to_some_lsn = log_sys->write_lsn;
+		//log_sys->one_flushed = TRUE;
+	
+	unlock = unlock | log_sys_check_flush_completion();
+		//log_sys->written_to_all_lsn = log_sys->write_lsn;
+		//log_sys->buf_next_to_write = log_sys->write_end_offset;	
+
+	log_flush_do_unlocks(unlock);
+	//os_event_set(log_sys->one_flushed_event);
+	//os_event_set(log_sys->no_flush_event);
+  
+  //释放mutex
+	mutex_exit(&(log_sys->mutex));
+	
+	
+	
+	

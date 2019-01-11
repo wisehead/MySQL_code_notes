@@ -1,0 +1,910 @@
+0.各种lsn，各种age，各种阈值
+
+minBuflsn//oldest_modification_lsn: bufferpool中脏页列表的lsn。根据最先更新的lsn进行排序。这里是最早的lsn
+redo_log_lsn           : 重做日志缓冲中的重做日志lsn，表示当前写到的lsn的位置。
+checkpoint_lsn         : 重做日志文件的前2K中记录有checkpoint值的信息，也用lsn表示。
+archived_lsn           : 归档重做日志这里也有lsn，表示已经归档到的重做日志的位置。
+
+modified_age           :  redo_log_lsn与minBuflsn的距离。
+checkpoint_age         :  redo_log_lsn与checkpoint_lsn的距离。
+archive_age            :  redo_log_lsn与archive_lsn的距离
+
+mmaa                   :max_modified_age_async =     7/8 * total_redo_log_file_size
+mmac                   :max_modified_age_sync  =   15/16 * total_redo_log_file_size
+mcaa	                 :max_checkpoint_age_async = 31/32 * total_redo_log_file_size
+mca                    :max_checkpoint_age_sync  =     1 * total_redo_log_file_size
+malaa                  :max_archived_lsn_age_async
+mala                   :max_archived_lsn_age_sync
+
+还有一个因此要考虑：buf脏页百分比——srv_max_buf_pool_modified_pct
+if (modified_age > max_modified_age_async) 异步刷脏页
+if (modified_age > max_modified_age_sync)  同步刷新脏页
+if (checkpoint_age > max_checkpoint_age_async) 将checkpoint的值异步写入到redo log。//这有什么用？？只写checkpoint_lsn????
+if (checkpoint_age > max_checkpoint_age_sync)  将checkpoint的值同步地写入到redo log。
+if (archive_age > max_archived_lsn_age_async)  将重做日志异步写入到归档日志。
+if (archive_age > max_archived_lsn_age_sync)  将重做日志同步写入到归档日志。
+
+1.overall funcions
+
+log_check_margins  //对redo log buffer，脏页，checkpoint，归档重做日志进行所有的检测，以确保有足够的空间供新的查询使用。
+log_write_low      //写log buffer
+log_write_up_to    //将log buffer写入redo log file
+log_archive_do     //将redo log归档
+log_checkpoint     //将checkpoint的值写入log file的header(只写检查点的值，不进行脏页的刷新)
+
+1.log_write_low
+
+mtr_commit
+--mtr_log_reserve_and_write
+----log_reserve_and_write_fast//小于512bytes
+----log_reserve_and_open//get mutex
+------log_buffer_extend
+------mutex_enter(&(log->mutex));
+------log_buffer_flush_to_disk
+----log_write_low
+----log_close
+------buf_pool_get_oldest_modification
+----mtr_add_dirtied_pages_to_flush_list
+------log_release
+--mtr_memo_pop_all//释放latch
+
+
+2.mlog_write_initial_log_record_fast
+重做日志的统一初始信息
+
+
+3.mini transaction的使用
+mtr_t mtr;
+mtr_start(&mtr);
+...
+...
+mtr_commit(&mtr);
+
+4.mtr_commit
+按顺序执行下列的步骤:
+-1. if (mtr->modified)
+    ----log_reserve_and_write_fast
+    ----log_write_low
+    将mtr中保存的日志按先进先出的顺序写入到log buffer，需持有log_sys->mutex.
+    
+-2.mtr_memo_pop_all释放mtr持有的所有latch
+
+-3.if (mtr->modified)
+   ----log_release()释放步骤一所持有的log_sys->mutex.
+   
+   innoDB首先修改bufferpool中的页，之后再释放log_sys->mutex.这样处理的目的是为了保证当释放log_sys->mutex时，所有的脏页都已经完成更新。
+   当执行函数log_checkpoint()，以及插入到脏页列表时，页的LSN修改操作已经完成。
+
+5.1、              基本概念
+
+a)        ib_logfile文件个数由innodb_log_files_in_group配置决定，若为2，则在datadir目录下有两个文件，命令从0开始，分别为ib_logfile0和ib_logfile.
+
+b)        文件为顺序写入，当达到最后一个文件末尾时，会从第一个文件开始顺序复用。
+
+c)        lsn: Log Sequence Number，是一个递增的整数。 Ib_logfile中的每次写入操作都包含至少1个log，每个log都带有一个lsn。在内存page修复过程中，只有大于page_lsn的log才会被使用。
+
+d)        lsn的保存在全局变量log_sys中。递增数值等于每个log的实际内容长度。即如果新增的一个log长度是len，则log_sys->lsn += len.
+
+e)        ib_logfile每次写入以512（OS_FILE_LOG_BLOCK_SIZE）字节为单位。实际写入函数 log_group_write_buf (log/log0log.c)
+
+f)         每次写盘后是否flush，由参数innodb_flush_log_at_trx_commit控制。
+
+
+4. log_sys介绍
+
+	  log_sys是一个全局内存结构。以下说明几个成员的意义。
+		
+		lsn
+		表示已经分配的最后一个lsn的值。
+		
+		written_to_all_lsn
+		n表示实际已经写盘的lsn。需要这个值是因为并非每次生成log后就写盘。
+		
+		flushed_to_disk_lsn
+		表示刷到磁盘的lsn。需要这个值是因为并非每次写盘后就flush。
+		
+		buf
+		待写入的内容保存在buf中
+		
+		buf_size
+		buf的大小。由配置中innodb_log_buffer_size决定，实际大小为innodb_log_buffer_size /16k * 16k。
+		
+		buf_next_to_write
+		buf中下一个要写入磁盘的位置
+		
+		buf_free
+		buf中实际内容的最后位置。当buf_free> buf_next_to_write时，说明内存中还有数据未写盘。
+
+
+5.相关更新
+
+用一个简单的更新语句来说明log_sys以及ib_logfile的更新内容的过程。假设我们的更新只涉及到非索引的固定长度字段。
+
+a)        在bufferpool中写入undo log。 对于一个单一的语句，需要先创建一个undolog头。
+
+b)        在bufferpool中写入undo log的实际内容。
+
+c)        在log_sys->buf中写入buffer page的更新内容。此处保存了更新的完整信息。
+
+d)        在log_sys->buf中写入启动事务（trx_prepare）的日志
+
+e)        将c、d更新的log内容写入ib_logfile中。
+
+f)         在log_sys->buf中写入事务结束(trx_commit)的日志
+
+g)        将f步骤的log内容写入ib_logfile中。
+
+6.说明
+
+a)        完成上述所有操作时，数据文件还没有更新。
+
+b)        每次写入log_sys->buf时同时更新lsn和buf_free。 每次写ib_logfile时同时更新written_to_all_lsn和buf_next_to_write；
+
+c)        每次写ib_logfile时以512字节为对齐，如需写入600字节，则实际写入1k。写到最后一个文件末尾则从第一个文件重复使用。
+
+d)         从上述流程看到，在a～d过程中若出现异常关闭，由于没有写入到磁盘中，因此整个事务放弃；若在e刚完成时出现异常关闭，虽然事务内容已经写盘，但没有提交。在重启恢复的时候，发现这个事务还没有提交，逻辑上整个事务放弃。      （重启日志中会有Found 1 prepared transaction(s) in InnoDB字样）。在g完成后出现异常关闭，则能够在重启恢复中正常提交。
+
+    在e和f之间会写mysql的bin-log，若bin-log写完前异常关闭，事务无效，bin-log写入成功后，则异常重启后能够根据bin-log恢复事务的修改。
+
+ 
+
+e)        若涉及到索引更新，在步骤c之后会增加索引更新的log。由于索引可能有merge过程，因此在merge过程中会另外增加写入一个log。但事务完全提交仍在步骤g中。索引的更新由于已经写盘，并不会因此丢失。
+
+
+
+7.recovery
+recv_recovery_from_checkpoint_start
+
+8.log_preflush_pool_modified_pages
+
+
+row_discard_tablespace_end//discard tablespace
+row_ins_clust_index_entry_low//debug_execute_if
+row_import_cleanup//import
+recv_reset_logs//reset content of log files
+logs_empty_and_mark_files_at_shutdown//shutdown
+log_make_checkpoint_at
+--log_preflush_pool_modified_pages
+--log_checkpoint
+
+
+
+callers:
+que_run_threads_low
+row_ins_clust_index_entry
+row_ins_sec_index_entry
+row_log_table_apply_ops
+row_log_apply_ops
+row_log_apply
+row_merge_insert_index_tuples
+row_purge_remove_clust_if_poss_low
+row_purge_remove_sec_if_poss_tree
+row_purge_remove_sec_if_poss_leaf
+row_undo_ins_remove_sec_low
+row_undo_ins
+row_undo_mod_clust
+row_undo_mod_del_mark_or_remove_sec_low
+row_undo_mod_del_unmark_sec_and_undo_update
+row_upd_sec_index_entry
+row_upd
+srv_master_do_active_tasks//!!!!
+srv_master_do_idle_tasks//!!!
+srv_master_do_shutdown_tasks//!!!
+
+
+log_free_check
+--log_check_margins
+----log_flush_margin
+----log_checkpoint_margin
+------log_preflush_pool_modified_pages
+------log_checkpoint
+
+
+9.用到 log_sys->check_flush_or_checkpoint 的地方
+写的地方
+log_close//每次写log，都要open/close
+log_init//只调用一次
+log_checkpoint_margin
+
+读log_sys->check_flush_or_checkpoint 的地方
+log_free_check
+log_check_margins
+log_checkpoint_margin
+
+10.log_checkpoint
+
+callers:
+
+log_make_checkpoint_at//初始化，关闭的时候，reset logs，崩溃恢复，重新建库建logfile。
+log_checkpoint_margin//被动
+srv_master_do_active_tasks//主动
+srv_master_do_idle_tasks//主动
+srv_master_do_shutdown_tasks//主动
+
+
+log_checkpoint
+--fil_flush_file_spaces
+----fil_flush
+--log_write_up_to
+--log_groups_write_checkpoint_info
+----log_group_checkpoint
+------log_checkpoint_set_nth_group_info
+
+
+
+11.- InnoDB存储引擎中相关的函数
+? Redo: recv_recovery_from_checkpoint_start()
+? Undo: recv_recovery_rollback_active()
+? Undo Log的Redo Log: trx_undof_page_add_undo_rec_log()
+
+12.LOG_BLOCK_HDR_NO
+/* Offsets of a log block header */
+#define	LOG_BLOCK_HDR_NO	0	/* block number which must be > 0 and
+					is allowed to wrap around at 2G; the
+					highest bit is set to 1 if this is the
+					first log block in a log flush write
+					segment */
+
+					
+log buffer由log block组成，在内部log buffer就好似一个数组，因此 LOG_BLOCK_HDR_NO 用来标记这个数组中的位置。
+他是递增并且循环使用的，其占用4个字节，但是由于第一位用来判断是否是flush bit，所以最大的值为2G。
+
+13.LOG_BLOCK_FLUSH_BIT_MASK
+#define LOG_BLOCK_FLUSH_BIT_MASK 0x80000000UL
+					/* mask used to get the highest bit in
+					the preceding field */
+log_write_up_to					
+--log_block_set_flush_bit
+
+log_block_get_flush_bit//在scan log的时候，用于确认之前的block都ok。
+												/*return	TRUE if this block was the first to be written in a log flush */
+
+
+14.	checkpoint num的概念
+单调递增的值。每次checkpoint操作完成后进行自增操作。。。
+
+ib_uint64_t	next_checkpoint_no;
+					/*!< next checkpoint number */
+
+写操作：log_block_set_checkpoint_no
+caller:
+log_write_low
+log_write_up_to
+
+log_group_checkpoint/*Writes the checkpoint info to a log group header. */
+
+
+log_write_up_to
+--log_group_write_buf
+----fil_io
+--fil_flush
+----os_file_flush
+------os_file_flush_func
+--------os_file_fsync
+----------fsync
+
+自增操作：
+log_complete_checkpoint
+recv_recovery_from_checkpoint_start_func
+recv_reset_logs//不常用
+
+DECLARE_THREAD(io_handler_thread)
+--fil_aio_wait
+----log_io_complete
+------log_io_complete_checkpoint
+--------log_complete_checkpoint
+
+读操作：从log block中读取 checkpoint_no
+log_block_get_checkpoint_no
+
+caller:
+recv_scan_log_recs
+
+if (scanned_lsn > recv_sys->scanned_lsn) {
+...
+...
+			recv_sys->scanned_lsn = scanned_lsn;
+			recv_sys->scanned_checkpoint_no
+				= log_block_get_checkpoint_no(log_block);
+...
+...
+==========================================================================
+15.0.崩溃恢复流程
+
+innobase_start_or_create_for_mysql
+--buf_pool_init//1951
+--recv_sys_create//2059
+--recv_sys_init//2060
+--open_or_create_data_files
+--os_file_get_status//check log files
+--srv_file_check_mode
+--fil_space_create/* Create the in-memory file space objects. */
+--log_group_init
+	/* Open all log files and data files in the system
+	tablespace: we keep them open until database
+	shutdown */
+--fil_open_log_and_system_tablespace_files
+--srv_undo_tablespaces_init
+
+--trx_sys_file_format_init();
+--trx_sys_create();
+--trx_sys_file_format_max_check//2390
+--buf_pool_invalidate
+--recv_recovery_from_checkpoint_start_func/recv_recovery_from_checkpoint_start//!!!!!!!!!!!!!!!!!!!!!
+----recv_find_max_checkpoint
+----log_group_read_checkpoint_info
+----recv_group_scan_log_recs
+------log_group_read_log_seg
+------//InnoDB: Doing recovery: scanned up to log sequence number 38101124325
+------recv_scan_log_recs
+--------recv_sys_add_to_parsing_buf
+--------recv_parse_log_recs
+----------recv_parse_log_rec//分析日志，
+------------mlog_parse_initial_log_record
+------------recv_parse_or_apply_log_rec_body
+----------recv_add_to_hash_table//然后加到hash表
+--------recv_apply_hashed_log_recs
+----------recv_recover_page//in buffer pool hash table
+-----------recv_recover_page_func
+-------------mtr_start(&mtr)
+-------------buf_page_get_known_nowait
+---------------rw_lock_x_lock_func_nowait_inline
+---------------mtr_memo_push(mtr, block, fix_type);
+-------------recv_parse_or_apply_log_rec_body
+-------------buf_flush_recv_note_modification
+--------------/* Make sure that committing mtr does not change the modification lsn values of page */
+--------------mtr.modifications = FALSE;
+--------------mtr_commit(&mtr);
+----------recv_read_in_area//
+------------buf_read_recv_pages
+--------------buf_read_page_low
+--------------os_aio_simulated_wake_handler_threads
+----------------fil_aio_wait//io thread aio
+------------------buf_page_io_complete
+		              if (recv_recovery_is_on()) {
+--------------------recv_recover_page(TRUE, (buf_block_t*) bpage);
+		              }
+----//2015-10-12 17:55:36 3307 [Note] InnoDB: Database was not shutdown normally!
+----//2015-10-12 17:55:36 3307 [Note] InnoDB: Starting crash recovery.
+----//2015-10-12 17:55:36 3307 [Note] InnoDB: Reading tablespace information from the .ibd files...
+----//2015-10-12 17:55:36 3307 [Note] InnoDB: Restoring possible half-written data pages 
+----//2015-10-12 17:55:36 3307 [Note] InnoDB: from the doublewrite buffer...
+----recv_init_crash_recovery
+------buf_dblwr_process
+
+--dict_boot
+--//InnoDB: 56 transaction(s) which must be rolled back or cleaned up
+--//InnoDB: in total 53 row operations to undo
+--//InnoDB: Trx id counter is 47407360
+--trx_sys_init_at_db_start//!!!!!!!!!!!!!! 
+----mtr_start(&mtr);
+----trx_lists_init_at_db_start
+------trx_resurrect_update
+--------trx_resurrect_update_in_prepared_state
+------trx_resurrect_table_locks
+----mtr_commit
+
+
+--//2015-10-12 15:20:44 22020 [Note] InnoDB: 128 rollback segment(s) are active.
+--trx_sys_create_rsegs
+
+--trx_purge_sys_create
+--recv_recovery_from_checkpoint_finish//!!!!!!!!!!!!!!!!!
+----//2015-10-12 15:16:34 22020 [Note] InnoDB: Starting an apply batch of log records to the database...
+----//InnoDB: Progress in percent: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99
+----//recv_apply_hashed_log_recs
+----recv_apply_hashed_log_recs
+------buf_page_get
+------recv_recover_page
+----//InnoDB: Starting in background the rollback of uncommitted transactions
+----trx_rollback_or_clean_recovered
+------trx_rollback_resurrected
+--------trx_cleanup_at_db_startup//case TRX_STATE_COMMITTED_IN_MEMORY:
+--------//2015-10-12 15:20:44 7ffe0a6e3700  InnoDB: Rolling back trx with id 47405770, 1 rows to undo
+--------trx_rollback_active
+----------que_run_threads(thr);
+--------//2015-10-12 17:55:40 7f003bdfb700  InnoDB: Rolling back trx with id 47437131, 1 rows to undo
+--------//2015-10-12 17:55:40 3307 [Note] InnoDB: Rollback of trx with id 47437131 completed
+--------trx_rollback_active
+----------trx_rollback_finish
+------------trx_commit  
+--------------trx_commit_low  
+----------------trx_write_serialisation_history  
+------------------trx_undo_update_cleanup  
+--------------------trx_purge_add_update_undo_to_history  
+----------------------flst_add_first
+------------------------flst_insert_before
+--------trx_free_for_background
+----2015-10-12 17:55:40 7f003bdfb700  InnoDB: Rollback of non-prepared transactions completed
+----trx_rollback_or_clean_recovered//end
+--recv_recovery_rollback_active
+
+
+trx_rollback_or_clean_recovered 可能来自 DECLARE_THREAD(trx_rollback_or_clean_all_recovered)
+
+
+        //B_chenhui2
+        fprintf(stderr,
+            "InnoDB: yyyyyyyy bpage->newest_modification is:%lx. \n",
+            (long unsigned int)bpage->newest_modification);
+        //E_chenhui2
+            
+
+(gdb) info br
+Num     Type           Disp Enb Address            What
+1       breakpoint     keep y   0x0000000000b84dd0 in buf_flush_note_modification(buf_block_t*, mtr_t*) at /home/chenhui/mysql-baidu-5623/storage/innobase/include/buf0flu.ic:63
+        breakpoint already hit 3 times
+2       breakpoint     keep y   0x0000000000ce4814 in buf_pool_invalidate() at /home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0buf.cc:5174
+3       breakpoint     keep y   0x0000000000b7b546 in recv_recovery_from_checkpoint_start_func(unsigned long, unsigned long) at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:3020
+        breakpoint already hit 1 time
+4       breakpoint     keep y   0x0000000000c7e7b9 in trx_sys_init_at_db_start() at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0sys.cc:496
+        breakpoint already hit 1 time
+5       breakpoint     keep y   0x0000000000b7bd65 in recv_recovery_from_checkpoint_finish() at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:3378
+        breakpoint already hit 1 time
+6       breakpoint     keep y   0x0000000000c78365 in trx_rollback_or_clean_recovered(unsigned long) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:734
+        breakpoint already hit 2 times
+7       breakpoint     keep y   0x0000000000b7acbf in recv_scan_log_recs(unsigned long, unsigned long, unsigned char const*, unsigned long, unsigned long, unsigned long*, unsigned long*) 
+                                                   at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:2696
+        breakpoint already hit 7 times
+8       breakpoint     keep n   0x0000000000c836fc in trx_resurrect_update(trx_t*, trx_undo_t*, trx_rseg_t*) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:633
+        breakpoint already hit 2 times
+9       breakpoint     keep y   0x0000000000b79951 in recv_apply_hashed_log_recs(unsigned long) at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:1851
+10      breakpoint     keep n   0x0000000000c781c2 in trx_rollback_resurrected(trx_t*, ulint) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:677
+        breakpoint already hit 3 times
+11      breakpoint     keep y   0x0000000000b7becb in recv_recovery_rollback_active() at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:3462
+
+
+16.recv_apply_hashed_log_recs
+
+Functions calling this function: recv_apply_hashed_log_recs
+
+  File        Function                             Line
+0 log0recv.h  recv_read_checkpoint_info_for_backup  279 recv_apply_hashed_log_recs(
+1 log0log.cc  log_preflush_pool_modified_pages     1800 recv_apply_hashed_log_recs(TRUE);
+2 log0log.cc  log_checkpoint                       2139 recv_apply_hashed_log_recs(TRUE);
+3 log0recv.cc recv_scan_log_recs                   2893 recv_apply_hashed_log_recs(FALSE);
+4 log0recv.cc recv_recovery_from_checkpoint_finish 3380 recv_apply_hashed_log_recs(TRUE);
+5 log0recv.cc recv_recovery_from_archive_start     3955 recv_apply_hashed_log_recs(FALSE);
+
+
+recv_apply_hashed_log_recs
+--recv_read_in_area
+----buf_recv_read_pages
+------buf_page_io_complete
+--------recv_recover_page
+----------recv_parse_or_apply_log_rec_body
+
+17.recv_scan_log_recs
+
+innobase_start_or_create_for_mysql
+--recv_recovery_from_checkpoint_start_func/recv_recovery_from_checkpoint_start
+----recv_group_scan_log_recs
+------recv_scan_log_recs
+--------recv_parse_log_recs
+----------recv_parse_log_rec//分析日志，然后加到hash表
+------------recv_parse_or_apply_log_rec_body
+
+
+
+
+
+
+recv_init_crash_recovery
+
+
+
+    Thread 2 (Thread 0x7f5bdafec700 (LWP 22216)):
+    #0  0x00007f5dbfd3bef3 in select () from /opt/compiler/gcc-4.8.2/lib/libc.so.6
+    #1  0x000000000098148b in os_thread_sleep (tm=tm@entry=100000)
+    #2  0x000000000096d8f8 in recv_writer_thread (arg=<optimized out>)
+    #3  0x00007f5dc0c681c3 in start_thread ()
+    #4  0x00007f5dbfd4312d in clone () from /opt/compiler/gcc-4.8.2/lib/libc.so.6
+    
+    
+    Thread 1 (Thread 0x7f5dc0f7e740 (LWP 22167)):
+    #0  0x00007f5dc0c6c3cc in pthread_cond_wait@@GLIBC_2.3.2 ()
+    #1  0x00000000009804b1 in os_cond_wait (fast_mutex=0xb702700, cond=0xb702740)
+    #2  os_event_wait_low (event=event@entry=0xb702700, 
+    #3  0x00000000009e6d70 in sync_array_wait_event (arr=0x148a0f0, index=0)
+    #4  0x00000000009e8a4c in mutex_spin_wait (mutex=mutex@entry=0xb7024d8, 
+    #5  0x0000000000969063 in mutex_enter_func (
+    #6  pfs_mutex_enter_func (
+    #7  log_write_up_to (lsn=38622821461, wait=93, flush_to_disk=1, trx=0x0)
+    #8  0x0000000000969e65 in log_write_up_to (lsn=<optimized out>, 
+    #9  0x0000000000a47845 in buf_flush_write_block_low (sync=true, 
+    #10 buf_flush_page (buf_pool=buf_pool@entry=0x7f5bf71e2058, 
+    #11 0x0000000000a4a4eb in buf_flush_single_page_from_LRU (
+    #12 0x0000000000a522c8 in buf_LRU_get_free_block (buf_pool=0x7f5bf71e2058)
+    #13 0x0000000000a37535 in buf_block_alloc (buf_pool=<optimized out>, 
+    #14 0x00000000009735c7 in mem_heap_create_block_func (type=1, n=16184, 
+    #15 mem_heap_add_block (heap=0xb705080, n=n@entry=155)
+    #16 0x000000000096dbc5 in mem_heap_alloc (n=155, heap=<optimized out>)
+    #17 recv_add_to_hash_table (type=<optimized out>, space=space@entry=0, 
+    #18 0x000000000096e31b in recv_add_to_hash_table (end_lsn=<optimized out>, 
+    #19 recv_parse_log_recs (store_to_hash=store_to_hash@entry=1)
+    #20 0x0000000000971b11 in recv_scan_log_recs (store_to_hash=1, 
+    #21 recv_group_scan_log_recs (group_scanned_lsn=<synthetic pointer>, 
+    #22 recv_recovery_from_checkpoint_start_func (
+    #23 0x00000000009e5409 in innobase_start_or_create_for_mysql ()
+    #24 0x0000000000930244 in innobase_init (p=<optimized out>)
+    #25 0x00000000005a7b41 in ha_initialize_handlerton (plugin=0x147d758)
+    #26 0x00000000006ee740 in plugin_initialize (plugin=plugin@entry=0x147d758)
+    #27 0x00000000006f3bc8 in plugin_init (
+    #28 0x00000000005a11d2 in init_server_components ()
+    #29 mysqld_main (argc=98, argv=0x13ad0c8)
+    #30 0x00007f5dbfc7dbd5 in __libc_start_main ()
+    #31 0x00000000005956d5 in _start ()
+    
+
+18.总结所有的redo log 的类型(see more in 1.mtr.txt)
+mtr0mtr.h
+
+		|//** @name Log item types
+		|The log items are declared 'byte' so that the compiler can warn if val
+		|and type parameters are switched in a call to mlog_write_ulint. NOTE!
+		|For 1 - 8 bytes, the flag value must give the length also! @{ */
+		|#define	MLOG_SINGLE_REC_FLAG	128		/*!< if the mtr contains only
+		|						one log record for one page,
+		|						i.e., write_initial_log_record
+		|						has been called only once,
+		|						this flag is ORed to the type
+		|						of that first log record */
+		|#define	MLOG_1BYTE		(1)		/*!< one byte is written */
+		|#define	MLOG_2BYTES		(2)		/*!< 2 bytes ... */
+		|#define	MLOG_4BYTES		(4)		/*!< 4 bytes ... */
+		|#define	MLOG_8BYTES		(8)		/*!< 8 bytes ... */
+		|#define	MLOG_REC_INSERT		((byte)9)	/*!< record insert */
+		|#define	MLOG_REC_CLUST_DELETE_MARK ((byte)10)	/*!< mark clustered index record
+		|						deleted */
+		|#define	MLOG_REC_SEC_DELETE_MARK ((byte)11)	/*!< mark secondary index record
+		|						deleted */
+		|#define MLOG_REC_UPDATE_IN_PLACE ((byte)13)	/*!< update of a record,
+		|						preserves record field sizes */
+		|#define MLOG_REC_DELETE		((byte)14)	/*!< delete a record from a
+		|						page */
+		|#define	MLOG_LIST_END_DELETE	((byte)15)	/*!< delete record list end on
+		|						index page */
+		|#define	MLOG_LIST_START_DELETE	((byte)16)	/*!< delete record list start on
+		|						index page */
+		|#define	MLOG_LIST_END_COPY_CREATED ((byte)17)	/*!< copy record list end to a
+		|						new created index page */
+		|#define	MLOG_PAGE_REORGANIZE	((byte)18)	/*!< reorganize an
+		|						index page in
+		|						ROW_FORMAT=REDUNDANT */
+		|#define MLOG_PAGE_CREATE	((byte)19)	/*!< create an index page */
+		|#define	MLOG_UNDO_INSERT	((byte)20)	/*!< insert entry in an undo
+		|						log */
+		|#define MLOG_UNDO_ERASE_END	((byte)21)	/*!< erase an undo log
+		|						page end */
+		|#define	MLOG_UNDO_INIT		((byte)22)	/*!< initialize a page in an
+		|						undo log */
+		|#define MLOG_UNDO_HDR_DISCARD	((byte)23)	/*!< discard an update undo log
+		|						header */
+		|#define	MLOG_UNDO_HDR_REUSE	((byte)24)	/*!< reuse an insert undo log
+		|						header */
+		|#define MLOG_UNDO_HDR_CREATE	((byte)25)	/*!< create an undo
+		|						log header */
+		|#define MLOG_REC_MIN_MARK	((byte)26)	/*!< mark an index
+		|						record as the
+		|						predefined minimum
+		|						record */
+		|#define MLOG_IBUF_BITMAP_INIT	((byte)27)	/*!< initialize an
+		|						ibuf bitmap page */
+		|/*#define	MLOG_FULL_PAGE	((byte)28)	full contents of a page */
+		|#ifdef UNIV_LOG_LSN_DEBUG
+		|# define MLOG_LSN		((byte)28)	/* current LSN */
+		|#endif
+		|#define MLOG_INIT_FILE_PAGE	((byte)29)	/*!< this means that a
+		|						file page is taken
+		|						into use and the prior
+		|						contents of the page
+		|						should be ignored: in
+		|						recovery we must not
+		|						trust the lsn values
+		|						stored to the file
+		|						page */
+		|#define MLOG_WRITE_STRING	((byte)30)	/*!< write a string to
+		|						a page */
+		|#define	MLOG_MULTI_REC_END	((byte)31)	/*!< if a single mtr writes
+		|						several log records,
+		|						this log record ends the
+		|						sequence of these records */
+		|#define MLOG_DUMMY_RECORD	((byte)32)	/*!< dummy log record used to
+		|						pad a log block full */
+		|#define MLOG_FILE_CREATE	((byte)33)	/*!< log record about an .ibd
+		|						file creation */
+		|#define MLOG_FILE_RENAME	((byte)34)	/*!< log record about an .ibd
+		|						file rename */
+		|#define MLOG_FILE_DELETE	((byte)35)	/*!< log record about an .ibd
+		|						file deletion */
+		|#define MLOG_COMP_REC_MIN_MARK	((byte)36)	/*!< mark a compact
+		|						index record as the
+		|						predefined minimum
+		|						record */
+		|#define MLOG_COMP_PAGE_CREATE	((byte)37)	/*!< create a compact
+		|						index page */
+		|#define MLOG_COMP_REC_INSERT	((byte)38)	/*!< compact record insert */
+		|#define MLOG_COMP_REC_CLUST_DELETE_MARK ((byte)39)
+		|						/*!< mark compact
+		|						clustered index record
+		|						deleted */
+		|#define MLOG_COMP_REC_SEC_DELETE_MARK ((byte)40)/*!< mark compact
+		|						secondary index record
+		|						deleted; this log
+		|						record type is
+		|						redundant, as
+		|						MLOG_REC_SEC_DELETE_MARK
+		|						is independent of the
+		|						record format. */
+		|#define MLOG_COMP_REC_UPDATE_IN_PLACE ((byte)41)/*!< update of a
+		|						compact record,
+		|						preserves record field
+		|						sizes */
+		|#define MLOG_COMP_REC_DELETE	((byte)42)	/*!< delete a compact record
+		|						from a page */
+		|#define MLOG_COMP_LIST_END_DELETE ((byte)43)	/*!< delete compact record list
+		|						end on index page */
+		|#define MLOG_COMP_LIST_START_DELETE ((byte)44)	/*!< delete compact record list
+		|						start on index page */
+		|#define MLOG_COMP_LIST_END_COPY_CREATED ((byte)45)
+		|						/*!< copy compact
+		|						record list end to a
+		|						new created index
+		|						page */
+		|#define MLOG_COMP_PAGE_REORGANIZE ((byte)46)	/*!< reorganize an index page */
+		|#define MLOG_FILE_CREATE2	((byte)47)	/*!< log record about creating
+		|						an .ibd file, with format */
+		|#define MLOG_ZIP_WRITE_NODE_PTR	((byte)48)	/*!< write the node pointer of
+		|						a record on a compressed
+		|						non-leaf B-tree page */
+		|#define MLOG_ZIP_WRITE_BLOB_PTR	((byte)49)	/*!< write the BLOB pointer
+		|						of an externally stored column
+		|						on a compressed page */
+		|#define MLOG_ZIP_WRITE_HEADER	((byte)50)	/*!< write to compressed page
+		|						header */
+		|#define MLOG_ZIP_PAGE_COMPRESS	((byte)51)	/*!< compress an index page */
+		|#define MLOG_ZIP_PAGE_COMPRESS_NO_DATA	((byte)52)/*!< compress an index page
+		|						without logging it's image */
+		|#define MLOG_ZIP_PAGE_REORGANIZE ((byte)53)	/*!< reorganize a compressed
+		|						page */
+		|#define MLOG_BIGGEST_TYPE	((byte)53)	/*!< biggest value (used in
+		|						assertions) */
+		|/* @} */
+
+
+16.MySQL shutdown流程，关闭流程
+clone.
+--start_thread
+----pfs_spawn_thread
+------kill_server_thread
+--------kill_server
+----------unireg_end
+------------clean_up
+--------------clean_up
+----------------plugin_shutdown
+------------------reap_plugins
+--------------------plugin_deinitialize
+----------------------ha_finalize_handlerton
+------------------------innobase_init//innobase_hton->panic = innobase_end;
+--------------------------innobase_end
+----------------------------innobase_shutdown_for_mysql
+------------------------------logs_empty_and_mark_files_at_shutdown
+--------------------------------log_make_checkpoint_at
+------------------------------srv_wake_master_thread
+------------------------------srv_purge_wakeup
+------------------------------os_aio_wake_all_threads_at_shutdown
+------------------------------ibuf_close();
+------------------------------log_shutdown();
+------------------------------lock_sys_close();
+------------------------------trx_sys_file_format_close();
+------------------------------trx_sys_close();
+------------------------------dict_close();         
+------------------------------btr_search_sys_free();
+------------------------------os_aio_free();    
+------------------------------que_close();      
+------------------------------row_mysql_close();
+------------------------------srv_mon_free();   
+------------------------------sync_close();
+--------------------------------pfs_mutex_free_func
+----------------------------------mutex_free_func     
+------------------------------srv_free();       
+------------------------------fil_close();      
+------------------------------os_sync_free
+------------------------------pars_lexer_close();                   
+------------------------------log_mem_free();                       
+------------------------------buf_pool_free(srv_buf_pool_instances);
+--------------------------------buf_pool_free_instance
+----------------------------------buf_page_free_descriptor
+----------------------------------mem_free(buf_pool->chunks);
+----------------------------------ha_clear(buf_pool->page_hash);
+----------------------------------hash_table_free(buf_pool->page_hash);
+----------------------------------hash_table_free(buf_pool->zip_hash);
+------------------------------mem_close();                          
+------------------------------ut_free_all_mem
+
+
+#0  0x00007f7886b94e24 in __lll_lock_wait ()
+#1  0x00007f7886b9229e in _L_lock_12 ()
+#2  0x00007f7886b921b7 in pthread_cond_destroy@@GLIBC_2.3.2 ()
+#3  0x0000000000981a92 in os_cond_destroy (cond=0x14f0160)
+#4  os_event_free (event=0x14f0120)
+#5  0x00000000009e9dfc in mutex_free_func (mutex=0x7f76bd1081c0)
+#6  pfs_mutex_free_func (mutex=0x7f76bd1081c0)
+#7  sync_close ()
+#8  0x00000000009e701b in innobase_shutdown_for_mysql ()
+#9  0x0000000000929f43 in innobase_end (hton=<optimized out>,
+#10 0x00000000005a7adb in ha_finalize_handlerton (plugin=0x147e758)
+#11 0x00000000006ef3b9 in plugin_deinitialize (ref_check=true,
+#12 reap_plugins () at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1023
+#13 0x00000000006f138b in plugin_shutdown ()
+#14 0x000000000059b523 in clean_up (print_message=print_message@entry=true)
+#15 0x000000000059b87d in clean_up (print_message=true)
+#16 unireg_end () at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:1753
+#17 0x00000000005a07ab in kill_server (sig_ptr=0x0)
+#18 0x00000000005a087e in kill_server_thread (arg=arg@entry=0x7f7886ea2de0)
+#19 0x000000000091b403 in pfs_spawn_thread (arg=0x7f7554005250)
+#20 0x00007f7886b8e1c3 in start_thread ()
+#21 0x00007f7885c6912d in clone () from /opt/compiler/gcc-4.8.2/lib/libc.so.6
+
+
+21.判断是否要进行崩溃恢复
+
+innobase_start_or_create_for_mysql
+--open_or_create_data_files
+----fil_read_first_page
+--recv_recovery_from_checkpoint_start_func
+
+
+shutdown时记录flush lsn
+innobase_shutdown_for_mysql
+--logs_empty_and_mark_files_at_shutdown
+----log_buffer_flush_to_disk
+----fil_write_flushed_lsn_to_data_files
+
+   1791     //B_chenhui2
+   1792     if (srv_buffer_pool_shm_key) {
+   1793         buf_shm_info_t* shm_info;
+   1794 
+   1795         ut_a(buf_pool->n_chunks == 1);
+   1796 
+   1797         chunk = buf_pool->chunks;
+   1798         shm_info = (buf_shm_info_t*)chunk->mem;
+   1799         shm_info->flush_lsn = lsn;
+   1800     }
+   1801     //E_chenhui2
+
+   2170         void* ptr = NULL;
+   2171         if (!srv_buffer_pool_shm_key){
+   2172             ptr = &buf_pool_ptr[i];
+   2173         }else{
+   2174             ptr = &buf_pool_shm_ptrs[i];
+   
+    240 //typedef buf_pool_t* p_buf_pool;
+    241 UNIV_INTERN p_buf_pool* buf_pool_shm_ptrs;   
+    
+22.trx_undo_update_cleanup
+
+23.min_flushed_lsn/max_flushed_lsn
+
+open_or_create_data_files
+--fil_read_first_page
+--mach_read_from_8(page + FIL_PAGE_FILE_FLUSH_LSN);
+recv_recovery_from_checkpoint_start_func
+
+		err = recv_recovery_from_checkpoint_start(
+			LOG_CHECKPOINT, LSN_MAX,
+			min_flushed_lsn, max_flushed_lsn);
+			
+#define LOG_CHECKPOINT	78656949 = 4B035B5
+#define LSN_MAX         IB_UINT64_MAX
+/** Maximum value for ib_uint64_t */
+#define IB_UINT64_MAX       ((ib_uint64_t) (~0ULL))
+
+
+write LSN流程：
+搜索FIL_PAGE_FILE_FLUSH_LSN，看看到底在哪里写入，在正常关闭的流程中，将该值记录在shm_info中
+
+callers:
+checkpoint_now_set//一个变量，不知道咋用。innodb_log_checkpoint_now
+logs_empty_and_mark_files_at_shutdown
+innobase_start_or_create_for_mysql
+
+innobase_shutdown_for_mysql
+--logs_empty_and_mark_files_at_shutdown
+----fil_write_flushed_lsn_to_data_files
+------fil_write_lsn_and_arch_no_to_file
+
+
+24.recv_parse_log_recs
+--recv_recovery_from_checkpoint_start_func/recv_recovery_from_checkpoint_start//!!!!!!!!!!!!!!!!!!!!!
+----recv_find_max_checkpoint
+----log_group_read_checkpoint_info
+----recv_group_scan_log_recs
+------log_group_read_log_seg
+------//InnoDB: Doing recovery: scanned up to log sequence number 38101124325
+------recv_scan_log_recs
+--------recv_sys_add_to_parsing_buf
+--------recv_parse_log_recs
+----------recv_parse_log_rec//分析日志，
+------------mlog_parse_initial_log_record
+------------recv_parse_or_apply_log_rec_body
+----------recv_add_to_hash_table//然后加到hash表
+--------recv_apply_hashed_log_recs
+----------recv_recover_page//in buffer pool hash table
+-----------recv_recover_page_func
+-------------mtr_start(&mtr)
+-------------buf_page_get_known_nowait
+---------------rw_lock_x_lock_func_nowait_inline
+---------------mtr_memo_push(mtr, block, fix_type);
+-------------recv_parse_or_apply_log_rec_body
+-------------buf_flush_recv_note_modification
+--------------/* Make sure that committing mtr does not change the modification lsn values of page */
+--------------mtr.modifications = FALSE;
+--------------mtr_commit(&mtr);
+----------recv_read_in_area//
+------------buf_read_recv_pages
+--------------buf_read_page_low
+--------------os_aio_simulated_wake_handler_threads
+----------------fil_aio_wait//io thread aio
+------------------buf_page_io_complete
+		              if (recv_recovery_is_on()) {
+--------------------recv_recover_page(TRUE, (buf_block_t*) bpage);
+		              }
+
+
+25.init_server_components
+
+获取配置函数。
+
+init_server_components () at /home/chenhui/dba_7-0-48_BRANCH/sql/mysqld.cc:4847
+4847      if (plugin_init(&remaining_argc, remaining_argv,
+(gdb) 
+4854      plugins_are_initialized= TRUE;  /* Don't separate from init function */
+(gdb) 
+4857      if (remaining_argc > 1)
+(gdb) 
+4863        };
+(gdb) 
+4868        my_getopt_skip_unknown= 0;
+(gdb) 
+4870        if ((ho_error= handle_options(&remaining_argc, &remaining_argv, no_opts,
+(gdb) 
+4872          unireg_abort(ho_error);
+
+
+(gdb) bt
+#0  plugin_initialize (plugin=0x1930ed0) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_plugin.cc:1197
+#1  0x00000000007f1b65 in plugin_init (argc=0x17fc4c8 <remaining_argc>, argv=0x185e598, flags=0) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_plugin.cc:1431
+#2  0x000000000062f496 in init_server_components () at /home/chenhui/dba_7-0-48_BRANCH/sql/mysqld.cc:4849
+#3  0x0000000000630393 in mysqld_main (argc=96, argv=0x185e598) at /home/chenhui/dba_7-0-48_BRANCH/sql/mysqld.cc:5444
+#4  0x00000000006259e0 in main (argc=1, argv=0x7fffffffe6f8) at /home/chenhui/dba_7-0-48_BRANCH/sql/main.cc:25
+
+
+=========================================================================================
+100.接下来要做的事
+--flush_bit
+--check_point_num
+--checkpoint函数流程整理
+--log_write_up_to
+--checkpoint_lsn和minbufLsn的区别。。//oldest_modification_lsn
+--undo log学习。。。。
+--recovery流程整理
+--mini-trx的内部流程，debug，看看写page，redo log，undo log到底是怎么搞的？？？？
+--总结所有的redo log 的类型
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,40 @@
+1.fut_get_ptr（）
+
+fut_get_ptr（）  ===> trx_undo_page_get/trx_undo_page_get_s_latched //fut0fut.ic line 50
+
+latch: rw_lock_create(PFS_NOT_INSTRUMENTED, &block->lock, SYNC_LEVEL_VARYING);
+
+holder: trx_undo_page_get//who is waiting for  log_reserve_and_write_fast ==> log_sys->mutex
+holder 这里申请的是 undo log page
+
+所以，fut_get_ptr这里也应该是要获取 undo log page
+
+fut_get_ptr
+--buf_page_get(space, zip_size, addr.page, rw_latch, mtr);
+----buf_page_get_gen
+--buf_block_get_frame
+
+
+caller都是底层的处理extent，segment，tablespace的代码
+
+Functions calling this function: fut_get_ptr
+
+  File       Function                Line
+0 fsp0fsp.cc xdes_lst_get_descriptor  571 descr = fut_get_ptr(space, zip_size, lst_node, RW_X_LATCH, mtr)
+1 fsp0fsp.cc fseg_inode_try_get      1859 inode = fut_get_ptr(space, zip_size, inode_addr, RW_X_LATCH, mtr);
+2 fsp0fsp.cc fsp_validate            3882 seg_inode_page = fut_get_ptr(
+3 fsp0fsp.cc fsp_validate            3927 seg_inode_page = fut_get_ptr(
+4 fsp0fsp.cc fsp_print               4062 seg_inode_page = fut_get_ptr(
+5 fsp0fsp.cc fsp_print               4099 seg_inode_page = fut_get_ptr(
+6 fut0lst.cc flst_add_last            103 last_node = fut_get_ptr(space, zip_size, last_addr,
+7 fut0lst.cc flst_add_first           146 first_node = fut_get_ptr(space, zip_size, first_addr,
+8 fut0lst.cc flst_insert_after        196 node3 = fut_get_ptr(space, zip_size,
+9 fut0lst.cc flst_insert_before       250 node1 = fut_get_ptr(space, zip_size, node1_addr,
+a fut0lst.cc flst_remove              303 node1 = fut_get_ptr(space, zip_size,
+b fut0lst.cc flst_remove              322 node3 = fut_get_ptr(space, zip_size,
+c fut0lst.cc flst_cut_end             378 node1 = fut_get_ptr(space,
+d fut0lst.cc flst_validate            478 node = fut_get_ptr(space, zip_size,
+e fut0lst.cc flst_validate            493 node = fut_get_ptr(space, zip_size,
+
+
+

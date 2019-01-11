@@ -1,0 +1,56 @@
+1.row_insert_for_mysql
+
+mysql_execute_command
+--mysql_insert
+----write_record
+------handler::ha_write_row
+--------ha_innobase::write_row
+----------row_insert_for_mysql
+
+
+2.row_upd_clust_rec
+row_upd_step
+--row_upd
+----row_upd_clust_step
+------row_upd_clust_rec
+--------btr_cur_optimistic_update
+
+	
+3.row_upd_step
+
+caller:
+ib_update_row_with_lock_retry
+que_thr_step
+row_update_for_mysql
+row_update_cascade_for_mysql
+
+4.row_update_for_mysql
+
+mysql_execute_command
+--mysql_update/write_record
+----handler::ha_update_row
+------ha_innobase::update_row
+--------row_update_for_mysql
+
+
+#17 0x0000000000745ef2 in mysql_update(THD*, TABLE_LIST*, List<Item>&, List<Item>&, Item*, unsigned int, st_order*, unsigned long long, enum_duplicates, bool, unsigned long long*, unsigned long long*) ()
+#18 0x00000000006da27a in mysql_execute_command(THD*) ()
+#19 0x00000000006eb052 in Prepared_statement::execute(String*, bool) ()
+#20 0x00000000006ef2ca in Prepared_statement::execute_loop(String*, bool, unsigned char*, unsigned char*) ()
+#21 0x00000000006ef994 in mysqld_stmt_execute(THD*, char*, unsigned int) ()
+#22 0x00000000006de574 in dispatch_command(enum_server_command, THD*, char*, unsigned int) ()
+#23 0x00000000006a641d in do_handle_one_connection(THD*) ()
+#24 0x00000000006a6552 in handle_one_connection ()
+#25 0x0000000000aa86f7 in pfs_spawn_thread ()
+#26 0x00007f9cfd11e9d1 in start_thread () from /lib64/libpthread.so.0
+#27 0x00007f9cfc088b5d in clone () from /lib64/libc.so.6
+
+5.row_search_for_mysql
+
+
+
+
+
+
+
+

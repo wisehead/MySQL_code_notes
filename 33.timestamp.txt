@@ -1,0 +1,384 @@
+https://dev.mysql.com/doc/internals/en/date-and-time-data-type-representation.html
+
+1.TIME_to_timestamp
+Field::get_timestamp
+--get_date
+--datetime_to_timeval
+----datetime_with_no_zero_in_date_to_timeval
+------TIME_to_timestamp
+--------TIME_to_gmt_sec
+
+
+
+ha_innobase::rnd_next
+--ha_innobase::general_fetch
+----row_search_for_mysql
+
+2.
+(gdb) info br
+Num     Type           Disp Enb Address            What
+1       breakpoint     keep n   0x000000000085395e in mysql_checksum_table(THD*, TABLE_LIST*, st_ha_check_opt*) at /home/chenhui/mysql-baidu-5623/sql/sql_table.cc:9141
+        breakpoint already hit 5 times
+2       breakpoint     keep n   0x0000000000648698 in handler::ha_rnd_next(unsigned char*) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:2682
+        breakpoint already hit 19 times
+3       breakpoint     keep n   <PENDING>          rnd_next
+4       breakpoint     keep n   0x0000000000b89b64 in ha_innobase::rnd_next(unsigned char*) at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:8047
+        breakpoint already hit 18 times
+5       breakpoint     keep n   0x0000000000b89615 in ha_innobase::general_fetch(unsigned char*, unsigned int, unsigned int) 
+                                                   at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:7836
+        breakpoint already hit 11 times
+6       breakpoint     keep n   0x0000000000b89986 in ha_innobase::index_first(unsigned char*) at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:7951
+        breakpoint already hit 5 times
+7       breakpoint     keep n   0x0000000000ca82d5 in row_search_for_mysql(unsigned char*, unsigned long, row_prebuilt_t*, unsigned long, unsigned long) 
+                                                   at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0sel.cc:3655
+        breakpoint already hit 5 times
+8       breakpoint     keep n   0x0000000000ca6b79 in row_sel_store_mysql_rec(unsigned char*, row_prebuilt_t*, rec_t const*, ulint, dict_index_t const*, ulint const*) 
+                                                   at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0sel.cc:2924
+        breakpoint already hit 2 times
+9       breakpoint     keep n   0x0000000000caa591 in row_search_for_mysql(unsigned char*, unsigned long, row_prebuilt_t*, unsigned long, unsigned long) 
+                                                   at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0sel.cc:4802
+        breakpoint already hit 2 times
+10      breakpoint     keep n   0x0000000000b889b0 in ha_innobase::index_read(unsigned char*, unsigned char const*, unsigned int, ha_rkey_function) 
+                                                   at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:7511
+11      breakpoint     keep n   <PENDING>          row_sel_store_mysql_field
+12      breakpoint     keep n   0x0000000000ca656d in row_sel_store_mysql_field_func(unsigned char*, row_prebuilt_t*, rec_t const*, dict_index_t const*, ulint const*, ulint, mysql_row_templ_t const*) at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0sel.cc:2778
+        breakpoint already hit 1 time
+13      breakpoint     keep n   <MULTIPLE>   
+
+
+
+4.
+mysql 5.6
+
+$19 = "\000\000\000\000\003\000\000\000\001\023\023\016\213\000\000\002\177\001\020gaojiaR\302\352\000\a\000\000\000(\377\224\000\000\000\000\003\001\000\000\001\023\023\017\214\000\000\001\200\001\020chenhuiU\242\217", '\000' <repeats 34 times>
+
+(gdb) p row_crc
+$101 = 839600346
+(gdb) p f->ptr
+$102 = (uchar *) 0x7fda580114a6 "R\302\352"
+(gdb) p f->ptr[0]
+$103 = 82 'R'
+(gdb) p f->ptr[1]
+$104 = 194 '\302'
+(gdb) p f->ptr[2]
+$105 = 234 '\352'
+(gdb) p f->ptr[3]
+$106 = 0 '\000'
+
+mysql 5.1
+$16 = "\000\000\000\000\003\000\000\000\000\000\a\004\200\000\000\000-\001\020gaojiaR\302\352\000\a\000\000\000 \377\270\000\000\000\000\003\001\000\000\000\000\a\005\200\000\000\000-\001\020chenhuiU\242\217", '\000' <repeats 34 times>
+
+(gdb) p t->s->fields
+$8 = 2
+(gdb) n
+8077                  switch (f->type()) {
+(gdb) 
+8090                      row_crc= my_checksum(row_crc, f->ptr, f->pack_length());
+(gdb) p f->type()
+$9 = MYSQL_TYPE_TIMESTAMP
+(gdb) p row_crc  
+$10 = 2952910694
+(gdb) p f->ptr
+$11 = (uchar *) 0x7f600400ac8e ""
+(gdb) p f->pack_length()
+$12 = 4
+(gdb) p f->ptr[0]       
+$13 = 0 '\000'
+(gdb) p f->ptr[1]
+$14 = 234 '\352'//ea
+(gdb) p f->ptr[2]
+$15 = 194 '\302'//c2
+(gdb) p f->ptr[3]
+$16 = 82 'R' //52
+
+3082 0000c090  01 10 67 61 6f 6a 69 61  52 c2 ea 00 00 00 00 00  |..gaojiaR.......| 
+
+在磁盘是大端对其，
+
+5.
+(gdb) bt
+#0  rec_get_nth_field_offs (offsets=0x7fdc746f0890, n=4, len=0x7fdc746f07b8) at /home/chenhui/mysql-baidu-5623/storage/innobase/include/rem0rec.ic:1043
+#1  0x0000000000ca6977 in row_sel_store_mysql_field_func (mysql_rec=0x7fda58011468 "\376\006gaojiai", prebuilt=0x7fda58038c68, rec=0x7fdaa4d640c7 "", index=0x7fda58041b88, 
+    offsets=0x7fdc746f0890, field_no=4, templ=0x7fda5803a810) at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0sel.cc:2842
+#2  0x0000000000ca6d07 in row_sel_store_mysql_rec (mysql_rec=0x7fda58011468 "\376\006gaojiai", prebuilt=0x7fda58038c68, rec=0x7fdaa4d640c7 "", rec_clust=0, index=0x7fda58041b88, 
+    offsets=0x7fdc746f0890) at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0sel.cc:2943
+#3  0x0000000000caa97e in row_search_for_mysql (buf=0x7fda58011468 "\376\006gaojiai", mode=1, prebuilt=0x7fda58038c68, match_mode=0, direction=0)
+    at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0sel.cc:4911
+#4  0x0000000000b88d10 in ha_innobase::index_read (this=0x7fda580111a0, buf=0x7fda58011468 "\376\006gaojiai", key_ptr=0x0, key_len=0, find_flag=HA_READ_AFTER_KEY)
+    at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:7587
+#5  0x0000000000b899e0 in ha_innobase::index_first (this=0x7fda580111a0, buf=0x7fda58011468 "\376\006gaojiai")
+    at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:7954
+#6  0x0000000000b89bc4 in ha_innobase::rnd_next (this=0x7fda580111a0, buf=0x7fda58011468 "\376\006gaojiai") at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:8051
+#7  0x0000000000648796 in handler::ha_rnd_next (this=0x7fda580111a0, buf=0x7fda58011468 "\376\006gaojiai") at /home/chenhui/mysql-baidu-5623/sql/handler.cc:2687
+#8  0x0000000000853df5 in mysql_checksum_table (thd=0x1291b710, tables=0x7fda580050e8, check_opt=0x1291e700) at /home/chenhui/mysql-baidu-5623/sql/sql_table.cc:9237
+#9  0x00000000007e0218 in mysql_execute_command (thd=0x1291b710) at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:3277
+#10 0x00000000007e8552 in mysql_parse (thd=0x1291b710, rawbuf=0x7fda58005010 "checksum table test", length=19, parser_state=0x7fdc746f26e0)
+    at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:6357
+#11 0x00000000007db993 in dispatch_command (command=COM_QUERY, thd=0x1291b710, packet=0x129f2f21 "", packet_length=19) at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:1332
+#12 0x00000000007dab36 in do_command (thd=0x1291b710) at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:1034
+#13 0x00000000007a31a1 in do_handle_one_connection (thd_arg=0x1291b710) at /home/chenhui/mysql-baidu-5623/sql/sql_connect.cc:982
+#14 0x00000000007a2cb7 in handle_one_connection (arg=0x1291b710) at /home/chenhui/mysql-baidu-5623/sql/sql_connect.cc:898
+#15 0x0000000000b043e0 in pfs_spawn_thread (arg=0x1285d940) at /home/chenhui/mysql-baidu-5623/storage/perfschema/pfs.cc:1860
+#16 0x00007fdc743de1c3 in ?? ()
+#17 0x0000000000000000 in ?? ()
+
+6.
+btr_pcur_get_rec
+
+
+
+
+
+
+7.row_sel_store_mysql_rec
+(gdb) bt
+#0  row_sel_field_store_in_mysql_format (dest=0x7ff7b000ac8e "", templ=0x7ff859c2bf28, data=0x7ff7d3d000e1 "U\242\217", len=4) at row/row0sel.c:2474
+#1  0x00000000007dcc71 in row_sel_store_mysql_rec (mysql_rec=0x7ff7b000ac50 "\376\achenhui", prebuilt=0x7ff859c2a8b8, rec=0x7ff7d3d000c7 "", rec_clust=0, offsets=0x7ff873934040)
+    at row/row0sel.c:2694
+#2  0x00000000007df526 in row_search_for_mysql (buf=0x7ff7b000ac50 "\376\achenhui", mode=1, prebuilt=0x7ff859c2a8b8, match_mode=0, direction=1) at row/row0sel.c:4351
+#3  0x000000000074f272 in general_fetch (match_mode=0, direction=1, buf=0x7ff7b000ac50 "\376\achenhui", this=0x7ff7b000aa60) at handler/ha_innodb.cc:5102
+#4  ha_innobase::rnd_next (this=0x7ff7b000aa60, buf=0x7ff7b000ac50 "\376\achenhui") at handler/ha_innodb.cc:5291
+#5  0x00000000006be8dc in mysql_checksum_table (thd=thd@entry=0x60b0d20, tables=tables@entry=0x7ff7b0004ab8, check_opt=check_opt@entry=0x60b3370) at sql_table.cc:8051
+#6  0x00000000005cfd57 in mysql_execute_command (thd=thd@entry=0x60b0d20) at sql_parse.cc:3247
+#7  0x00000000005d52fb in mysql_parse (thd=thd@entry=0x60b0d20, rawbuf=0x7ff7b00049e0 "checksum table test", length=19, found_semicolon=found_semicolon@entry=0x7ff873935860)
+    at sql_parse.cc:6281
+#8  0x00000000005d67a8 in dispatch_command (command=<optimized out>, command@entry=COM_QUERY, thd=thd@entry=0x60b0d20, packet=packet@entry=0x60ffb81 "", 
+    packet_length=packet_length@entry=19) at sql_parse.cc:1283
+#9  0x00000000005d741c in do_command (thd=0x60b0d20) at sql_parse.cc:897
+#10 0x00000000005c5f1e in handle_one_connection (arg=<optimized out>) at sql_connect.cc:1454
+#11 0x00007ff8736a31c3 in ?? ()
+#12 0x0000000000000000 in ?? ()
+
+
+8.在函数 row_sel_field_store_in_mysql_format 中
+   2474     if (templ->type == DATA_INT) {
+   2475         /* Convert integer data from Innobase to a little-endian
+   2476         format, sign bit restored to normal */
+   2477 
+   2478         ptr = dest + len;
+   2479 
+   2480         for (;;) {
+   2481             ptr--;
+   2482             *ptr = *data;
+   2483             if (ptr == dest) {
+   2484                 break;
+   2485             }
+   2486             data++;
+   2487         }
+   
+   5.6中，templ->type是DATA_FIXBINARY
+   5.1中，templ->type是DATA_INT
+   
+9.p this->prebuilt->mysql_template[1]来自于 index->table->cols
+p *index->table->cols
+
+(gdb) bt
+build_template_field
+#0  ha_innobase::build_template (this=0x7f5bd8011220, whole_row=false) at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:6429
+#1  0x0000000000b89573 in ha_innobase::change_active_index (this=0x7f5bd8011220, keynr=64) at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:7788
+#2  0x0000000000b89ace in ha_innobase::rnd_init (this=0x7f5bd8011220, scan=true) at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:8006
+#3  0x000000000064854d in handler::ha_rnd_init (this=0x7f5bd8011220, scan=true) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:2641
+#4  0x0000000000853d6d in mysql_checksum_table (thd=0x1291bdd0, tables=0x7f5bd8005168, check_opt=0x1291edc0) at /home/chenhui/mysql-baidu-5623/sql/sql_table.cc:9220
+#5  0x00000000007e0218 in mysql_execute_command (thd=0x1291bdd0) at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:3277
+#6  0x00000000007e8552 in mysql_parse (thd=0x1291bdd0, rawbuf=0x7f5bd8005090 "checksum table test", length=19, parser_state=0x7f5df225b6e0)
+    at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:6357
+#7  0x00000000007db993 in dispatch_command (command=COM_QUERY, thd=0x1291bdd0, packet=0x129f3861 "", packet_length=19) at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:1332
+#8  0x00000000007dab36 in do_command (thd=0x1291bdd0) at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:1034
+#9  0x00000000007a31a1 in do_handle_one_connection (thd_arg=0x1291bdd0) at /home/chenhui/mysql-baidu-5623/sql/sql_connect.cc:982
+#10 0x00000000007a2cb7 in handle_one_connection (arg=0x1291bdd0) at /home/chenhui/mysql-baidu-5623/sql/sql_connect.cc:898
+#11 0x0000000000b043e0 in pfs_spawn_thread (arg=0x1286a880) at /home/chenhui/mysql-baidu-5623/storage/perfschema/pfs.cc:1860
+#12 0x00007f5df1f781c3 in ?? ()
+#13 0x0000000000000000 in ?? ()
+
+10.创建prebuilt 
+Breakpoint 19, row_create_prebuilt (table=0x7f323c0340d8, mysql_row_len=66) at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0mysql.cc:719
+719             uint            srch_key_len = 0;
+(gdb) bt
+#0  row_create_prebuilt (table=0x7f323c0340d8, mysql_row_len=66) at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0mysql.cc:719
+#1  0x0000000000b8445c in ha_innobase::open (this=0x7f321c0111a0, name=0x7f321c00f620 "./test/test", mode=2, test_if_locked=18)
+    at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:4972
+#2  0x0000000000647e4b in handler::ha_open (this=0x7f321c0111a0, table_arg=0x7f321c0108b0, name=0x7f321c00f620 "./test/test", mode=2, test_if_locked=18)
+    at /home/chenhui/mysql-baidu-5623/sql/handler.cc:2505
+#3  0x000000000089da04 in open_table_from_share (thd=0x1291b0e0, share=0x7f321c00f2b0, alias=0x7f321c0050e0 "test", db_stat=39, prgflag=44, ha_open_flags=16, outparam=0x7f321c0108b0, 
+    is_create_table=false) at /home/chenhui/mysql-baidu-5623/sql/table.cc:2344
+#4  0x000000000077368a in open_table (thd=0x1291b0e0, table_list=0x7f321c0050e8, ot_ctx=0x7f34382201e0) at /home/chenhui/mysql-baidu-5623/sql/sql_base.cc:3159
+#5  0x0000000000775d3a in open_and_process_table (thd=0x1291b0e0, lex=0x1291d318, tables=0x7f321c0050e8, counter=0x7f34382202e4, flags=0, prelocking_strategy=0x7f3438220320, 
+    has_prelocking_list=false, ot_ctx=0x7f34382201e0) at /home/chenhui/mysql-baidu-5623/sql/sql_base.cc:4648
+#6  0x00000000007769b4 in open_tables (thd=0x1291b0e0, start=0x7f34382202a0, counter=0x7f34382202e4, flags=0, prelocking_strategy=0x7f3438220320)
+    at /home/chenhui/mysql-baidu-5623/sql/sql_base.cc:5081
+#7  0x000000000077790d in open_and_lock_tables (thd=0x1291b0e0, tables=0x7f321c0050e8, derived=false, flags=0, prelocking_strategy=0x7f3438220320)
+    at /home/chenhui/mysql-baidu-5623/sql/sql_base.cc:5725
+#8  0x0000000000769b31 in open_and_lock_tables (thd=0x1291b0e0, tables=0x7f321c0050e8, derived=false, flags=0) at /home/chenhui/mysql-baidu-5623/sql/sql_base.h:472
+#9  0x0000000000853bc4 in mysql_checksum_table (thd=0x1291b0e0, tables=0x7f321c0050e8, check_opt=0x1291e0d0) at /home/chenhui/mysql-baidu-5623/sql/sql_table.cc:9187
+#10 0x00000000007e0218 in mysql_execute_command (thd=0x1291b0e0) at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:3277
+#11 0x00000000007e8552 in mysql_parse (thd=0x1291b0e0, rawbuf=0x7f321c005010 "checksum table test", length=19, parser_state=0x7f34382216e0)
+    at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:6357
+#12 0x00000000007db993 in dispatch_command (command=COM_QUERY, thd=0x1291b0e0, packet=0x129f28f1 "", packet_length=19) at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:1332
+#13 0x00000000007dab36 in do_command (thd=0x1291b0e0) at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:1034
+#14 0x00000000007a31a1 in do_handle_one_connection (thd_arg=0x1291b0e0) at /home/chenhui/mysql-baidu-5623/sql/sql_connect.cc:982
+#15 0x00000000007a2cb7 in handle_one_connection (arg=0x1291b0e0) at /home/chenhui/mysql-baidu-5623/sql/sql_connect.cc:898
+#16 0x0000000000b043e0 in pfs_spawn_thread (arg=0x12843e90) at /home/chenhui/mysql-baidu-5623/storage/perfschema/pfs.cc:1860
+#17 0x00007f3437f3e1c3 in ?? ()
+#18 0x0000000000000000 in ?? ()
+
+11.DATA_FIXBINARY
+get_innobase_type_from_mysql_type
+
+12.跟踪 table->cols
+(gdb) bt
+#0  dict_table_add_to_cache (table=0x7f54ec03a168, can_be_evicted=1, heap=0x7f54ec03a3e0) at /home/chenhui/mysql-baidu-5623/storage/innobase/dict/dict0dict.cc:1157
+#1  0x0000000000d7e62f in dict_create_table_step (thr=0x7f54ec03c5c0) at /home/chenhui/mysql-baidu-5623/storage/innobase/dict/dict0crea.cc:1090
+#2  0x0000000000c376d2 in que_thr_step (thr=0x7f54ec03c5c0) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1113
+#3  0x0000000000c3788d in que_run_threads_low (thr=0x7f54ec03c5c0) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1167
+#4  0x0000000000c37a52 in que_run_threads (thr=0x7f54ec03c5c0) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1208
+#5  0x0000000000c7b954 in row_create_table_for_mysql (table=0x7f54ec03a168, trx=0x7f54ec039638, commit=false) at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0mysql.cc:2311
+#6  0x0000000000b8b21e in create_table_def (trx=0x7f54ec039638, form=0x7f570af937d0, table_name=0x7f570af92b60 "test2/test", temp_path=0x7f570af92d60 "", remote_path=0x7f570af92f60 "", 
+    flags=1, flags2=80) at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:8733
+#7  0x0000000000b8cb65 in ha_innobase::create (this=0x7f54ec010170, name=0x7f570af95330 "./test2/test", form=0x7f570af937d0, create_info=0x7f570af95c40)
+    at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:9641
+#8  0x000000000064c5fa in handler::ha_create (this=0x7f54ec010170, name=0x7f570af95330 "./test2/test", form=0x7f570af937d0, info=0x7f570af95c40)
+    at /home/chenhui/mysql-baidu-5623/sql/handler.cc:4524
+#9  0x000000000064ce9d in ha_create_table (thd=0x1291b730, path=0x7f570af95330 "./test2/test", db=0x7f54ec005698 "test2", table_name=0x7f54ec005100 "test", create_info=0x7f570af95c40, 
+    update_create_info=false, is_temp_table=false) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:4762
+#10 0x00000000008b220d in rea_create_table (thd=0x1291b730, path=0x7f570af95330 "./test2/test", db=0x7f54ec005698 "test2", table_name=0x7f54ec005100 "test", create_info=0x7f570af95c40, 
+    create_fields=..., keys=0, key_info=0x7f54ec005e10, file=0x7f54ec005b48, no_ha_table=false) at /home/chenhui/mysql-baidu-5623/sql/unireg.cc:527
+#11 0x0000000000849b74 in create_table_impl (thd=0x1291b730, db=0x7f54ec005698 "test2", table_name=0x7f54ec005100 "test", path=0x7f570af95330 "./test2/test", 
+    create_info=0x7f570af95c40, alter_info=0x7f570af956e0, internal_tmp_table=false, select_field_count=0, no_ha_table=false, is_trans=0x7f570af955be, key_info=0x7f570af95538, 
+    key_count=0x7f570af95534) at /home/chenhui/mysql-baidu-5623/sql/sql_table.cc:4919
+#12 0x000000000084a029 in mysql_create_table_no_lock (thd=0x1291b730, db=0x7f54ec005698 "test2", table_name=0x7f54ec005100 "test", create_info=0x7f570af95c40, 
+    alter_info=0x7f570af956e0, select_field_count=0, is_trans=0x7f570af955be) at /home/chenhui/mysql-baidu-5623/sql/sql_table.cc:5029
+#13 0x000000000084a126 in mysql_create_table (thd=0x1291b730, create_table=0x7f54ec005138, create_info=0x7f570af95c40, alter_info=0x7f570af956e0)
+    at /home/chenhui/mysql-baidu-5623/sql/sql_table.cc:5078
+#14 0x00000000007df828 in mysql_execute_command (thd=0x1291b730) at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:3061
+#15 0x00000000007e8552 in mysql_parse (thd=0x1291b730, rawbuf=0x7f54ec005010 "create table test (name varchar(20),create_time timestamp)", length=58, parser_state=0x7f570af966e0)
+    at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:6357
+#16 0x00000000007db993 in dispatch_command (command=COM_QUERY, thd=0x1291b730, packet=0x129f2e61 "create table test (name varchar(20),create_time timestamp)", packet_length=58)
+    at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:1332
+#17 0x00000000007dab36 in do_command (thd=0x1291b730) at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:1034
+#18 0x00000000007a31a1 in do_handle_one_connection (thd_arg=0x1291b730) at /home/chenhui/mysql-baidu-5623/sql/sql_connect.cc:982
+#19 0x00000000007a2cb7 in handle_one_connection (arg=0x1291b730) at /home/chenhui/mysql-baidu-5623/sql/sql_connect.cc:898
+#20 0x0000000000b043e0 in pfs_spawn_thread (arg=0x12852d80) at /home/chenhui/mysql-baidu-5623/storage/perfschema/pfs.cc:1860
+#21 0x00007f570ac821c3 in ?? ()
+#22 0x0000000000000000 in ?? ()
+
+
+$103 = (tab_node_t *) 0x7f54ec03d108
+
+13.get_innobase_type_from_mysql_type
+
+(gdb) p field->type()
+$131 = MYSQL_TYPE_TIMESTAMP
+$132 = MYSQL_TYPE_TIMESTAMP2
+(gdb) p field->real_type()
+$132 = MYSQL_TYPE_TIMESTAMP2
+   5632     switch (field->type()) {
+   5633         /* NOTE that we only allow string types in DATA_MYSQL and
+   5634         DATA_VARMYSQL */
+   5635     case MYSQL_TYPE_VAR_STRING: /* old <= 4.1 VARCHAR */
+   5636     case MYSQL_TYPE_VARCHAR:    /* new >= 5.0.3 true VARCHAR */
+   5637         if (field->binary()) {
+   5638             return(DATA_BINARY);
+   5639         } else if (strcmp(field->charset()->name,
+   5640                   "latin1_swedish_ci") == 0) {
+   5641             return(DATA_VARCHAR);
+   5642         } else {
+   5643             return(DATA_VARMYSQL);
+   5644         }   
+   5645     case MYSQL_TYPE_BIT:
+   5646     case MYSQL_TYPE_STRING: if (field->binary()) {
+   5647             
+   5648             return(DATA_FIXBINARY);
+   5649         } else if (strcmp(field->charset()->name,
+   5650                   "latin1_swedish_ci") == 0) {
+   5651             return(DATA_CHAR);
+   5652         } else {
+   5653             return(DATA_MYSQL);
+   5654         }   
+   5655     case MYSQL_TYPE_NEWDECIMAL:
+   5656         return(DATA_FIXBINARY); 
+   5657     case MYSQL_TYPE_LONG:
+   5658     case MYSQL_TYPE_LONGLONG:
+   5659     case MYSQL_TYPE_TINY:
+   5660     case MYSQL_TYPE_SHORT:
+   5661     case MYSQL_TYPE_INT24:
+   5662     case MYSQL_TYPE_DATE:
+   5663     case MYSQL_TYPE_YEAR:
+   5664     case MYSQL_TYPE_NEWDATE:
+   5665         return(DATA_INT);
+   5666     case MYSQL_TYPE_TIME:
+   5667     case MYSQL_TYPE_DATETIME:
+   5668     case MYSQL_TYPE_TIMESTAMP:
+   5669         switch (field->real_type()) {
+   5670         case MYSQL_TYPE_TIME:
+   5671         case MYSQL_TYPE_DATETIME:
+   5672         case MYSQL_TYPE_TIMESTAMP:
+   5673             return(DATA_INT);
+   5674         default: /* Fall through */
+   5675             DBUG_ASSERT((ulint)MYSQL_TYPE_DECIMAL < 256);
+   5676         case MYSQL_TYPE_TIME2:
+   5677         case MYSQL_TYPE_DATETIME2:
+   5678         case MYSQL_TYPE_TIMESTAMP2:
+   5679             return(DATA_FIXBINARY);
+   5680         }
+   
+(gdb) bt
+#0  get_innobase_type_from_mysql_type (unsigned_flag=0x7f52c815aa80, f=0x7f50a003b9c0) at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:5669
+#1  0x0000000000b8aee3 in create_table_def (trx=0x7f50a003c688, form=0x7f52c815b7d0, table_name=0x7f52c815ab60 "test2/test", temp_path=0x7f52c815ad60 "", remote_path=0x7f52c815af60 "", 
+    flags=1, flags2=80) at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:8644
+#2  0x0000000000b8cb65 in ha_innobase::create (this=0x7f50a003b5d0, name=0x7f52c815d330 "./test2/test", form=0x7f52c815b7d0, create_info=0x7f52c815dc40)
+    at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:9641
+#3  0x000000000064c5fa in handler::ha_create (this=0x7f50a003b5d0, name=0x7f52c815d330 "./test2/test", form=0x7f52c815b7d0, info=0x7f52c815dc40)
+    at /home/chenhui/mysql-baidu-5623/sql/handler.cc:4524
+#4  0x000000000064ce9d in ha_create_table (thd=0x1291dd20, path=0x7f52c815d330 "./test2/test", db=0x7f50a0005698 "test2", table_name=0x7f50a0005100 "test", create_info=0x7f52c815dc40, 
+    update_create_info=false, is_temp_table=false) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:4762
+#5  0x00000000008b220d in rea_create_table (thd=0x1291dd20, path=0x7f52c815d330 "./test2/test", db=0x7f50a0005698 "test2", table_name=0x7f50a0005100 "test", create_info=0x7f52c815dc40, 
+    create_fields=..., keys=0, key_info=0x7f50a0005e10, file=0x7f50a0005b48, no_ha_table=false) at /home/chenhui/mysql-baidu-5623/sql/unireg.cc:527
+#6  0x0000000000849b74 in create_table_impl (thd=0x1291dd20, db=0x7f50a0005698 "test2", table_name=0x7f50a0005100 "test", path=0x7f52c815d330 "./test2/test", 
+    create_info=0x7f52c815dc40, alter_info=0x7f52c815d6e0, internal_tmp_table=false, select_field_count=0, no_ha_table=false, is_trans=0x7f52c815d5be, key_info=0x7f52c815d538, 
+    key_count=0x7f52c815d534) at /home/chenhui/mysql-baidu-5623/sql/sql_table.cc:4919
+#7  0x000000000084a029 in mysql_create_table_no_lock (thd=0x1291dd20, db=0x7f50a0005698 "test2", table_name=0x7f50a0005100 "test", create_info=0x7f52c815dc40, 
+    alter_info=0x7f52c815d6e0, select_field_count=0, is_trans=0x7f52c815d5be) at /home/chenhui/mysql-baidu-5623/sql/sql_table.cc:5029
+#8  0x000000000084a126 in mysql_create_table (thd=0x1291dd20, create_table=0x7f50a0005138, create_info=0x7f52c815dc40, alter_info=0x7f52c815d6e0)
+    at /home/chenhui/mysql-baidu-5623/sql/sql_table.cc:5078
+#9  0x00000000007df828 in mysql_execute_command (thd=0x1291dd20) at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:3061
+#10 0x00000000007e8552 in mysql_parse (thd=0x1291dd20, rawbuf=0x7f50a0005010 "create table test (name varchar(20),create_time timestamp)", length=58, parser_state=0x7f52c815e6e0)
+    at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:6357
+#11 0x00000000007db993 in dispatch_command (command=COM_QUERY, thd=0x1291dd20, packet=0x129f57b1 "create table test (name varchar(20),create_time timestamp)", packet_length=58)
+    at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:1332
+#12 0x00000000007dab36 in do_command (thd=0x1291dd20) at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:1034
+#13 0x00000000007a31a1 in do_handle_one_connection (thd_arg=0x1291dd20) at /home/chenhui/mysql-baidu-5623/sql/sql_connect.cc:982
+#14 0x00000000007a2cb7 in handle_one_connection (arg=0x1291dd20) at /home/chenhui/mysql-baidu-5623/sql/sql_connect.cc:898
+#15 0x0000000000b043e0 in pfs_spawn_thread (arg=0x12877290) at /home/chenhui/mysql-baidu-5623/storage/perfschema/pfs.cc:1860
+#16 0x00007f52c7e7b1c3 in ?? ()
+#17 0x0000000000000000 in ?? ()
+
+   
+8.   
+(gdb) p t
+(gdb) p t
+$60 = (TABLE *) 0x7ff7b0009980  
+p ((TABLE *) 0x7ff7b0009980)->field[0][0]
+p ((TABLE *) 0x7ff7b0009980)->field[1][0]
+
+ p *((TABLE *) 0x7ff7b0009980)->field[1][0]->ptr@100
+ 
+p ((TABLE *) 0x7ff7b0009980)->record[0]
+
+
+mysql 5.6 $33 = (TABLE *) 0x7f5bd8010930
+
+p ((TABLE *) 0x7f5bd8010930)->field[0][0]
+p ((TABLE *) 0x7f5bd8010930)->field[1][0]
+
+ p *((TABLE *) 0x7f5bd8010930)->field[1][0]->ptr@100
+
+(gdb) p this
+$40 = (ha_innobase * const) 0x7f5bd8011220
+p this->prebuilt->mysql_template[1]
+
+
+p ((ha_innobase * const) 0x7f5bd8011220)->prebuilt->mysql_template[1]
+
+
+
+p ((ha_innobase *)0x7f5bd8011220)->prebuilt->mysql_template[1]

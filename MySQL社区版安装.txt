@@ -1,0 +1,74 @@
+cmake .
+-DCMAKE_INSTALL_PREFIX=/usr/local/mysql \
+-DMYSQL_DATADIR=/usr/local/mysql/data \
+-DSYSCONFDIR=/etc \
+-DWITH_MYISAM_STORAGE_ENGINE=1 \
+-DWITH_INNOBASE_STORAGE_ENGINE=1 \
+-DWITH_MEMORY_STORAGE_ENGINE=1 \
+-DWITH_READLINE=1 \
+-DMYSQL_UNIX_ADDR=/var/lib/mysql/mysql.sock \
+-DMYSQL_TCP_PORT=3306 \
+-DENABLED_LOCAL_INFILE=1 \
+-DWITH_PARTITION_STORAGE_ENGINE=1 \
+-DEXTRA_CHARSETS=all \
+-DDEFAULT_CHARSET=utf8 \
+-DDEFAULT_COLLATION=utf8_general_ci
+
+
+export bpath=/home/cds/mysql_ch && 
+cmake -DCMAKE_INSTALL_PREFIX=${bpath}    
+-DMYSQL_DATADIR=${bpath}/var    
+-DINSTALL_MYSQLDATADIR=var    
+-DINSTALL_SBINDIR=libexec    
+-DINSTALL_LIBDIR=lib/mysql    
+-DSYSCONFDIR=${bpath}/etc    
+-DMYSQL_UNIX_ADDR=${bpath}/tmp/mysql.sock    
+-DINSTALL_PLUGINDIR=lib/plugin    
+-DINSTALL_SCRIPTDIR=bin    
+-DINSTALL_MYSQLSHAREDIR=share    
+-DINSTALL_SUPPORTFILESDIR=share/mysql    
+-DCMAKE_C_FLAGS='-O3 -g'     
+-DCMAKE_CXX_FLAGS='-O3 -g'     
+-DCMAKE_C_FLAGS_RELEASE='-O3 -g'     
+-DCMAKE_CXX_FLAGS_RELEASE='-O3 -g'     
+-DDEFAULT_CHARSET=utf8     
+-DDEFAULT_COLLATION=utf8_general_ci     
+-DWITH_EXTRA_CHARSETS=all     
+-DWITH_UNIT_TESTS=0    
+-DWITH_DEBUG=0    
+-DWITH_PERFSCHEMA_STORAGE_ENGINE=1    
+-DWITH_INNODB_MEMCACHED=1    
+-DWITH_MYISAM_STORAGE_ENGINE=1    
+-DWITH_INNOBASE_STORAGE_ENGINE=1    
+-DWITH_ARCHIVE_STORAGE_ENGINE=0    
+-DWITH_PARTITION_STORAGE_ENGINE=1     
+-DENABLED_PROFILING=1    
+-DWITH_ZLIB=bundled    
+-DENABLED_LOCAL_INFILE=1  && 
+
+make -j 8  
+
+export bpath=/ssd4/mysql_ch
+
+cmake .
+-DCMAKE_INSTALL_PREFIX=${bpath} \
+-DMYSQL_DATADIR=${bpath}/var \
+-DSYSCONFDIR=${bpath}/etc  \
+-DWITH_MYISAM_STORAGE_ENGINE=1 \
+-DWITH_INNOBASE_STORAGE_ENGINE=1 \
+-DWITH_MEMORY_STORAGE_ENGINE=1 \
+-DWITH_READLINE=1 \
+-DMYSQL_UNIX_ADDR=${bpath}/tmp/mysql.sock  \
+-DMYSQL_TCP_PORT=10299 \
+-DENABLED_LOCAL_INFILE=1 \
+-DWITH_PARTITION_STORAGE_ENGINE=1 \
+-DEXTRA_CHARSETS=all \
+-DDEFAULT_CHARSET=utf8 \
+-DDEFAULT_COLLATION=utf8_general_ci
+
+
+2.
+bin   data  docs  etc  include   lib  libexec  log  man  mysql-test  share  sql-bench  tmp  var
+
+3.
+mysql_install_db --user=chenhui --basedir=${bpath} --datadir=${bpath}/var

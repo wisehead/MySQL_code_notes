@@ -1,0 +1,67 @@
+1.MYSQLlex
+
+
+2.
+ADD_CUSTOM_TARGET(
+        GenServerSource
+        DEPENDS ${GEN_SOURCES}
+)
+
+3.lex_init
+init_common_variables
+--lex_init
+
+4.Lex_input_stream::init
+
+Parser_state.init
+--Lex_input_stream::init
+----Query_arena.alloc
+------alloc_root
+--------my_malloc
+----------malloc
+------------ut_malloc
+--------------ut_malloc_low
+
+5.Lex_input_stream::body_utf8_start
+
+yyparse
+--sp_head::set_body_start
+----Lex_input_stream::body_utf8_start
+
+6.body_utf8_append
+
+lex_one_token
+--body_utf8_append
+
+7.Lex_input_stream::body_utf8_append_literal
+body_utf8_append_literal
+--convert_string
+
+
+[chenhui@sh01-mco-ssdwise259.sh01.baidu.com dba_7-0-48_BRANCH]$ grep -R chenhui *|grep -v tags|grep -v svn|grep -v scope|grep -v bak
+cmake/build_configurations/feature_set.cmake:#chenhui
+sql/sys_vars.cc://chenhui
+sql/sys_vars.cc:    //myisam_delay_key_write=0;//chenhui
+sql/sys_vars.cc:    //myisam_delay_key_write=1;//chenhui
+sql/sys_vars.cc:    //myisam_delay_key_write=1;//chenhui
+sql/sys_vars.cc://chenhui
+sql/sys_vars.cc://B_chenhui
+sql/sys_vars.cc://E_chenhui
+sql/sql_tmp_table.cc:  //chenhui
+sql/mysqld.cc:   //remove for debug chenhui
+sql/mysqld.cc:  //chenhui
+sql/mysqld.cc:  //chenhui
+sql/mysqld.cc:  //chenhui
+sql/mysqld.cc:  //chenhui
+sql/mysqld.cc:  //chenhui
+sql/mysqld.cc:  //chenhui
+sql/mysqld.cc:  //chenhui
+sql/mysqld.cc:  //chenhui
+sql/mysqld.cc:  my_disable_locking= MY_TEST(opt_external_locking == 0);//chenhui
+sql/handler.cc:  //chenhui
+storage/heap/CMakeLists.txt:#chenhui
+storage/heap/CMakeLists.txt:#B_chenhui
+storage/heap/CMakeLists.txt:#E_chenhui
+storage/myisam/CMakeLists.txt:#B_chenhui
+storage/myisam/CMakeLists.txt:#E_chenhui
+storage/myisammrg/CMakeLists.txt:#chenhui

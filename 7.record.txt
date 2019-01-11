@@ -1,0 +1,130 @@
+1.read_view_sees_trx_id
+判断当前事务是否可以读取记录的当前版本
+
+2.row_sel_build_prev_vers_for_mysql
+若不可读取，则用以上函数构建前一个行版本。
+
+
+
+4.dtuple_convert_back_big_rec
+将大记录对象重新转化为普通逻辑记录。。。
+
+5.get_innobase_type_from_mysql_type
+负责将各种MySQL上层的列类型转化为数据结构dtype的mtype类型。
+
+6.cmp_whole_field
+对于列mtype>=DATA_FLOAT, Innodb调用函数cmp_whole_field进行列的比较，该函数对整个列的字节进行比较。
+而对于非latin1字符集的VHARCHAR和CHAR类型，调用MySQL上层函数cmp_whole_field比较。
+
+
+
+7.
+逻辑记录与物理记录的比较通过函数 cmp_dtuple_with_match.
+物理记录之间比较通过 cmp_rec_rec_with_match.
+
+8.read_view_open_now
+用来初始化read_view_struct数据结构。
+
+row_search_for_mysql
+--select_lock_type == LOCK_NONE
+--if yes//没有锁，则直接加读锁，读。。
+----lock_table
+--if no//该记录有锁，创建read view来看能不能读
+----trx_assign_read_view
+------read_view_open_now
+
+9.row_search_for_mysql
+
+
+10.row_upd
+#11 log_check_margins ()
+#12 0x0000000000a54d55 in log_free_check ()
+#13 row_upd (thr=0x7ef384077368, node=0x7ef384077068)
+#14 row_upd_step (thr=thr@entry=0x7ef384077368)
+#15 0x0000000000a39fad in row_update_for_mysql (
+#16 0x00000000009b442e in ha_innobase::update_row (this=0x7ef384075c10,
+#17 0x00000000005aefa3 in handler::ha_update_row (this=0x7ef384075c10,
+#18 0x0000000000763125 in mysql_update (thd=thd@entry=0x6e0ad6c0,
+#19 0x00000000006f43bc in mysql_execute_command (thd=0x6e0ad6c0)
+#20 0x000000000070a13e in Prepared_statement::execute (
+#21 0x000000000070a352 in Prepared_statement::execute_loop (
+#22 0x000000000070a607 in mysqld_stmt_execute (thd=thd@entry=0x6e0ad6c0,
+#23 0x00000000006fa46f in dispatch_command (command=COM_STMT_EXECUTE,
+#24 0x00000000006fb364 in do_command (thd=<optimized out>)
+#25 0x00000000006c152d in do_handle_one_connection (
+#26 0x00000000006c1579 in handle_one_connection (arg=arg@entry=0x6e0ad6c0)
+#27 0x0000000000945fb0 in pfs_spawn_thread (arg=0x6e0b5720)
+#28 0x00007f062130b1c3 in start_thread ()
+#29 0x00007f06201e512d in clone () from /opt/compiler/gcc-4.8.2/lib/libc.so.6
+
+
+
+row_upd
+--log_free_check
+--row_upd_clust_step
+----mtr_start(&mtr);
+----btr_pcur_restore_position
+----btr_pcur_get_rec
+----row_upd_store_row
+----row_upd_clust_rec
+--row_upd_sec_step
+
+
+
+11.dtuple_convert_big_rec
+当需要将记录转化成大记录对象时，InnoDB存储引擎首先会选择最大长度的列进行extern格式化。若格式化后当前页中该记录的所占字节数已经小于1/2*page_get_free_space_of_empty()时，那么完成转化。否则重新再选择一个列进行extern格式化，直到满足条件。这个过程在函数dtuple_convert_big_rec中完成。
+
+callers:
+Functions calling this function: dtuple_convert_big_rec
+
+  File       Function                   Line
+0 btr0cur.cc btr_cur_optimistic_insert  1291 big_rec_vec = dtuple_convert_big_rec(index, entry, &n_ext);
+1 btr0cur.cc btr_cur_pessimistic_insert 1584 big_rec_vec = dtuple_convert_big_rec(index, entry, &n_ext);
+2 btr0cur.cc btr_cur_pessimistic_update 2587 big_rec_vec = dtuple_convert_big_rec(index, new_entry, &n_ext);
+
+dtuple_convert_big_rec
+--rec_get_converted_size
+----rec_get_converted_size_comp
+------rec_get_converted_size_comp_prefix_low
+--------dict_index_get_nth_field
+--------dfield_get_len
+--------dict_field_get_col
+--mem_heap_create
+--mem_heap_alloc
+--page_zip_rec_needs_ext
+----page_get_free_space_of_empty
+--dict_index_get_n_unique_in_tree
+
+12.cmp_dtuple_rec_with_match
+cmp_dtuple_rec_with_match
+--cmp_dtuple_rec_with_match_low
+----rec_get_info_bits
+----dtuple_get_info_bits
+----dtuple_get_nth_field
+----rec_get_nth_field
+------rec_get_nth_field_offs
+----cmp_whole_field
+
+
+13.cmp_rec_rec_with_match
+
+逻辑类似于 cmp_dtuple_rec_with_match
+
+
+14.rec_init_offsets
+
+rec_get_offsets
+--rec_get_offsets_func
+----rec_offs_set_n_alloc
+---rec_offs_set_n_fields
+----rec_init_offsets
+------dict_index_get_nth_field
+
+
+15.cmp_whole_field
+
+cmp_whole_field
+--innobase_mysql_cmp
+--get_charset
+--charset->coll->strnncollsp
+

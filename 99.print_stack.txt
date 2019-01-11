@@ -1,0 +1,88 @@
+1.文件
+my_stacktrace.h
+stacktrace.c
+
+
+2.关键函数
+my_print_stacktrace
+
+3.调用函数
+sql/signal_handler.cc
+
+handle_fatal_signal
+
+ 55 extern "C" sig_handler handle_fatal_signal(int sig)
+ 56 {  
+ 
+ 
+151   if (!(test_flags & TEST_NO_STACKTRACE))
+152   {
+153     my_safe_printf_stderr("Thread pointer: 0x%p\n", thd);
+154     my_safe_printf_stderr("%s",  
+155       "Attempting backtrace. You can use the following "
+156       "information to find out\n"
+157       "where mysqld died. If you see no messages after this, something went\n"
+158       "terribly wrong...\n");
+159     my_print_stacktrace(thd ? (uchar*) thd->thread_stack : NULL,
+160                         my_thread_stack_size);         
+161   }  
+
+
+4.init_stacktrace
+ 8537 static void init_signal_handling(void)
+ 8538 {  
+ 8539   struct sigaction sa;
+ 8540   DBUG_ENTER("init_signal_handling");
+ 8541    
+ 8542 #ifdef HAVE_STACKTRACE
+ 8543   my_init_stacktrace();                                                                                                                                                                 
+ 8544 #endif
+ 8545    
+ 8546   sa.sa_flags = SA_RESETHAND | SA_NODEFER;
+ 8547   sigemptyset(&sa.sa_mask);
+ 8548   sigprocmask(SIG_SETMASK, &sa.sa_mask, NULL);
+ 8549    
+ 8550   sa.sa_handler= signal_handler;
+ 8551    
+ 8552   sigaction(SIGSEGV, &sa, NULL);
+ 8553   sigaction(SIGABRT, &sa, NULL);
+ 8554 #ifdef SIGBUS
+ 8555   sigaction(SIGBUS, &sa, NULL);
+ 8556 #endif
+ 8557   sigaction(SIGILL, &sa, NULL);
+ 8558   sigaction(SIGFPE, &sa, NULL);
+ 8559    
+ 8560   DBUG_VOID_RETURN;
+ 8561 }  
+ 
+ 3011 void my_init_signals(void)
+3012 {    
+3013   sigset_t set;
+3014   struct sigaction sa;
+3015   DBUG_ENTER("my_init_signals");
+3016      
+3017   my_sigset(THR_SERVER_ALARM,print_signal_warning); // Should never be called!
+3018      
+3019   if (!(test_flags & TEST_NO_STACKTRACE) || (test_flags & TEST_CORE_ON_SIGNAL))
+3020   {  
+3021     sa.sa_flags = SA_RESETHAND | SA_NODEFER;
+3022     sigemptyset(&sa.sa_mask);
+3023     sigprocmask(SIG_SETMASK,&sa.sa_mask,NULL);
+3024      
+3025 #ifdef HAVE_STACKTRACE
+3026     my_init_stacktrace();                                                                                                                                                                
+3027 #endif
+3028 #if defined(__amiga__)
+3029     sa.sa_handler=(void(*)())handle_fatal_signal;
+3030 #else
+3031     sa.sa_handler=handle_fatal_signal;
+3032 #endif
+3033     sigaction(SIGSEGV, &sa, NULL);
+3034     sigaction(SIGABRT, &sa, NULL);
+3035 #ifdef SIGBUS
+3036     sigaction(SIGBUS, &sa, NULL);
+3037 #endif
+3038     sigaction(SIGILL, &sa, NULL);
+3039     sigaction(SIGFPE, &sa, NULL);
+3040   }
+

@@ -1,0 +1,98 @@
+1.编解码
+mach_read_from_4
+
+
+2.dyn_array_t动态数组
+typedef dyn_block_t		dyn_array_t;
+
+/** @brief A block in a dynamically allocated array.
+NOTE! Do not access the fields of the struct directly: the definition
+appears here only for the compiler to know its size! */
+struct dyn_block_t{
+	mem_heap_t*	heap;	/*!< in the first block this is != NULL
+				if dynamic allocation has been needed */
+	ulint		used;	/*!< number of data bytes used in this block;
+				DYN_BLOCK_FULL_FLAG is set when the block
+				becomes full */
+	byte		data[DYN_ARRAY_DATA_SIZE];
+				/*!< storage for array elements */
+	UT_LIST_BASE_NODE_T(dyn_block_t) base;
+				/*!< linear list of dyn blocks: this node is
+				used only in the first block */
+	UT_LIST_NODE_T(dyn_block_t) list;
+				/*!< linear list node: used in all blocks */
+#ifdef UNIV_DEBUG
+	ulint		buf_end;/*!< only in the debug version: if dyn
+				array is opened, this is the buffer
+				end offset, else this is 0 */
+	ulint		magic_n;/*!< magic number (DYN_BLOCK_MAGIC_N) */
+#endif
+};
+
+
+3.双向列表内存双链表
+
+
+#define UT_LIST_NODE_T(TYPE)	ut_list_node<TYPE>
+#define UT_LIST_BASE_NODE_T(TYPE)	ut_list_base<TYPE>
+struct ut_list_base {
+	typedef TYPE elem_type;
+
+	ulint	count;	/*!< count of nodes in list */
+	TYPE*	start;	/*!< pointer to list start, NULL if empty */
+	TYPE*	end;	/*!< pointer to list end, NULL if empty */
+};
+
+
+struct ut_list_node {
+	TYPE* 	prev;	/*!< pointer to the previous node,
+										NULL if start of list */
+	TYPE* 	next;	/*!< pointer to next node, NULL if end of list */
+};
+
+4.磁盘双向链表
+typedef	byte	flst_base_node_t;
+typedef	byte	flst_node_t;
+
+5.fut_get_ptr
+用于获取磁盘中fil_faddr_t位置数据在内存缓冲池中的指针ptr
+
+6.buf_ptr_get_fsp_addr
+用于获取内存缓冲池指针ptr对应的表空间中的数据位置fil_faddr_t
+
+7.flst_write_addr
+用于往ptr对应的_faddr_t缓冲区写入地址信息
+
+8.flst_read_addr
+用于读取ptr中的地址信息。
+
+9.dyn_array_create
+创建一个动态数组，该函数不分配动态数组空间，仅对数组中的第一个块进行初始化。
+
+10.dyn_array_add_block
+若第一个块的空间不够用的话，会调用该函数分配一个新的块。
+动态数组第一次调用该函数时，会分配一个内存堆对象来初始化heap字段，并对base进行初始化。
+
+11.dyn_array_open
+在将数据写入动态数组前，将其打开。函数返回用于写数据的指针。
+
+12.dyn_array_close
+写入完成后，关闭。
+
+13.#define UT_SORT_FUNCTION_BODY(SORT_FUN, ARR, AUX_ARR, LOW, HIGH, CMP_FUN)\
+排序算法实现的宏定义
+
+SORT_FUN为用于对目标数组ARR进行排序的函数。
+CMP_FUN用于比较ARR中两个元素大小的函数。
+AUX_ARR用于排序的辅助数组。
+
+caller:
+row_merge_tuple_sort
+
+
+
+
+
+
+
+

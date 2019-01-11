@@ -1,0 +1,372 @@
+1.thread启动流程
+mysql_declare_plugin
+--innobase_init
+----innobase_start_or_create_for_mysql
+------os_thread_create(buf_flush_page_cleaner_thread, NULL, NULL);
+
+2.purge
+mysql支持MVCC，在删除的时候，先将某行标志为flag delete，然后purge进程会异步真实删除。
+
+3.mysql thread列表
+		1). (buf_flush_page_cleaner_thread)
+		//page_cleaner thread tasked with flushing dirty pages from the buffer
+		//pools. As of now we'll have only one instance of this thread.
+
+
+		2) (recv_writer_thread)
+		//recv_writer thread tasked with flushing dirty pages from the buffer
+		//pools.
+
+
+		3) (buf_dump_thread)
+		//This is the main thread for buffer pool dump/load. It waits for an
+		//event and when waked up either performs a dump or load and sleeps
+		//again.
+
+
+		4) (dict_stats_thread)
+		//This is the thread for background stats gathering. It pops tables, from
+		//the auto recalc list and proceeds them, eventually recalculating their
+		//statistics.
+
+
+		5) (lock_wait_timeout_thread)
+		//A thread which wakes up threads whose lock wait may have lasted too long.
+		监控线程锁。
+
+		6) (srv_monitor_thread)
+		//A thread which prints the info output by various InnoDB monitors.
+
+
+		7) (srv_error_monitor_thread)
+		//A thread which prints warnings about semaphore waits which have lasted
+		//too long. These can be used to track bugs which cause hangs.
+	 	检测系统中长时间等待的信号（semaphore），该线程每10秒钟会遍历一遍等待信号数组，当某个信号等待时间大于240秒时，会打印错误信息。
+	 	而当等待时长大于420秒时，整个系统会崩溃。
+		
+		8) (srv_master_thread)
+		//The master thread controlling the server.
+		将buffer pool中的data page写回磁盘
+		对ibuf中缓存的复制记录进行merge操作
+		undo log 的回收
+		checkpoint创建
+		
+		
+
+		9) (srv_worker_thread)
+		//Worker thread that reads tasks from the work queue and executes them.
+
+
+
+		10) (srv_purge_coordinator_thread)
+		//Purge coordinator thread that schedules the purge tasks.
+		
+		
+		11) (io_handler_thread)
+		//I/o-handler thread function.
+		异步I/O操作，包括data 读写，ibuf操作。在不支持libaio的系统上，使用simulated aio。
+		
+
+		12) (trx_rollback_or_clean_all_recovered)
+		//Rollback or clean up any incomplete transactions which were
+		//encountered in crash recovery.  If the transaction already was
+		//committed, then we clean up a possible insert undo log. If the
+		//transaction was not yet committed, then we roll it back.
+		//Note: this is done in a background thread.
+
+
+4.innobase_srv_conc_force_exit_innodb
+
+innobase_srv_conc_force_exit_innodb
+--srv_conc_force_exit_innodb
+
+
+5.innodb_thread_concurrency
+
+ 长期以来，innodb因其并发性差无法充分利用multi-cpu资源饱受诟病，主要因为mutex粒度太大，当多个sql同时运行会引发严重的锁竞争；
+一方面innodb不断细化mutex，比如引入flush list mutex & LRU list mutex，另一方面可限制并发运行的线程，innodb_thread_concurrency参数便应运而生；
+
+innodb_thread_concurrency
+如果参数设置大于0，则表示检查机制开启，允许进入的线程数就是参数的值.
+
+在新的MySQL线程调用Innodb接口前，Innodb会检查已经接受的请求线程数；
+如已经超过innodb_thread_concurrency设置的限制，则该请求线程会等待innodb_thread_sleep_delay微秒后尝试重新请求，如果第二次请求还是无法获得，则该线程会进入FIFO队列休眠。重试两次的机制是为了减少CPU的上下文切换的次数，以降低CPU消耗。
+如果请求被Innodb接受，则会获得一个次数为innodb_concurrency_tickets(默认500次)的通行证，在次数用完之前，该线程重新请求时无须再进行前面的检查 
+
+srv_conc_enter_innodb
+--srv_conc_enter_innodb_without_atomics
+
+
+6..page cleaner thread
+
+DECLARE_THREAD(buf_flush_page_cleaner_thread)
+  //如果其他线程正忙，不捣乱，sleep
+--page_cleaner_sleep_if_needed
+  //if (srv_check_activity(last_activity))
+--buf_flush_LRU_tail
+----buf_flush_LRU
+------buf_flush_start
+------buf_flush_batch
+--------buf_do_LRU_batch
+----------buf_free_from_unzip_LRU_list_batch
+----------buf_flush_LRU_list_batch
+------------buf_LRU_free_page
+------------buf_flush_page_and_try_neighbors or
+------buf_flush_end
+------buf_flush_common
+----buf_flush_wait_batch_end
+--page_cleaner_flush_pages_if_needed//1秒调用一次
+----af_get_pct_for_dirty
+----af_get_pct_for_lsn
+----page_cleaner_do_flush_batch
+------buf_flush_list
+  //else if (srv_check_activity)
+--page_cleaner_do_flush_batch
+----buf_flush_list
+------buf_flush_start
+------buf_flush_batch
+--------buf_do_flush_list_batch
+----------buf_flush_page_and_try_neighbors
+------buf_flush_end
+------buf_flush_common
+  //while (srv_shutdown_state == SRV_SHUTDOWN_CLEANUP)
+  //退出清理阶段
+--page_cleaner_do_flush_batch
+--buf_flush_wait_batch_end
+--buf_flush_wait_LRU_batch_end
+  //最后收尾工作
+--buf_flush_list
+--buf_flush_wait_batch_end
+
+buf_flush_LRU底层是一个一个地调用 buf_LRU_free_page 或 buf_flush_page_and_try_neighbors
+buf_flush_list的底层是buf_flush_page_and_try_neighbors
+
+7.io_handler_thread 
+Thread 18 (Thread 0x42816940 (LWP 22173)):
+#0  0x00000033d660ab99 in pthread_cond_wait@@GLIBC_2.3.2 ()
+#1  0x00000000008c5797 in os_event_wait_low ()
+#2  0x00000000008c430e in os_aio_simulated_handle ()
+#3  0x000000000087f89e in fil_aio_wait ()
+#4  0x0000000000806638 in io_handler_thread ()
+#5  0x00000033d66064a7 in start_thread () from /lib64/libpthread.so.0
+#6  0x00000033d5ed3c2d in clone () from /lib64/libc.so.6
+
+8.Srv.*thread 6个
+
+srv_lock_timeout_thread
+srv_error_monitor_thread
+srv_monitor_thread
+srv_LRU_dump_restore_thread (Percona)
+srv_master_thread 
+srv_purge_thread (5.5)
+
+9.main 线程 、signal_handler
+
+新连接
+
+Thread 2 (Thread 0x41c7e940 (LWP 26056)):
+#0  0x00000033d660ab99 in pthread_cond_wait@
+#1  0x00000000004fbd4a in one_thread_per_connection_end ()
+#2  0x00000000005f85ef in do_handle_one_connection ()
+#3  0x00000000005f871a in handle_one_connection ()
+#4  0x00000033d66064a7 in start_thread () from /lib64/libpthread.so.0
+#5  0x00000033d5ed3c2d in clone () from
+
+
+clone
+--start_thread
+----handle_one_connection
+------do_handle_one_connection
+--------do_command
+----------dispatch_command
+------------mysql_parse
+--------------mysql_execute_command
+----------------mysql_client_binlog_statement
+------------------Rows_log_event::do_apply_event
+--------------------rows_event_stmt_cleanup
+----------------------trans_commit_stmt
+------------------------ha_commit_trans
+--------------------------MYSQL_BIN_LOG::log_and_order
+----------------------------MYSQL_BIN_LOG::write_transaction_to_binlog
+------------------------------MYSQL_BIN_LOG::write_transaction_to_binlog_events
+--------------------------------THD::wait_for_wakeup_ready
+----------------------------------pthread_cond_wait@@GLIBC_2.3.2
+
+
+clone
+--start_thread
+----event_worker_thread
+------Event_worker_thread::run
+--------event_job_data::execute
+----------sp_head::execute_procedure
+------------sp_head::execute
+--------------sp_instr_stmt::execute
+----------------sp_lex_keeper::reset_lex_and_exec_core
+------------------sp_instr_stmt::exec_core
+--------------------mysql_execute_command
+----------------------sp_head::execute_procedure
+------------------------sp_head::execute
+--------------------------sp_instr_stmt::execute
+----------------------------sp_lex_keeper::reset_lex_and_exec_core
+------------------------------sp_instr_stmt::exec_core
+--------------------------------mysql_execute_command
+----------------------------------mysql_alter_table
+------------------------------------quick_rm_table
+--------------------------------------ha_delete_table
+----------------------------------------ha_innodb::delete_table
+------------------------------------------row_drop_table_for_mysql
+--------------------------------------------trx_commit_for_mysql
+----------------------------------------------mutex_spin_wait
+------------------------------------------------sync_array_wait_event
+--------------------------------------------------os_event_wait_low
+
+10.与线程数目有关的参数
+innodb_purge_threads
+innodb_read_io_threads / innodb_write_io_threads
+
+11.与线程控制有关的参数
+thread_cache_size
+thread_concurrency （已经废弃）
+innodb_thread_concurrency
+thread_handling (one-thread-per-connection)
+
+
+12.os_thread_create
+
+os_thread_create
+--os_thread_create_func
+----pthread_attr_init
+----pthread_create
+----pthread_attr_destroy
+
+13.DECLARE_THREAD(srv_master_thread)
+
+DECLARE_THREAD(srv_master_thread)
+--srv_reserve_slot
+--srv_master_sleep
+--srv_master_do_active_tasks
+----row_drop_tables_for_mysql_in_background
+----log_free_check
+----ibuf_contract_in_background
+----srv_sync_log_buffer_in_background
+----srv_master_evict_from_table_cache
+----log_checkpoint(TRUE, FALSE);
+
+--srv_master_do_idle_tasks
+----row_drop_tables_for_mysql_in_background
+----log_free_check
+----ibuf_contract_in_background
+----srv_master_evict_from_table_cache
+----srv_sync_log_buffer_in_background
+----log_checkpoint(TRUE, FALSE);
+
+--srv_master_do_shutdown_tasks
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+---------------------------------
+第一部分， innodb的线程模型：
+
+innodb内部大体上有三类线程， 主线程（只有一个）； 用户线程 ， 用户线程根据不同的职责也可以分成两类； 辅助线程
+
+整个innodb由一个主线程控制， 这个线程是innodb一起来的时候就开始运行（入口函数是srv_master_thread）， 它的优先级相对于其他innodb内部的线程来说优先级较高， 大部分时间下， 这个线程处于sleep状态， 每隔一定间隔这个线程起来看看是否有什么任务需要处理，这些任务包括:
+
+1. drop延迟删除的表(如果有的话)
+
+2. 把日志缓冲区(log buffer)中的日志(如果有的话)通过同步写的方式flush到硬盘
+
+3. 检查缓冲控制区的完整性
+
+4. 把缓冲区(buffer pool)中的数据写入到硬盘
+
+5. 插入缓冲区(ibuf)的合并(merge)
+
+6. binlog的purge
+
+7. 生成检查点(checkpoint)
+
+innodb运行了一些处于normal优先级的被称作用户线程的线程，大体分成二大类：
+
+一类是包括专门负责处理客户端请求的线程， 处理控制台请求的线程等；每个用户线程负责一个客户端的请求， 其完成的工作包括接收输入， 启动处理过程， 当查询处理完成后负责把结果返回给客户端；也就是说， 没有专门的负责通信的线程和专门负责处理的线程之分， 这样做的好处是少了一些线程的切换开销，个人觉得，这个节省到底有多大和必要是和机器的状况， 客户端的数量， 客户端所处的位置相关的；另外， 这种模型在客户端多且请求频繁的情况下对于设置并发线程(innodb的并发模型后面会谈到)的上限来说比较困难； 顺便提一下， mysql客户端和服务器的通信时单工的， 所谓单工， 就是会出现服务器端和客户端同时发送信息给对方的情况。
+
+第二类线程是负责执行sql语句的线程， 这些线程会把sql请求分解，然后执行， 待执行完成后， 通知客户端线程(第一类线程)来返回数据
+
+辅助线程， 完成一些辅助工作， 比如异步读写线程， 负责插入缓冲区flush的线程和负责日志flush的线程等
+
+innodb维护有一个线程表的数据结构来管理所有的线程， 其中记录了线程的状态信息，用来控制挂起的信号量等.
+
+innodb的”线程调度器”
+
+innodb自己实现了一个”线程调度器”: 在同一时刻， 只允许一定数量的处于活动状态的并发线程位于innodb内核， 全局变量srv_thread_concurrency(变量innodb_thread_concurrency)控制着这个数目，
+
+对于一台4cpu, 4disk的机器， 推荐的srv_thread_concurrency是10， 这样做的目的是尽量减少不必要的线程切换； 对于srv_thread_concurrency来说，0是个特殊值， 用来表示不进行任何并发线程数量的控制； 当然， 处于等待状态的线程（等待某些资源的进程）是不算在内的， 因为如果这些都算的话， 可能会导致死锁。 当一个线程试图进入innodb内核时， 都会调用函数srv_conc_enter_innodb来取得进入innodb的许可，如果当前处于内核的线程数目达到了上限，且这个线程所进行的事务没有占用资源的话（这样做的目的是为了防止死锁）， 会尝试把这个线程睡眠一段时间（变量innode_thread_sleep_delay）然后再尝试(这么做的目的还是为了减少线程上下文切换的开销， 注意， 这里不是较少上下文切换)，如果并发数目已经低于上限则会允许进入内核，否则会尝试把这个线程挂起， 以使其处于等待状态， 如果已经处于等待状态的线程还没有达到等待队列的上限， 则把这个线程挂起，并把它放到等待队列；如果等待对列已经满了的话， 也会允许这个线程进入内核；一般来说，处于某个事务当中的线程， 在进入内核后会在不近的将来再次进入内核， 因此， 通过并发控制的线程会分配到一定数量的进入券（n_tickets_to_enter_innodb控制， 变量innodb_concurrency_tickets）， 当没有用完这些券之前， 该线程是可以直接进入内核的， 这其实是允许已经获得资格的线程优先再次进入内核。当然了， 主从复制的线程不在这个控制的范围内。
+
+

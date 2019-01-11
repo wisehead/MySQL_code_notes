@@ -1,0 +1,724 @@
+1.mutex_enter_func
+
+mutex_enter_func
+--ib_mutex_test_and_set
+----__sync_lock_test_and_set
+----os_fast_mutex_trylock//or
+------pthread_mutex_trylock
+--------my_pthread_mutex_trylock
+--mutex_spin_wait
+----mutex_get_lock_word
+----ib_mutex_test_and_set
+----sync_array_get_and_reserve_cell
+----mutex_set_waiters
+----sync_array_wait_event
+
+2.sync_arr_wake_threads_if_sema_free
+一个后台线程每秒定期去调用函数，来检测是否在wait array中存在无限等待的mutex（或latch），有则唤醒之。
+
+DECLARE_THREAD(srv_error_monitor_thread)
+--sync_arr_wake_threads_if_sema_free
+----sync_array_wake_threads_if_sema_free_low
+------sync_arr_cell_can_wake_up
+------os_event_set
+
+
+3.rw_lock_x_lock_func
+获得x-latch的函数。innodb的rw-lock支持递归的x-latch操作，即允许同一线程多次进入临界资源区。
+函数首先调用rw_lock_x_lock_low来判断是否进行x-latch操作，返回值：
+RW_LOCK_EX x-latch操作成功
+RW_LOCK_NOT_LOCKED x-latch操作不成功，之前已有线程持有s-latch
+RW_LOCK_WAIT_EX x-latch操作不成功，之前已有线程持有x-latch
+
+rw_lock_x_lock_func
+--rw_lock_x_lock_low
+----rw_lock_lock_word_decr
+----rw_lock_set_writer_id_and_recursion_flag
+----rw_lock_x_lock_wait
+------sync_array_get_and_reserve_cell(lock,
+							   RW_LOCK_WAIT_EX,
+							   file_name,
+							   line, &index);
+------sync_array_wait_event
+--------sync_cell_get_event
+--------os_event_wait_low
+------sync_array_free_cell
+----//else (if rw_lock_lock_word_decr)
+----os_rmb//memory barrier
+--//else (if rw_lock_x_lock_low)
+--os_rmb
+--sync_array_get_and_reserve_cell(lock, RW_LOCK_EX,
+						   file_name, line, &index);
+--rw_lock_set_waiter_flag
+--sync_array_wait_event
+
+
+4.rw_lock_s_lock_func
+用来实现s-latch操作。
+开始s-latch操作时，首先判断writer是否为RW_LOCK_NOT_LOCKED,若是则s-latch操作成功，否则自旋并判断，最后加入到wait array中等待被唤醒。
+
+由于数据结构rw_lock_t中没有定义持有s-latch的线程ID，因此s-latch不支持递归的调用，即一个线程不允许同时执行两次s-latch。
+
+rw_lock_s_lock_func
+--rw_lock_s_lock_low
+----rw_lock_lock_word_decr
+--rw_lock_s_lock_spin
+----os_thread_yield
+----rw_lock_s_lock_low
+----sync_array_get_and_reserve_cell
+------sync_array_get
+------sync_array_reserve_cell
+----rw_lock_set_waiter_flag
+----rw_lock_s_lock_low
+----sync_array_wait_event
+------os_event_wait_low
+--------os_cond_wait(&(event->cond_var), &(event->os_mutex));
+------sync_array_free_cell
+
+
+
+
+5.rw_lock_s_unlock_func
+释放持有的latch
+rw_lock_s_unlock_func
+--rw_lock_lock_word_incr
+--os_event_set(lock->wait_ex_event);
+----event->is_set = TRUE;
+----event->signal_count += 1;
+----os_cond_broadcast(&(event->cond_var));
+--sync_array_object_signalled();
+
+6.sync_array_create
+用于对sync_primary_wait_array的初始化，默认建立1000个cell的wait array
+
+innobase_init
+--innobase_start_or_create_for_mysql
+----srv_boot
+------srv_general_init
+--------sync_init
+----------sync_arraysync_array_create_init
+------------sync_array_create
+
+
+
+7.sync_array_reserve_cell
+当线程不能立即持有latch时，会调用该函数，分配wait array中的一个cell。
+
+8.sync_array_wait_event
+若申请到cell后，等待的线程会执行该函数，进行休眠。等待被持有latch的线程唤醒。
+
+9.sync_array_signal_object
+当持有latch的线程释放latch后，会调用该函数检查队列sync_primary_wait_array中是否有线程在等待获得该latch，若有则唤醒。
+
+
+10.sync_thread_add_level
+当线程latch请求成功后，会调用该函数，将latch放入到制定的sync_thread_t槽中，然后检查latch操作的顺序是否符合要求。
+
+11.sync_array_detect_deadlock
+由于死锁仅仅发生在需要等待的场景下，因此当将等待线程放入到sync_primary_wait_array的cell中时，会调用该函数，以
+判断线程是否会产生死锁。该死锁检测使用深度优先遍历的算法。
+
+
+12.rw_lock_x_lock_func_nowait
+rw_lock_x_lock_func_nowait
+--rw_lock_set_writer_id_and_recursion_flag
+
+
+13.rw_lock_x_unlock_func
+	if (rw_lock_lock_word_incr(lock, x_lock_incr) == X_LOCK_DECR) {
+		/* Lock is now free. May have to signal read/write waiters.
+		We do not need to signal wait_ex waiters, since they cannot
+		exist when there is a writer. */
+		if (lock->waiters) {
+			rw_lock_reset_waiter_flag(lock);
+			os_event_set(lock->event);
+			sync_array_object_signalled();
+		}
+	}
+
+
+14.mutex_exit_func
+
+mutex_exit_func
+--mutex_reset_lock_word
+--mutex_get_waiters
+--mutex_signal_object
+	--mutex_set_waiters(mutex, 0);
+	--/* The memory order of resetting the waiters field and
+	--signaling the object is important. See LEMMA 1 above. */
+	--os_event_set(mutex->event);
+	--sync_array_object_signalled();
+
+15.latch order
+sync0sync.h
+
+
+				|/*
+				|		LATCHING ORDER WITHIN THE DATABASE
+				|		==================================
+				|
+				|The mutex or latch in the central memory object, for instance, a rollback
+				|segment object, must be acquired before acquiring the latch or latches to
+				|the corresponding file data structure. In the latching order below, these
+				|file page object latches are placed immediately below the corresponding
+				|central memory object latch or mutex.
+				|
+				|Synchronization object			Notes
+				|----------------------			-----
+				|
+				|Dictionary mutex			If we have a pointer to a dictionary
+				||					object, e.g., a table, it can be
+				||					accessed without reserving the
+				||					dictionary mutex. We must have a
+				||					reservation, a memoryfix, to the
+				||					appropriate table object in this case,
+				||					and the table must be explicitly
+				||					released later.
+				|V
+				|Dictionary header
+				||
+				|V
+				|Secondary index tree latch		The tree latch protects also all
+				||					the B-tree non-leaf pages. These
+				|V					can be read with the page only
+				|Secondary index non-leaf		bufferfixed to save CPU time,
+				||					no s-latch is needed on the page.
+				||					Modification of a page requires an
+				||					x-latch on the page, however. If a
+				||					thread owns an x-latch to the tree,
+				||					it is allowed to latch non-leaf pages
+				||					even after it has acquired the fsp
+				||					latch.
+				|V
+				|Secondary index leaf			The latch on the secondary index leaf
+				||					can be kept while accessing the
+				||					clustered index, to save CPU time.
+				|V
+				|Clustered index tree latch		To increase concurrency, the tree
+				||					latch is usually released when the
+				||					leaf page latch has been acquired.
+				|V
+				|Clustered index non-leaf
+				||
+				|V
+				|Clustered index leaf
+				||
+				|V
+				|Transaction system header
+				||
+				|V
+				|Transaction undo mutex			The undo log entry must be written
+				||					before any index page is modified.
+				||					Transaction undo mutex is for the undo
+				||					logs the analogue of the tree latch
+				||					for a B-tree. If a thread has the
+				||					trx undo mutex reserved, it is allowed
+				||					to latch the undo log pages in any
+				||					order, and also after it has acquired
+				||					the fsp latch.
+				|V
+				|Rollback segment mutex			The rollback segment mutex must be
+				||					reserved, if, e.g., a new page must
+				||					be added to an undo log. The rollback
+				||					segment and the undo logs in its
+				||					history list can be seen as an
+				||					analogue of a B-tree, and the latches
+				||					reserved similarly, using a version of
+				||					lock-coupling. If an undo log must be
+				||					extended by a page when inserting an
+				||					undo log record, this corresponds to
+				||					a pessimistic insert in a B-tree.
+				|V
+				|Rollback segment header
+				||
+				|V
+				|Purge system latch
+				||
+				|V
+				|Undo log pages				If a thread owns the trx undo mutex,
+				||					or for a log in the history list, the
+				||					rseg mutex, it is allowed to latch
+				||					undo log pages in any order, and even
+				||					after it has acquired the fsp latch.
+				||					If a thread does not have the
+				||					appropriate mutex, it is allowed to
+				||					latch only a single undo log page in
+				||					a mini-transaction.
+				|V
+				|File space management latch		If a mini-transaction must allocate
+				||					several file pages, it can do that,
+				||					because it keeps the x-latch to the
+				||					file space management in its memo.
+				|V
+				|File system pages
+				||
+				|V
+				|lock_sys_wait_mutex			Mutex protecting lock timeout data
+				||
+				|V
+				|lock_sys_mutex				Mutex protecting lock_sys_t
+				||
+				|V
+				|trx_sys->mutex				Mutex protecting trx_sys_t
+				||
+				|V
+				|Threads mutex				Background thread scheduling mutex
+				||
+				|V
+				|query_thr_mutex				Mutex protecting query threads
+				||
+				|V
+				|trx_mutex				Mutex protecting trx_t fields
+				||
+				|V
+				|Search system mutex
+				||
+				|V
+				|Buffer pool mutexes
+				||
+				|V
+				|Log mutex
+				||
+				|Any other latch
+				||
+				|V
+				|Memory pool mutex */
+				|
+				|/* Latching order levels. If you modify these, you have to also update
+				|sync_thread_add_level(). */
+				|
+				|/* User transaction locks are higher than any of the latch levels below:
+				|no latches are allowed when a thread goes to wait for a normal table
+				|or row lock! */
+				|#define SYNC_USER_TRX_LOCK	9999
+				|#define SYNC_NO_ORDER_CHECK	3000	/* this can be used to suppress
+				|					latching order checking */
+				|#define	SYNC_LEVEL_VARYING	2000	/* Level is varying. Only used with
+				|					buffer pool page locks, which do not
+				|					have a fixed level, but instead have
+				|					their level set after the page is
+				|					locked; see e.g.
+				|					ibuf_bitmap_get_map_page(). */
+				|#define SYNC_TRX_I_S_RWLOCK	1910	/* Used for
+				|					trx_i_s_cache_t::rw_lock */
+				|#define SYNC_TRX_I_S_LAST_READ	1900	/* Used for
+				|					trx_i_s_cache_t::last_read_mutex */
+				|#define SYNC_FILE_FORMAT_TAG	1200	/* Used to serialize access to the
+				|					file format tag */
+				|#define	SYNC_DICT_OPERATION	1010	/* table create, drop, etc. reserve
+				|					this in X-mode; implicit or backround
+				|					operations purge, rollback, foreign
+				|					key checks reserve this in S-mode */
+				|#define SYNC_FTS_CACHE		1005	/* FTS cache rwlock */
+				|#define SYNC_DICT		1000
+				|#define SYNC_DICT_AUTOINC_MUTEX	999
+				|#define SYNC_STATS_AUTO_RECALC	997
+				|#define SYNC_DICT_HEADER	995
+				|#define SYNC_IBUF_HEADER	914
+				|#define SYNC_IBUF_PESS_INSERT_MUTEX 912
+				|/*-------------------------------*/
+				|#define	SYNC_INDEX_TREE		900
+				|#define SYNC_TREE_NODE_NEW	892
+				|#define SYNC_TREE_NODE_FROM_HASH 891
+				|#define SYNC_TREE_NODE		890
+				|#define	SYNC_PURGE_LATCH	800
+				|#define	SYNC_TRX_UNDO		700
+				|#define SYNC_RSEG		600
+				|#define SYNC_RSEG_HEADER_NEW	591
+				|#define SYNC_RSEG_HEADER	590
+				|#define SYNC_TRX_UNDO_PAGE	570
+				|#define SYNC_EXTERN_STORAGE	500
+				|#define	SYNC_FSP		400
+				|#define	SYNC_FSP_PAGE		395
+				|/*------------------------------------- Change buffer headers */
+				|#define SYNC_IBUF_MUTEX		370	/* ibuf_mutex */
+				|/*------------------------------------- Change buffer tree */
+				|#define SYNC_IBUF_INDEX_TREE	360
+				|#define SYNC_IBUF_TREE_NODE_NEW	359
+				|#define SYNC_IBUF_TREE_NODE	358
+				|#define	SYNC_IBUF_BITMAP_MUTEX	351
+				|#define	SYNC_IBUF_BITMAP	350
+				|/*------------------------------------- Change log for online create index */
+				|#define SYNC_INDEX_ONLINE_LOG	340
+				|/*------------------------------------- MySQL query cache mutex */
+				|/*------------------------------------- MySQL binlog mutex */
+				|/*-------------------------------*/
+				|#define SYNC_LOCK_WAIT_SYS	300
+				|#define SYNC_LOCK_SYS		299
+				|#define SYNC_TRX_SYS		298
+				|#define SYNC_TRX		297
+				|#define SYNC_THREADS		295
+				|#define SYNC_REC_LOCK		294
+				|#define SYNC_TRX_SYS_HEADER	290
+				|#define	SYNC_PURGE_QUEUE	200
+				|#define SYNC_LOG		170
+				|#define SYNC_LOG_FLUSH_ORDER	147
+				|#define SYNC_RECV		168
+				|#define SYNC_FTS_TOKENIZE	167
+				|#define SYNC_FTS_CACHE_INIT	166	/* Used for FTS cache initialization */
+				|#define SYNC_FTS_BG_THREADS	165
+				|#define SYNC_FTS_OPTIMIZE       164     // FIXME: is this correct number, test
+				|#define	SYNC_WORK_QUEUE		162
+				|#define	SYNC_SEARCH_SYS		160	/* NOTE that if we have a memory
+				|					heap that can be extended to the
+				|					buffer pool, its logical level is
+				|					SYNC_SEARCH_SYS, as memory allocation
+				|					can call routines there! Otherwise
+				|					the level is SYNC_MEM_HASH. */
+				|#define SYNC_BUF_LRU_LIST   151
+				|#define SYNC_BUF_PAGE_HASH  149 /* buf_pool->page_hash rw_lock */
+				|#define SYNC_BUF_BLOCK      146 /* Block mutex */
+				|#define SYNC_BUF_FREE_LIST  145
+				|#define SYNC_BUF_ZIP_FREE   144
+				|#define SYNC_BUF_ZIP_HASH   143
+				|#define SYNC_BUF_FLUSH_STATE    142
+				|#define SYNC_BUF_FLUSH_LIST 141 /* Buffer flush list mutex */
+				|#define SYNC_DOUBLEWRITE    139
+				|#define	SYNC_ANY_LATCH		135
+				|#define	SYNC_MEM_HASH		131
+				|#define	SYNC_MEM_POOL		130
+				|
+				|/* Codes used to designate lock operations */
+				|#define RW_LOCK_NOT_LOCKED	350
+				|#define RW_LOCK_EX		351
+				|#define RW_LOCK_EXCLUSIVE	351
+				|#define RW_LOCK_SHARED		352
+				|#define RW_LOCK_WAIT_EX		353
+				|#define SYNC_MUTEX		354
+
+13.RW_LOCK(sync0rw.cc)
+/*
+	IMPLEMENTATION OF THE RW_LOCK
+	=============================
+The status of a rw_lock is held in lock_word. The initial value of lock_word is
+X_LOCK_DECR. lock_word is decremented by 1 for each s-lock and by X_LOCK_DECR
+for each x-lock. This describes the lock state for each value of lock_word:
+
+lock_word == X_LOCK_DECR:      Unlocked.
+0 < lock_word < X_LOCK_DECR:   Read locked, no waiting writers.
+			       (X_LOCK_DECR - lock_word) is the
+			       number of readers that hold the lock.
+lock_word == 0:		       Write locked
+-X_LOCK_DECR < lock_word < 0:  Read locked, with a waiting writer.
+			       (-lock_word) is the number of readers
+			       that hold the lock.
+lock_word <= -X_LOCK_DECR:     Recursively write locked. lock_word has been
+			       decremented by X_LOCK_DECR for the first lock
+			       and the first recursive lock, then by 1 for
+			       each recursive lock thereafter.
+			       So the number of locks is:
+			       (lock_copy == 0) ? 1 : 2 - (lock_copy + X_LOCK_DECR)
+
+The lock_word is always read and updated atomically and consistently, so that
+it always represents the state of the lock, and the state of the lock changes
+with a single atomic operation. This lock_word holds all of the information
+that a thread needs in order to determine if it is eligible to gain the lock
+or if it must spin or sleep. The one exception to this is that writer_thread
+must be verified before recursive write locks: to solve this scenario, we make
+writer_thread readable by all threads, but only writeable by the x-lock holder.
+
+The other members of the lock obey the following rules to remain consistent:
+
+recursive:	This and the writer_thread field together control the
+		behaviour of recursive x-locking.
+		lock->recursive must be FALSE in following states:
+			1) The writer_thread contains garbage i.e.: the
+			lock has just been initialized.
+			2) The lock is not x-held and there is no
+			x-waiter waiting on WAIT_EX event.
+			3) The lock is x-held or there is an x-waiter
+			waiting on WAIT_EX event but the 'pass' value
+			is non-zero.
+		lock->recursive is TRUE iff:
+			1) The lock is x-held or there is an x-waiter
+			waiting on WAIT_EX event and the 'pass' value
+			is zero.
+		This flag must be set after the writer_thread field
+		has been updated with a memory ordering barrier.
+		It is unset before the lock_word has been incremented.
+writer_thread:	Is used only in recursive x-locking. Can only be safely
+		read iff lock->recursive flag is TRUE.
+		This field is uninitialized at lock creation time and
+		is updated atomically when x-lock is acquired or when
+		move_ownership is called. A thread is only allowed to
+		set the value of this field to it's thread_id i.e.: a
+		thread cannot set writer_thread to some other thread's
+		id.
+waiters:	May be set to 1 anytime, but to avoid unnecessary wake-up
+		signals, it should only be set to 1 when there are threads
+		waiting on event. Must be 1 when a writer starts waiting to
+		ensure the current x-locking thread sends a wake-up signal
+		during unlock. May only be reset to 0 immediately before a
+		a wake-up signal is sent to event. On most platforms, a
+		memory barrier is required after waiters is set, and before
+		verifying lock_word is still held, to ensure some unlocker
+		really does see the flags new value.
+event:		Threads wait on event for read or writer lock when another
+		thread has an x-lock or an x-lock reservation (wait_ex). A
+		thread may only	wait on event after performing the following
+		actions in order:
+		   (1) Record the counter value of event (with os_event_reset).
+		   (2) Set waiters to 1.
+		   (3) Verify lock_word <= 0.
+		(1) must come before (2) to ensure signal is not missed.
+		(2) must come before (3) to ensure a signal is sent.
+		These restrictions force the above ordering.
+		Immediately before sending the wake-up signal, we should:
+		   (1) Verify lock_word == X_LOCK_DECR (unlocked)
+		   (2) Reset waiters to 0.
+wait_ex_event:	A thread may only wait on the wait_ex_event after it has
+		performed the following actions in order:
+		   (1) Decrement lock_word by X_LOCK_DECR.
+		   (2) Record counter value of wait_ex_event (os_event_reset,
+		       called from sync_array_reserve_cell).
+		   (3) Verify that lock_word < 0.
+		(1) must come first to ensures no other threads become reader
+		or next writer, and notifies unlocker that signal must be sent.
+		(2) must come before (3) to ensure the signal is not missed.
+		These restrictions force the above ordering.
+		Immediately before sending the wake-up signal, we should:
+		   Verify lock_word == 0 (waiting thread holds x_lock)
+*/
+
+
+
+
+12.加latch，加mutex，加lock的顺序
+sync0sync.h
+		|	*
+		|			LATCHING ORDER WITHIN THE DATABASE
+		|			==================================
+		|	
+		|	The mutex or latch in the central memory object, for instance, a rollback
+		|	segment object, must be acquired before acquiring the latch or latches to
+		|	the corresponding file data structure. In the latching order below, these
+		|	file page object latches are placed immediately below the corresponding
+		|	central memory object latch or mutex.
+		|	
+		|	Synchronization object			Notes
+		|	----------------------			-----
+		|	
+		|	Dictionary mutex			If we have a pointer to a dictionary
+		|	|					object, e.g., a table, it can be
+		|	|					accessed without reserving the
+		|	|					dictionary mutex. We must have a
+		|	|					reservation, a memoryfix, to the
+		|	|					appropriate table object in this case,
+		|	|					and the table must be explicitly
+		|	|					released later.
+		|	V
+		|	Dictionary header
+		|	|
+		|	V
+		|	Secondary index tree latch		The tree latch protects also all
+		|	|					the B-tree non-leaf pages. These
+		|	V					can be read with the page only
+		|	Secondary index non-leaf		bufferfixed to save CPU time,
+		|	|					no s-latch is needed on the page.
+		|	|					Modification of a page requires an
+		|	|					x-latch on the page, however. If a
+		|	|					thread owns an x-latch to the tree,
+		|	|					it is allowed to latch non-leaf pages
+		|	|					even after it has acquired the fsp
+		|	|					latch.
+		|	V
+		|	Secondary index leaf			The latch on the secondary index leaf
+		|	|					can be kept while accessing the
+		|	|					clustered index, to save CPU time.
+		|	V
+		|	Clustered index tree latch		To increase concurrency, the tree
+		|	|					latch is usually released when the
+		|	|					leaf page latch has been acquired.
+		|	V
+		|	Clustered index non-leaf
+		|	|
+		|	V
+		|	Clustered index leaf
+		|	|
+		|	V
+		|	Transaction system header
+		|	|
+		|	V
+		|	Transaction undo mutex			The undo log entry must be written
+		|	|					before any index page is modified.
+		|	|					Transaction undo mutex is for the undo
+		|	|					logs the analogue of the tree latch
+		|	|					for a B-tree. If a thread has the
+		|	|					trx undo mutex reserved, it is allowed
+		|	|					to latch the undo log pages in any
+		|	|					order, and also after it has acquired
+		|	|					the fsp latch.
+		|	V
+		|	Rollback segment mutex			The rollback segment mutex must be
+		|	|					reserved, if, e.g., a new page must
+		|	|					be added to an undo log. The rollback
+		|	|					segment and the undo logs in its
+		|	|					history list can be seen as an
+		|	|					analogue of a B-tree, and the latches
+		|	|					reserved similarly, using a version of
+		|	|					lock-coupling. If an undo log must be
+		|	|					extended by a page when inserting an
+		|	|					undo log record, this corresponds to
+		|	|					a pessimistic insert in a B-tree.
+		|	V
+		|	Rollback segment header
+		|	|
+		|	V
+		|	Purge system latch
+		|	|
+		|	V
+		|	Undo log pages				If a thread owns the trx undo mutex,
+		|	|					or for a log in the history list, the
+		|	|					rseg mutex, it is allowed to latch
+		|	|					undo log pages in any order, and even
+		|	|					after it has acquired the fsp latch.
+		|	|					If a thread does not have the
+		|	|					appropriate mutex, it is allowed to
+		|	|					latch only a single undo log page in
+		|	|					a mini-transaction.
+		|	V
+		|	File space management latch		If a mini-transaction must allocate
+		|	|					several file pages, it can do that,
+		|	|					because it keeps the x-latch to the
+		|	|					file space management in its memo.
+		|	V
+		|	File system pages
+		|	|
+		|	V
+		|	lock_sys_wait_mutex			Mutex protecting lock timeout data
+		|	|
+		|	V
+		|	lock_sys_mutex				Mutex protecting lock_sys_t
+		|	|
+		|	V
+		|	trx_sys->mutex				Mutex protecting trx_sys_t
+		|	|
+		|	V
+		|	Threads mutex				Background thread scheduling mutex
+		|	|
+		|	V
+		|	query_thr_mutex				Mutex protecting query threads
+		|	|
+		|	V
+		|	trx_mutex				Mutex protecting trx_t fields
+		|	|
+		|	V
+		|	Search system mutex
+		|	|
+		|	V
+		|	Buffer pool mutexes
+		|	|
+		|	V
+		|	Log mutex
+		|	|
+		|	Any other latch
+		|	|
+		|	V
+		|	Memory pool mutex */
+		|	
+		|	/* Latching order levels. If you modify these, you have to also update
+		|	sync_thread_add_level(). */
+		|	
+		|	/* User transaction locks are higher than any of the latch levels below:
+		|	no latches are allowed when a thread goes to wait for a normal table
+		|	or row lock! */
+		|	#define SYNC_USER_TRX_LOCK	9999
+		|	#define SYNC_NO_ORDER_CHECK	3000	/* this can be used to suppress
+		|						latching order checking */
+		|	#define	SYNC_LEVEL_VARYING	2000	/* Level is varying. Only used with
+		|						buffer pool page locks, which do not
+		|						have a fixed level, but instead have
+		|						their level set after the page is
+		|						locked; see e.g.
+		|						ibuf_bitmap_get_map_page(). */
+		|	#define SYNC_TRX_I_S_RWLOCK	1910	/* Used for
+		|						trx_i_s_cache_t::rw_lock */
+		|	#define SYNC_TRX_I_S_LAST_READ	1900	/* Used for
+		|						trx_i_s_cache_t::last_read_mutex */
+		|	#define SYNC_FILE_FORMAT_TAG	1200	/* Used to serialize access to the
+		|						file format tag */
+		|	#define	SYNC_DICT_OPERATION	1010	/* table create, drop, etc. reserve
+		|						this in X-mode; implicit or backround
+		|						operations purge, rollback, foreign
+		|						key checks reserve this in S-mode */
+		|	#define SYNC_FTS_CACHE		1005	/* FTS cache rwlock */
+		|	#define SYNC_DICT		1000
+		|	#define SYNC_DICT_AUTOINC_MUTEX	999
+		|	#define SYNC_STATS_AUTO_RECALC	997
+		|	#define SYNC_DICT_HEADER	995
+		|	#define SYNC_IBUF_HEADER	914
+		|	#define SYNC_IBUF_PESS_INSERT_MUTEX 912
+		|	/*-------------------------------*/
+		|	#define	SYNC_INDEX_TREE		900
+		|	#define SYNC_TREE_NODE_NEW	892
+		|	#define SYNC_TREE_NODE_FROM_HASH 891
+		|	#define SYNC_TREE_NODE		890
+		|	#define	SYNC_PURGE_LATCH	800
+		|	#define	SYNC_TRX_UNDO		700
+		|	#define SYNC_RSEG		600
+		|	#define SYNC_RSEG_HEADER_NEW	591
+		|	#define SYNC_RSEG_HEADER	590
+		|	#define SYNC_TRX_UNDO_PAGE	570
+		|	#define SYNC_EXTERN_STORAGE	500
+		|	#define	SYNC_FSP		400
+		|	#define	SYNC_FSP_PAGE		395
+		|	/*------------------------------------- Change buffer headers */
+		|	#define SYNC_IBUF_MUTEX		370	/* ibuf_mutex */
+		|	/*------------------------------------- Change buffer tree */
+		|	#define SYNC_IBUF_INDEX_TREE	360
+		|	#define SYNC_IBUF_TREE_NODE_NEW	359
+		|	#define SYNC_IBUF_TREE_NODE	358
+		|	#define	SYNC_IBUF_BITMAP_MUTEX	351
+		|	#define	SYNC_IBUF_BITMAP	350
+		|	/*------------------------------------- Change log for online create index */
+		|	#define SYNC_INDEX_ONLINE_LOG	340
+		|	/*------------------------------------- MySQL query cache mutex */
+		|	/*------------------------------------- MySQL binlog mutex */
+		|	/*-------------------------------*/
+		|	#define SYNC_LOCK_WAIT_SYS	300
+		|	#define SYNC_LOCK_SYS		299
+		|	#define SYNC_TRX_SYS		298
+		|	#define SYNC_TRX		297
+		|	#define SYNC_THREADS		295
+		|	#define SYNC_REC_LOCK		294
+		|	#define SYNC_TRX_SYS_HEADER	290
+		|	#define	SYNC_PURGE_QUEUE	200
+		|	#define SYNC_LOG_ONLINE		175
+		|	#define SYNC_LOG		170
+		|	#define SYNC_LOG_FLUSH_ORDER	147
+		|	#define SYNC_RECV		168
+		|	#define SYNC_FTS_TOKENIZE	167
+		|	#define SYNC_FTS_CACHE_INIT	166	/* Used for FTS cache initialization */
+		|	#define SYNC_FTS_BG_THREADS	165
+		|	#define SYNC_FTS_OPTIMIZE       164     // FIXME: is this correct number, test
+		|	#define	SYNC_WORK_QUEUE		162
+		|	#define	SYNC_SEARCH_SYS		160	/* NOTE that if we have a memory
+		|						heap that can be extended to the
+		|						buffer pool, its logical level is
+		|						SYNC_SEARCH_SYS, as memory allocation
+		|						can call routines there! Otherwise
+		|						the level is SYNC_MEM_HASH. */
+		|	#define	SYNC_BUF_LRU_LIST	151
+		|	#define	SYNC_BUF_PAGE_HASH	149	/* buf_pool->page_hash rw_lock */
+		|	#define	SYNC_BUF_BLOCK		146	/* Block mutex */
+		|	#define	SYNC_BUF_FREE_LIST	145
+		|	#define	SYNC_BUF_ZIP_FREE	144
+		|	#define	SYNC_BUF_ZIP_HASH	143
+		|	#define	SYNC_BUF_FLUSH_STATE	142
+		|	#define	SYNC_BUF_FLUSH_LIST	141	/* Buffer flush list mutex */
+		|	#define	SYNC_DOUBLEWRITE	139
+		|	#define	SYNC_ANY_LATCH		135
+		|	#define	SYNC_MEM_HASH		131
+		|	#define	SYNC_MEM_POOL		130
+		|	
+		|	/* Codes used to designate lock operations */
+		|	#define RW_LOCK_NOT_LOCKED	350
+		|	#define RW_LOCK_EX		351
+		|	#define RW_LOCK_EXCLUSIVE	351
+		|	#define RW_LOCK_SHARED		352
+		|	#define RW_LOCK_WAIT_EX		353
+		|	#define SYNC_MUTEX		354
+		|	#define SYNC_PRIO_MUTEX		355
+		|	#define PRIO_RW_LOCK_EX		356
+		|	#define PRIO_RW_LOCK_SHARED	357
+

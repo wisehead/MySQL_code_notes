@@ -1,0 +1,408 @@
+1.整个文件系统
+//--
+struct fil_system_struct {
+#ifndef UNIV_HOTBACKUP
+	mutex_t		mutex;		/*!< The mutex protecting the cache */
+#endif /* !UNIV_HOTBACKUP */
+	hash_table_t*	spaces;		/*!< The hash table of spaces in the
+					system; they are hashed on the space
+					id */
+	hash_table_t*	name_hash;	/*!< hash table based on the space
+					name */
+	UT_LIST_BASE_NODE_T(fil_node_t) LRU;
+					/*!< base node for the LRU list of the
+					most recently used open files with no
+					pending i/o's; if we start an i/o on
+					the file, we first remove it from this
+					list, and return it to the start of
+					the list when the i/o ends;
+					log files and the system tablespace are
+					not put to this list: they are opened
+					after the startup, and kept open until
+					shutdown */
+	UT_LIST_BASE_NODE_T(fil_space_t) unflushed_spaces;
+					/*!< base node for the list of those
+					tablespaces whose files contain
+					unflushed writes; those spaces have
+					at least one file node where
+					modification_counter > flush_counter */
+	ulint		n_open;		/*!< number of files currently open */
+	ulint		max_n_open;	/*!< n_open is not allowed to exceed
+					this */
+	ib_int64_t	modification_counter;/*!< when we write to a file we
+					increment this by one */
+	ulint		max_assigned_id;/*!< maximum space id in the existing
+					tables, or assigned during the time
+					mysqld has been up; at an InnoDB
+					startup we scan the data dictionary
+					and set here the maximum of the
+					space id's of the tables there */
+	ib_int64_t	tablespace_version;
+					/*!< a counter which is incremented for
+					every space object memory creation;
+					every space mem object gets a
+					'timestamp' from this; in DISCARD/
+					IMPORT this is used to check if we
+					should ignore an insert buffer merge
+					request */
+	UT_LIST_BASE_NODE_T(fil_space_t) space_list;
+					/*!< list of all file spaces */
+	ibool		space_id_reuse_warned;
+					/* !< TRUE if fil_space_create()
+					has issued a warning about
+					potential space_id reuse */
+};
+
+
+2.文件空间
+/** Tablespace or log data space: let us call them by a common name space */
+struct fil_space_struct {
+	char*		name;	/*!< space name = the path to the first file in
+				it */
+	ulint		id;	/*!< space id */
+	ib_int64_t	tablespace_version;
+				/*!< in DISCARD/IMPORT this timestamp
+				is used to check if we should ignore
+				an insert buffer merge request for a
+				page because it actually was for the
+				previous incarnation of the space */
+	ibool		mark;	/*!< this is set to TRUE at database startup if
+				the space corresponds to a table in the InnoDB
+				data dictionary; so we can print a warning of
+				orphaned tablespaces */
+	ibool		stop_ios;/*!< TRUE if we want to rename the
+				.ibd file of tablespace and want to
+				stop temporarily posting of new i/o
+				requests on the file */
+	ibool		stop_new_ops;
+				/*!< we set this TRUE when we start
+				deleting a single-table tablespace */
+	ibool		is_being_deleted;
+				/*!< this is set to TRUE when we start
+				deleting a single-table tablespace and its
+				file; when this flag is set no further i/o
+				or flush requests can be placed on this space,
+				though there may be such requests still being
+				processed on this space */
+	ulint		purpose;/*!< FIL_TABLESPACE, FIL_LOG, or
+				FIL_ARCH_LOG */
+	UT_LIST_BASE_NODE_T(fil_node_t) chain;
+				/*!< base node for the file chain */
+	ulint		size;	/*!< space size in pages; 0 if a single-table
+				tablespace whose size we do not know yet;
+				last incomplete megabytes in data files may be
+				ignored if space == 0 */
+	ulint		flags;	/*!< compressed page size and file format, or 0 */
+	ulint		n_reserved_extents;
+				/*!< number of reserved free extents for
+				ongoing operations like B-tree page split */
+	ulint		n_pending_flushes; /*!< this is positive when flushing
+				the tablespace to disk; dropping of the
+				tablespace is forbidden if this is positive */
+	ulint		n_pending_ops;/*!< this is positive when we
+				have pending operations against this
+				tablespace. The pending operations can
+				be ibuf merges or lock validation code
+				trying to read a block.
+				Dropping of the tablespace is forbidden
+				if this is positive */
+	hash_node_t	hash;	/*!< hash chain node */
+	hash_node_t	name_hash;/*!< hash chain the name_hash table */
+#ifndef UNIV_HOTBACKUP
+	rw_lock_t	latch;	/*!< latch protecting the file space storage
+				allocation */
+#endif /* !UNIV_HOTBACKUP */
+	UT_LIST_NODE_T(fil_space_t) unflushed_spaces;
+				/*!< list of spaces with at least one unflushed
+				file we have written to */
+	ibool		is_in_unflushed_spaces; /*!< TRUE if this space is
+				currently in unflushed_spaces */
+	UT_LIST_NODE_T(fil_space_t) space_list;
+				/*!< list of all spaces */
+	ulint		magic_n;/*!< FIL_SPACE_MAGIC_N */
+};
+
+/** Value of fil_space_struct::magic_n */
+#define	FIL_SPACE_MAGIC_N	89472
+
+/** The tablespace memory cache */
+typedef	struct fil_system_struct	fil_system_t;
+
+/** The tablespace memory cache; also the totality of logs (the log
+data space) is stored here; below we talk about tablespaces, but also
+the ib_logfiles form a 'space' and it is handled here */
+
+3.文件节点
+/** File node of a tablespace or the log data space */
+struct fil_node_struct {
+	fil_space_t*	space;	/*!< backpointer to the space where this node
+				belongs */
+	char*		name;	/*!< path to the file */
+	ibool		open;	/*!< TRUE if file open */
+	os_file_t	handle;	/*!< OS handle to the file, if file open */
+	ibool		is_raw_disk;/*!< TRUE if the 'file' is actually a raw
+				device or a raw disk partition */
+	ulint		size;	/*!< size of the file in database pages, 0 if
+				not known yet; the possible last incomplete
+				megabyte may be ignored if space == 0 */
+	ulint		n_pending;
+				/*!< count of pending i/o's on this file;
+				closing of the file is not allowed if
+				this is > 0 */
+	ulint		n_pending_flushes;
+				/*!< count of pending flushes on this file;
+				closing of the file is not allowed if
+				this is > 0 */
+	ib_int64_t	modification_counter;/*!< when we write to the file we
+				increment this by one */
+	ib_int64_t	flush_counter;/*!< up to what
+				modification_counter value we have
+				flushed the modifications to disk */
+	UT_LIST_NODE_T(fil_node_t) chain;
+				/*!< link field for the file chain */
+	UT_LIST_NODE_T(fil_node_t) LRU;
+				/*!< link field for the LRU list */
+	ulint		magic_n;/*!< FIL_NODE_MAGIC_N */
+};
+
+4.checksum--校验位
+
+buf_page_is_corrupted
+--buf_calc_page_crc32
+--buf_calc_page_new_checksum
+
+	checksum_field1 = mach_read_from_4(
+		read_buf + FIL_PAGE_SPACE_OR_CHKSUM);
+
+	checksum_field2 = mach_read_from_4(
+		read_buf + UNIV_PAGE_SIZE - FIL_PAGE_END_LSN_OLD_CHKSUM);
+		
+		
+5.FILE Header字段
+/** The byte offsets on a file page for various variables @{ */
+#define FIL_PAGE_SPACE_OR_CHKSUM 0	/*!< in < MySQL-4.0.14 space id the
+					page belongs to (== 0) but in later
+					versions the 'new' checksum of the
+					page */
+#define FIL_PAGE_OFFSET		4	/*!< page offset inside space */
+#define FIL_PAGE_PREV		8	/*!< if there is a 'natural'
+					predecessor of the page, its
+					offset.  Otherwise FIL_NULL.
+					This field is not set on BLOB
+					pages, which are stored as a
+					singly-linked list.  See also
+					FIL_PAGE_NEXT. */
+#define FIL_PAGE_NEXT		12	/*!< if there is a 'natural' successor
+					of the page, its offset.
+					Otherwise FIL_NULL.
+					B-tree index pages
+					(FIL_PAGE_TYPE contains FIL_PAGE_INDEX)
+					on the same PAGE_LEVEL are maintained
+					as a doubly linked list via
+					FIL_PAGE_PREV and FIL_PAGE_NEXT
+					in the collation order of the
+					smallest user record on each page. */
+#define FIL_PAGE_LSN		16	/*!< lsn of the end of the newest
+					modification log record to the page */
+#define	FIL_PAGE_TYPE		24	/*!< file page type: FIL_PAGE_INDEX,...,
+					2 bytes.
+
+					The contents of this field can only
+					be trusted in the following case:
+					if the page is an uncompressed
+					B-tree index page, then it is
+					guaranteed that the value is
+					FIL_PAGE_INDEX.
+					The opposite does not hold.
+
+					In tablespaces created by
+					MySQL/InnoDB 5.1.7 or later, the
+					contents of this field is valid
+					for all uncompressed pages. */
+#define FIL_PAGE_FILE_FLUSH_LSN	26	/*!< this is only defined for the
+					first page in a system tablespace
+					data file (ibdata*, not *.ibd):
+					the file has been flushed to disk
+					at least up to this lsn */
+#define FIL_PAGE_ARCH_LOG_NO_OR_SPACE_ID  34 /*!< starting from 4.1.x this
+					contains the space id of the page */
+#define FIL_PAGE_SPACE_ID  FIL_PAGE_ARCH_LOG_NO_OR_SPACE_ID
+
+#define FIL_PAGE_DATA		38	/*!< start of the data on the page */
+
+		
+
+
+7.函数xdes_calc_descriptor_page用于判断给定的区的描述符。
+
+8.fsp_alloc_free_page，从碎片区申请碎片页。
+每个段有32个碎片页，段中的内容首先保存在这32页中，超出容量后，再以区的方式申请空间。
+碎片区保存在space header中，不能分配给段。段中保存的区都是在链表FSP_FREE中申请的。
+
+9.fseg_create_general
+用来创建一个段，初始化segment inode以及segment header。函数变量page表示segment header的位置。
+对于用户表来说，segment header总是保存在其索引的root页中，被指向了非叶子节点segment inode和叶子节点的segment inode。
+然而，segment header并不总是保存在root页中，可以放在一个单独的页中，例如insert buffer的处理方式。
+
+10.fil_flush_file_spaces
+
+buf_dblwr_flush_buffered_writes
+--buf_dblwr_sync_datafiles
+----fil_flush_file_spaces
+------fil_flush
+--------os_file_flush
+----------os_file_flush_func
+------------os_file_fsync
+--------------fsync
+
+
+#0 0x00007f062130f3cc in pthread_cond_wait@@GLIBC_2.3.2 ()
+#1 0x00000000009fbba1 in os_cond_wait (fast_mutex=0x6d5bef50,
+#2 os_event_wait_low (event=0x6d5bef50, reset_sig_count=<optimized out>,
+#3 0x0000000000b03d3f in fil_flush (space_id=<optimized out>)
+#4 0x0000000000b04bf5 in fil_flush_file_spaces (purpose=purpose@entry=501)
+#5 0x0000000000ac13b4 in buf_dblwr_sync_datafiles ()
+#6 buf_dblwr_flush_buffered_writes ()
+#7 0x0000000000ac71fb in buf_flush_common (flush_type=BUF_FLUSH_LIST,
+#8 buf_flush_list (min_n=<optimized out>, min_n@entry=18446744073709551614,
+#9 0x00000000009e7042 in log_preflush_pool_modified_pages (
+#10 log_checkpoint_margin ()
+#11 log_check_margins ()
+#12 0x0000000000a54d55 in log_free_check ()
+#13 row_upd (thr=0x7ef384077368, node=0x7ef384077068)
+#14 row_upd_step (thr=thr@entry=0x7ef384077368)
+#15 0x0000000000a39fad in row_update_for_mysql (
+#16 0x00000000009b442e in ha_innobase::update_row (this=0x7ef384075c10,
+#17 0x00000000005aefa3 in handler::ha_update_row (this=0x7ef384075c10,
+#18 0x0000000000763125 in mysql_update (thd=thd@entry=0x6e0ad6c0,
+#19 0x00000000006f43bc in mysql_execute_command (thd=0x6e0ad6c0)
+#20 0x000000000070a13e in Prepared_statement::execute (
+#21 0x000000000070a352 in Prepared_statement::execute_loop (
+#22 0x000000000070a607 in mysqld_stmt_execute (thd=thd@entry=0x6e0ad6c0,
+#23 0x00000000006fa46f in dispatch_command (command=COM_STMT_EXECUTE,
+#24 0x00000000006fb364 in do_command (thd=<optimized out>)
+#25 0x00000000006c152d in do_handle_one_connection (
+#26 0x00000000006c1579 in handle_one_connection (arg=arg@entry=0x6e0ad6c0)
+#27 0x0000000000945fb0 in pfs_spawn_thread (arg=0x6e0b5720)
+#28 0x00007f062130b1c3 in start_thread ()
+#29 0x00007f06201e512d in clone () from /opt/compiler/gcc-4.8.2/lib/libc.so.6
+
+log_checkpoint
+--fil_flush_file_spaces
+
+
+
+11.表空间特殊page
+/*--------------------------------------*/
+#define FSP_XDES_OFFSET			0	/* !< extent descriptor */
+#define FSP_IBUF_BITMAP_OFFSET		1	/* !< insert buffer bitmap */
+				/* The ibuf bitmap pages are the ones whose
+				page number is the number above plus a
+				multiple of XDES_DESCRIBED_PER_PAGE */
+
+#define FSP_FIRST_INODE_PAGE_NO		2	/*!< in every tablespace */
+				/* The following pages exist
+				in the system tablespace (space 0). */
+#define FSP_IBUF_HEADER_PAGE_NO		3	/*!< insert buffer
+						header page, in
+						tablespace 0 */
+#define FSP_IBUF_TREE_ROOT_PAGE_NO	4	/*!< insert buffer
+						B-tree root page in
+						tablespace 0 */
+				/* The ibuf tree root page number in
+				tablespace 0; its fseg inode is on the page
+				number FSP_FIRST_INODE_PAGE_NO */
+#define FSP_TRX_SYS_PAGE_NO		5	/*!< transaction
+						system header, in
+						tablespace 0 */
+#define	FSP_FIRST_RSEG_PAGE_NO		6	/*!< first rollback segment
+						page, in tablespace 0 */
+#define FSP_DICT_HDR_PAGE_NO		7	/*!< data dictionary header
+						page, in tablespace 0 */
+/*--------------------------------------*/
+
+12.fsp_fill_free_list用于申请区，若空间大小允许，每次申请4个区，若申请的区包含碎片区，则申请5个区。
+取得申请与分配通过space header完成。而区中的64个页是否已经全部使用则通过区描述符（extent desciptor）来控制。
+
+caller:
+fsp_alloc_free_page
+fseg_fill_free_list
+fseg_alloc_free_extent
+fseg_alloc_free_page_low
+
+
+--fsp_alloc_free_extent
+----fsp_fill_free_list
+------fsp_try_extend_data_file
+--------fil_extend_space_to_desired_size
+----------static_cast<byte*>(mem_alloc(buf_size + page_size));
+----------os_aio(OS_FILE_WRITE, OS_AIO_SYNC,
+----------mem_free(buf2);
+----------fil_node_complete_io
+----------fil_flush
+------xdes_get_descriptor_with_space_hdr
+--------xdes_calc_descriptor_page
+------xdes_init
+------//if(init_xdes) 
+------xdes_set_bit
+------xdes_set_state(descr, XDES_FREE_FRAG, mtr);
+------flst_add_last(header + FSP_FREE,
+------//!if(init_xdes)
+
+
+fsp_header_init
+--fsp_fill_free_list
+
+13.fsp_alloc_free_page
+碎片页的申请，
+
+caller:
+fsp_alloc_seg_inode_page
+fseg_alloc_free_page_low
+
+Functions calling this function: fseg_create
+
+  File         Function               Line         
+0 btr0btr.cc   btr_create             1558 buf_block_t* ibuf_hdr_block = fseg_create(
+1 btr0btr.cc   btr_create             1585 block = fseg_create(space, 0,
+2 btr0btr.cc   btr_create             1609 if (!fseg_create(space, page_no,
+3 buf0dblwr.cc buf_dblwr_create        230 block2 = fseg_create(TRX_SYS_SPACE, TRX_SYS_PAGE_NO,
+4 dict0boot.cc dict_hdr_create         153 block = fseg_create(DICT_HDR_SPACE, 0,
+5 trx0rseg.cc  trx_rseg_header_create   70 block = fseg_create(space, 0, TRX_RSEG + TRX_RSEG_FSEG_HEADER, mtr);
+6 trx0sys.cc   trx_sysf_create         411 block = fseg_create(TRX_SYS_SPACE, 0, TRX_SYS + TRX_SYS_FSEG_HEADER,
+
+fseg_create/trx_undo_seg_create
+--fseg_create_general
+----fsp_reserve_free_extents
+----fsp_alloc_seg_inode
+------fsp_alloc_seg_inode_page
+--------fsp_alloc_free_page
+----------fsp_get_space_header
+----------xdes_get_descriptor_with_space_hdr
+----------fsp_alloc_free_extent
+----------xdes_find_bit
+----------xdes_get_offset
+----------fsp_alloc_from_free_frag
+------------xdes_set_bit(descr, XDES_FREE_BIT, bit, FALSE, mtr);
+----------fsp_page_create
+------------buf_page_create
+------------fsp_init_file_page
+--------------fsp_init_file_page_low
+--------fsp_seg_inode_page_get_nth_inode
+--------flst_add_last
+------flst_get_first(space_header + FSP_SEG_INODES_FREE, mtr).page;
+------fsp_seg_inode_page_find_free
+------fsp_seg_inode_page_get_nth_inode
+----if (page == 0) {
+----fseg_alloc_free_page_low
+
+
+
+
+
+fseg_alloc_free_page_low
+--fsp_alloc_free_page
+
+
+
+

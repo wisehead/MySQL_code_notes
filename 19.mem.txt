@@ -1,0 +1,37 @@
+1.mem_heap_create_func
+内存堆的创建。
+
+2.mem_pool_create
+内存实例中会有一个 mem_comm_pool 对象，称之为通用内存池，其在innodb 启动进行内存管理初始化时调用函数 mem_pool_create创建，
+大小通过参数 innodb_additional_mem_pool_size 进行定义。 通用内存池服务于之前介绍的内存堆，主要用于进行小块内存的分配，通常用于分配一些 Innodb 引擎内部的数据结构对象。
+
+mysql_declare_plugin
+--innobase_init
+----innobase_start_or_create_for_mysql
+------srv_boot
+--------srv_general_init
+----------mem_init
+------------mem_pool_create
+
+
+3.mem_comm_pool对象
+/** Data structure for a memory pool. The space is allocated using the buddy
+algorithm, where free list i contains areas of size 2 to power i. */
+struct mem_pool_t{
+	byte*		buf;		/*!< memory pool */
+	ulint		size;		/*!< memory common pool size */
+	ulint		reserved;	/*!< amount of currently allocated
+					memory */
+	ib_mutex_t		mutex;		/*!< mutex protecting this struct */
+	UT_LIST_BASE_NODE_T(mem_area_t)
+			free_list[64];	/*!< lists of free memory areas: an
+					area is put to the list whose number
+					is the 2-logarithm of the area size */
+};
+
+
+free_list实现buddy算法，以解决外碎片问题。
+
+
+
+
