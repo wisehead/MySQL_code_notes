@@ -1,0 +1,97 @@
+1.get_page可以通过get_frame获取到裸数据
+1202         bitmap_page = buf_block_get_frame(
+1203             buf_page_get_gen(
+1204                 space, zip_size,
+1205                 ibuf_bitmap_page_no_calc(zip_size, page_no),
+1206                 RW_NO_LATCH, NULL, BUF_GET_NO_LATCH,
+1207                 file, line, &local_mtr));
+
+2.get_page 宏定义
+#ifndef UNIV_HOTBACKUP
+/**************************************************************//**
+NOTE! The following macros should be used instead of buf_page_get_gen,
+to improve debugging. Only values RW_S_LATCH and RW_X_LATCH are allowed
+in LA! */
+#define buf_page_get(SP, ZS, OF, LA, MTR)    buf_page_get_gen(\                                                                                                                                                                                                 
+                SP, ZS, OF, LA, NULL,\
+                BUF_GET, __FILE__, __LINE__, MTR)
+/**************************************************************//**
+Use these macros to bufferfix a page with no latching. Remember not to
+read the contents of the page unless you know it is safe. Do not modify
+the contents of the page! We have separated this case, because it is
+error-prone programming not to set a latch, and it should be used
+with care. */
+#define buf_page_get_with_no_latch(SP, ZS, OF, MTR)    buf_page_get_gen(\
+                SP, ZS, OF, RW_NO_LATCH, NULL,\
+                BUF_GET_NO_LATCH, __FILE__, __LINE__, MTR)
+                
+                
+3.buf_page_get_gen
+
+/********************************************************************//**
+This is the general function used to get access to a database page.
+@return pointer to the block or NULL */
+UNIV_INTERN
+buf_block_t*
+buf_page_get_gen(
+/*=============*/
+    ulint       space,  /*!< in: space id */
+    ulint       zip_size,/*!< in: compressed page size in bytes
+                or 0 for uncompressed pages */
+    ulint       offset, /*!< in: page number */
+    ulint       rw_latch,/*!< in: RW_S_LATCH, RW_X_LATCH, RW_NO_LATCH */
+    buf_block_t*    guess,  /*!< in: guessed block or NULL */
+    ulint       mode,   /*!< in: BUF_GET, BUF_GET_IF_IN_POOL,
+                BUF_PEEK_IF_IN_POOL, BUF_GET_NO_LATCH, or
+                BUF_GET_IF_IN_POOL_OR_WATCH */
+    const char* file,   /*!< in: file name */
+    ulint       line,   /*!< in: line where called */
+    mtr_t*      mtr)    /*!< in: mini-transaction */
+{}   
+    
+4. buf_page_get_with_no_latch//凑参数
+    
+table_space 6
+page_no 3
+zip_size = 0
+FIL_PAGE_TYPE = 0x45 bf(17855)              
+
+5.mtr of buf_page_get_gen
+mtr_t   local_mtr;
+
+1187 #ifdef UNIV_DEBUG
+1188     if (!x_latch) {
+1189         mtr_start(&local_mtr);
+1190              
+1191         /* Get the bitmap page without a page latch, so that
+1192         we will not be violating the latching order when
+1193         another bitmap page has already been latched by this
+1194         thread. The page will be buffer-fixed, and thus it
+1195         cannot be removed or relocated while we are looking at
+1196         it. The contents of the page could change, but the
+1197         IBUF_BITMAP_IBUF bit that we are interested in should
+1198         not be modified by any other thread. Nobody should be
+1199         calling ibuf_add_free_page() or ibuf_remove_free_page()
+1200         while the page is linked to the insert buffer b-tree. */
+1201              
+1202         bitmap_page = buf_block_get_frame(
+1203             buf_page_get_gen(
+1204                 space, zip_size,
+1205                 ibuf_bitmap_page_no_calc(zip_size, page_no),
+1206                 RW_NO_LATCH, NULL, BUF_GET_NO_LATCH,
+1207                 file, line, &local_mtr));
+1208              
+1209         ret = ibuf_bitmap_page_get_bits_low(
+1210             bitmap_page, page_no, zip_size,
+1211             MTR_MEMO_BUF_FIX, &local_mtr, IBUF_BITMAP_IBUF);
+1212              
+1213         mtr_commit(&local_mtr);                                                                                                                                                                                                                            
+1214         return(ret);
+1215     }        
+1216 #endif /* UNIV_DEBUG */
+
+
+
+
+
+
