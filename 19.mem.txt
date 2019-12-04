@@ -1,9 +1,9 @@
 1.mem_heap_create_func
-�ڴ�ѵĴ�����
+ÄÚ´æ¶ÑµÄ´´½¨¡£
 
 2.mem_pool_create
-�ڴ�ʵ���л���һ�� mem_comm_pool ���󣬳�֮Ϊͨ���ڴ�أ�����innodb ���������ڴ������ʼ��ʱ���ú��� mem_pool_create������
-��Сͨ������ innodb_additional_mem_pool_size ���ж��塣 ͨ���ڴ�ط�����֮ǰ���ܵ��ڴ�ѣ���Ҫ���ڽ���С���ڴ�ķ��䣬ͨ�����ڷ���һЩ Innodb �����ڲ������ݽṹ����
+ÄÚ´æÊµÀýÖÐ»áÓÐÒ»¸ö mem_comm_pool ¶ÔÏó£¬³ÆÖ®ÎªÍ¨ÓÃÄÚ´æ³Ø£¬ÆäÔÚinnodb Æô¶¯½øÐÐÄÚ´æ¹ÜÀí³õÊ¼»¯Ê±µ÷ÓÃº¯Êý mem_pool_create´´½¨£¬
+´óÐ¡Í¨¹ý²ÎÊý innodb_additional_mem_pool_size ½øÐÐ¶¨Òå¡£ Í¨ÓÃÄÚ´æ³Ø·þÎñÓÚÖ®Ç°½éÉÜµÄÄÚ´æ¶Ñ£¬Ö÷ÒªÓÃÓÚ½øÐÐÐ¡¿éÄÚ´æµÄ·ÖÅä£¬Í¨³£ÓÃÓÚ·ÖÅäÒ»Ð© Innodb ÒýÇæÄÚ²¿µÄÊý¾Ý½á¹¹¶ÔÏó¡£
 
 mysql_declare_plugin
 --innobase_init
@@ -13,8 +13,8 @@ mysql_declare_plugin
 ----------mem_init
 ------------mem_pool_create
 
-
-3.mem_comm_pool����
+，
+3.mem_comm_pool¶ÔÏó
 /** Data structure for a memory pool. The space is allocated using the buddy
 algorithm, where free list i contains areas of size 2 to power i. */
 struct mem_pool_t{
@@ -30,8 +30,23 @@ struct mem_pool_t{
 };
 
 
-free_listʵ��buddy�㷨���Խ������Ƭ���⡣
+free_listÊµÏÖbuddyËã·¨£¬ÒÔ½â¾öÍâËéÆ¬ÎÊÌâ¡£
+
+4.MySQLÄÚ´æÓÐÁ½²¿·Ö£ºbuffer pool ·ÖÅä£¬ºÍÍ¨ÓÃÄÚ´æ³Ø·ÖÅä
+--mem_area_alloc: ´ÓÍ¨ÓÃÄÚ´æ³Ø½¨Á¢Ò»¸öÄÚ´æ¶Ñ£¬»òÕßÎªÄÚ´æ¶ÑÔö¼ÓÒ»¸öÄÚ´æ¿é¡£¶¯Ì¬·ÖÅä
+--buf_frame_alloc:´Ó»º³å³Ø·ÖÅäÒ»ÕûÒ³´óÐ¡µÄÄÚ´æ¿Õ¼ä¡£»º³å³Ø·ÖÅä¡£
 
 
+5.内存堆是InnoDB存储引擎内存管理基本的也是最重要的对象。内存堆相当于一个stack。
+若要释放内存堆中的某个内存块，只能释放位于栈顶的内存块，或者一次性释放内存堆中的所有内存库块。
+从这个栈中，可以分配更小块的内存。
 
+调用者请求内存对象时候，获取最后一个内存块用于分配。如果该块用完，则新分配。
+
+内存堆的创建通过
+
+6.InnoDB引擎有三种内存堆
+--MEM_HEAP_DYNAMIC 堆的内存调用通用内存池接口申请。
+--MEM_HEAP_BUFFER：堆的内存是从缓冲池申请的。
+--MEM_HEAP_BTR_SEARCH是MEM_HEAP_BUFFER的子类型，仅在自适应哈希索引中使用。
 

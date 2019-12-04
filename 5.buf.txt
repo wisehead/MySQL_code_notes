@@ -1843,6 +1843,30 @@ os_mem_alloc_large
 os_mem_free_large
 
 
+68.buf_read_page_low
+物理层读取page
+
+69.caller of buf_read_page_low
+
+buf_read_ahead_random//预读
+
+buf_read_page//high level read
+
+buf_read_page_async
+
+buf_read_ahead_linear
+
+buf_read_ibuf_merge_pages
+
+buf_read_ibuf_merge_pages//
+
+buf_read_recv_pages//崩溃恢复时候读取page
+
+
+
+
+
+
 ======================================================================================
 100.遗留问题
 --1.free list中的frame是释放的吗？？？
