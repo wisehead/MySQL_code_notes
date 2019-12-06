@@ -722,3 +722,16 @@ sync0sync.h
 		|	#define PRIO_RW_LOCK_EX		356
 		|	#define PRIO_RW_LOCK_SHARED	357
 
+13.memory model
+memory model决定了CPU怎样访问内存，以及并发情况下各CPU之间的影响。但是memory model主要关心的是CPU和内存之间的数据和物理地址的传输。
+
+不同硬件之间的memory model的差异在于硬件是根据怎样的顺序来执行load和store指令的。除此之外，memory model还定义了多个处理器访问同一内存地址的行为。
+
+三种memory model
+--sequential 
+--total store
+--partial store
+
+这些模型的本质是L1.L2的一致性引起的。
+
+
