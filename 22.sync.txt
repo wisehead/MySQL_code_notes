@@ -734,4 +734,103 @@ memory model决定了CPU怎样访问内存，以及并发情况下各CPU之间的影响。但是memory mod
 
 这些模型的本质是L1.L2的一致性引起的。
 
+14.TAS原子操作
+int test_and_set (volatile int* addr)
+{
+	int old_value;
+	old_value = swap_atomic(addr, 1);
+	if (old_value == 0)
+		return 0;
+	return 1;
+}
+swap_atomic()函数执行swap-atomic的硬件指令，并且返回交换前内存中的addr的值。当前操作系统本身提供了如下swap_atomic函数
 
+Linux: __sync_lock_test_and_set(ptr, new_val)。
+
+15.spin lock
+spin lock 是用来对short term critical section进行互斥的数据结构。spin lock用来互斥的critical section的代码应该比较少，一般可以较快的执行完代码(通常100us以内)，并释放spin-lock
+
+void lock(volatile lock_t* lock_status)
+{
+	while(test_and_set(lock_status) == 1);
+}
+
+void unlock(volatile lock_t* lock_status)
+{
+	store_barrier();
+	*lock_status = 0;
+}
+
+int trylock(volatile lock_t* lock_status)
+{
+	if (test_and_set(lock_status))
+		return FALSE;
+	return TRUE;
+}
+
+
+16.mutex
+InnoDB并没有直接使用操作系统提供的spin lock，，而是自己实现互斥的数据结构mutex_struct。也是通过TAS实现的。
+
+mutex和spin lock的不同之处在于：
+--当test-and-set返回1时候，先进行自旋操作。
+--当自旋一段时间后仍然不能获得mutex的话，则将mutex放入wait array的slot，等待被唤醒。
+--mutex默认自旋20us。
+
+void mutex_enter_func(mutex_t* mutex)
+{
+	if (test_and_set(mutex->lock_word) == 0)
+	{
+		get mutex;
+		return;
+	}
+loop:
+	while(mutex->lock_word != 0 && i < SYNC_SPIN_ROUNDS)
+	{
+		spin;
+		i++;
+	}
+	if (test_and_set(mutex->lock_word) == 0){
+		get mutex;
+		return;
+	}
+
+	reserve a cell from wait array;
+	mutex->waiters = 1;
+
+	for (i = 0; i < 4; i++)
+	{
+		if (test_and_set(mutex->lock_word) == 0)
+		{
+			get mutex;
+			free cell;
+			return;
+		}
+	}
+	
+	wait event;
+	goto loop;
+}
+
+void mutex_exit(mutex_t* mutex)
+{
+	mutex_reset_lock_word(mutex);
+	if (mutex->waiters != 0)
+	{
+		wake up threads;
+	}
+}
+
+为了避免reorder的问题，mutex没有加memory barrier，而是在一个后台线程每秒定时去调用函数sync_arr_wake_threads_if_sema_free
+来检测是否在wait array中存在无限等待的mutex或者latch，有则唤醒。
+
+
+17.rw_lock
+rw_lock也就是innodb的latch
+
+rw_lock和mutex想用的是当不能获得x-latch时，首先进行自旋操作，待一段时间仍未能拿到x-latch后，线程放入wait array中，等待被唤醒。
+
+s-latch和x-latch稍有不同。由于数据结构rw_lock_t中没有定义持有s-latch的线程ID，因此s-latch不支持递归的调用，即一个线程不允许两次执行s-latch。
+
+18. wait array
+wait array中变量event是InnoDB封装的一个事件。在Linux下就是条件变量，可以用来实现线程的同步。
