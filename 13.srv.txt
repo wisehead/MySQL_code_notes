@@ -101,6 +101,9 @@ srv_mysql_table  用于用户线程的管理。
 
 该函数为每个事务trx_t添加了 n_tickets_to_enter_innodb，默认500. 事务每操作一行，则ticket减一。为0时，进入等待队列。
 
+问题：srv_thread_concurrency控制的是什么线程？？？？？？ 工作线程？？具体是什么线程？？还是所有？？？
+还是进入innodb的agent线程？？？？？？？
+
 
 7.innobase_shutdown_for_mysql
 - 数据持久化
@@ -231,6 +234,17 @@ innobase_shutdown_for_mysql
 ----srv_shutdown_state = SRV_SHUTDOWN_LAST_PHASE;
 ----fil_close_all_files();
 
+12.后台线程
+--io_handler_thread	异步io
+--srv_lock_timeout_and_monitor_thread
+	打印监控信息，和控制线程锁
+--srv_error_monitor_thread
+	先测系统中长时间等待的信号semaphone.
+--srv_master_thread
+	将bufferpool中的page写会磁盘
+	对insert buffer中的复制索引记录进行merge操作
+	undo log的回收
+	刷盘redo log
 
 
 
