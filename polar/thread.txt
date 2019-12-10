@@ -1,11 +1,33 @@
-1.#define DECLARE_THREAD(func)    func
-#define os_thread_create(f,a,i) os_thread_create_func(f, a, i)
+1.MySQL8.0 innodb threads
+/** Structure which keeps shared future objects for InnoDB background
+threads. One should use these objects to check if threads exited. */
+struct Srv_threads {}
 
+2.buf resize thread.
+2497 /** This is the thread for resizing buffer pool. It waits for an event and
+2498 when waked up either performs a resizing and sleeps again. */
+2499 void buf_resize_thread() {
+2500   while (srv_shutdown_state.load() == SRV_SHUTDOWN_NONE) {
+2501     os_event_wait(srv_buf_resize_event);
+2502     os_event_reset(srv_buf_resize_event);
+2503     
+2504     if (srv_shutdown_state.load() != SRV_SHUTDOWN_NONE) {
+2505       break;
+2506     }
+2507     
+2508     os_rmb;
+2509     if (srv_buf_pool_old_size == srv_buf_pool_size) {
+2510       std::ostringstream sout;
+2511       sout << "Size did not change (old size = new size = " << srv_buf_pool_size
+2512            << ". Nothing to do.";
+2513       buf_resize_status("%s", sout.str().c_str());
+2514     
+2515       /* nothing to do */
+2516       continue;
+2517     }
+2518     
+2519     buf_pool_resize();
+2520   } 
+2521 }
 
-2.os_thread_create
-
-
-3.buf_flush_page_cleaner_thread//example
-
-
-4.innobase_start_or_create_for_mysql
+3.

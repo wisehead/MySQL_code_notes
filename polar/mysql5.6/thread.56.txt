@@ -1,0 +1,11 @@
+1.#define DECLARE_THREAD(func)    func
+#define os_thread_create(f,a,i) os_thread_create_func(f, a, i)
+
+
+2.os_thread_create
+
+
+3.buf_flush_page_cleaner_thread//example
+
+
+4.innobase_start_or_create_for_mysql
