@@ -30,4 +30,28 @@ struct Srv_threads {}
 2520   } 
 2521 }
 
-3.
+3.page cleaner thread
+static void buf_flush_page_cleaner_thread() {
+#ifdef UNIV_LINUX          
+  /* linux might be able to set different setting for each thread
+  worth to try to set high priority for page cleaner threads */
+  if (buf_flush_page_cleaner_set_priority(buf_flush_page_cleaner_priority)) {
+    ib::info(ER_IB_MSG_129)
+        << "page_cleaner worker priority: " << buf_flush_page_cleaner_priority;
+  }                        
+#endif /* UNIV_LINUX */                                                                                                                                                                         
+                           
+  for (;;) {               
+    os_event_wait(page_cleaner->is_requested);
+                           
+    ut_d(buf_flush_page_cleaner_disabled_loop());
+                           
+    if (!page_cleaner->is_running) {
+      break;               
+    }                      
+                           
+    pc_flush_slot();   
+  }                        
+}     
+
+4.
