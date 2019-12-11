@@ -54,4 +54,4 @@ static void buf_flush_page_cleaner_thread() {
   }                        
 }     
 
-4.
+4.buf_page_get
