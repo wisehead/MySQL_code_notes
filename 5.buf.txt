@@ -1862,8 +1862,11 @@ buf_read_ibuf_merge_pages//
 
 buf_read_recv_pages//崩溃恢复时候读取page
 
+70.buf_flush_lists
 
-
+buf_flush_lists
+--buf_flush_do_batch
+----buf_flush_end
 
 
 
@@ -1873,3 +1876,4 @@ buf_read_recv_pages//崩溃恢复时候读取page
 --2.研究BUF_BLOCK_ZIP_DIRTY和其它的TYPE
 --3.buf_LRU_free_page
 --4.buf_LRU_free_page分情况讨论。
+
