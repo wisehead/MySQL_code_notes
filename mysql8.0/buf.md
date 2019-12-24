@@ -53,6 +53,80 @@
 	 9073   return (out);
 	 9074 }  
  
+2.buf\_page\_init\_for_read
+
+
+	caller:
+	--buf_read_page_low
+	----buf_page_init_for_read
+	
+3.buf_read_page_low
+
+caller:
+
+* Buf_fetch<T>::read_page()
+* buf_read_ahead_random
+* buf_read_page
+* buf_read_page_background
+* buf_phy_read_ahead
+* buf_read_ahead_linear
+* buf_read_ibuf_merge_pages
+* buf_read_recv_pages
+	
+		
+		buf_read_page_low
+		--buf_page_io_complete
+	
+	
+4.Buf_fetch<T>::read_page()
+
+	Buf_fetch<T>::read_page()
+	--buf_read_page(const page_id_t &page_id, const page_size_t &page_size)
+	----
+	
+	caller:
+	--Buf_fetch_normal::get
+	--Buf_fetch_other::get
+
+
+5.Buf_fetch_normal::get
+
+	caller:
+	Buf_fetch<T>::single_page()
+	
+	Buf_fetch_normal::get
+	--Buf_fetch<T>::lookup
+	----buf_page_hash_lock_get
+	----buf_page_hash_get_low
+	--Buf_fetch<T>::read_page
+	----buf_read_page
+	----buf_read_page_low
+	------buf_page_io_complete
+
+6.Buf_fetch<T>::single_page()
+	
+	caller:
+	buf_page_get_gen
+	--fetch.single_page()
+	
+	Buf_fetch<T>::single_page()
+	--Buf_fetch_normal::get
+	--buf_wait_for_read(block);
+	--mtr_add_page(block);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
