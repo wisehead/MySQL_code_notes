@@ -103,6 +103,8 @@ caller:
 	----buf_read_page_low
 	------buf_page_io_complete
 
+
+***
 6.Buf_fetch<T>::single_page()
 	
 	caller:
@@ -113,6 +115,8 @@ caller:
 	--Buf_fetch_normal::get
 	--buf_wait_for_read(block);
 	--mtr_add_page(block);
+
+---
 
 
 
