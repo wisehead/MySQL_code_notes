@@ -177,6 +177,8 @@ caller:
 	114                                                                  
 	115     dst = ((buf_block_t *)bpage)->frame;                                                                                                                                                                                                                    
 	116   } 
+	120   *err = fil_io(request, sync, page_id, page_size, 0, page_size.physical(), dst,
+	121                 bpage); 
 		
 ## 10.2 buf_page_init_for_read
 //分配zip.data内存，初始化。
