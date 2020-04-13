@@ -36,3 +36,24 @@ main
 --//close reader
 --filesystem->close_reader(reader);
 ```
+
+#2.test_mkdir_readdir_unlink.cpp
+
+```
+main
+--std::unique_ptr<afs2::AfsFileSystem> filesystem
+--filesystem->start(true);
+--//创建父目录
+--filesystem->mkdir(pdir_name.c_str());
+--//判断在不在
+--filesystem->exist(pdir_name.c_str());
+--//创建子目录
+--dir_name = dir_name_perfix + std::to_string(random_num);
+--filesystem->mkdir(dir_name.c_str());
+--//读目录项
+--filesystem->readdir(pdir_name.c_str(), &dentry_list);
+--//删除目录
+--filesystem->remove(pdir_name.c_str(), true, afs2::TrashStrategy::NO_TRASH);
+--//判断存在
+--filesystem->exist(pdir_name.c_str());
+```
