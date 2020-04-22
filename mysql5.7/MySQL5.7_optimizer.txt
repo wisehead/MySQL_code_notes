@@ -18,7 +18,7 @@ sql_parse.h
 
 2.MySQL5.6文件列表
 
-[chenhui@sh01-mco-ssdwise259.sh01.baidu.com sql]$ ls|grep -i parse
+[chenhui@ sql]$ ls|grep -i parse
 event_parse_data.cc
 event_parse_data.h
 parse_file.cc

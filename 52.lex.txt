@@ -38,7 +38,6 @@ body_utf8_append_literal
 --convert_string
 
 
-[chenhui@sh01-mco-ssdwise259.sh01.baidu.com dba_7-0-48_BRANCH]$ grep -R chenhui *|grep -v tags|grep -v svn|grep -v scope|grep -v bak
 cmake/build_configurations/feature_set.cmake:#chenhui
 sql/sys_vars.cc://chenhui
 sql/sys_vars.cc:    //myisam_delay_key_write=0;//chenhui
