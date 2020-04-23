@@ -1,0 +1,215 @@
+0.func_array
+
+1.do_command
+
+do_command//从此处开始进入sql的解析阶段
+--my_net_read//从网络读取数据包
+--//Packet[0] ： enum command.  //COM_SLEEP、COM_QUERY ..
+--//Packet[1-length] ： sql query.
+--dispatch_command
+    switch( command ) {
+    		case COM_STATISTICS:
+    		case COM_PING:
+    			break;
+    		…….
+    		case COM_QUERY:
+    			mysql_parse(thd, thd->query(), thd->query_length(), 			&end_of_stmt);
+    		……..
+    	}
+----alloc_query
+----mysql_parse//!!!!
+------lex_start
+------mysql_reset_thd_for_next_command
+------query_cache_send_result_to_client
+------parse_sql//!!!!
+--------MYSQLparse
+
+
+2.mysql_execute_command
+mysql_execute_command(thd);  //sql_parse.cc  
+—-execute_sqlcom_select(thd, all_tables);           
+---—handle_select(thd, lex, result, 0);     
+------mysql_select       
+--------mysql_prepare_select
+--------query_cache_store_query 
+--------mysql_execute_select
+----------join->optimize
+----------join->exec
+
+3.lex_one_token
+
+
+Breakpoint 1, lex_one_token (yylval=0x7ffff7ea6750, thd=0x452e2be0) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_lex.cc:973
+973       reg1  uchar c= 0;
+(gdb) bt
+#0  lex_one_token (yylval=0x7ffff7ea6750, thd=0x452e2be0) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_lex.cc:973
+#1  0x00000000007cbd8e in MYSQLlex (yylval=0x7ffff7ea6750, thd=0x452e2be0) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_lex.cc:931
+#2  0x00000000008cd52e in MYSQLparse (YYTHD=0x452e2be0) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_yacc.cc:17321
+#3  0x00000000007ecbf2 in parse_sql (thd=0x452e2be0, parser_state=0x7ffff7ea86e0, creation_ctx=0x0) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_parse.cc:8311
+#4  0x00000000007e889a in mysql_parse (thd=0x452e2be0, rawbuf=0x7ff7d0005010 "select @@version_comment limit 1", length=32, parser_state=0x7ffff7ea86e0)
+    at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_parse.cc:6261
+#5  0x00000000007dc03f in dispatch_command (command=COM_QUERY, thd=0x452e2be0, packet=0x453c3401 "select @@version_comment limit 1", packet_length=32)
+    at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_parse.cc:1332
+#6  0x00000000007db1e2 in do_command (thd=0x452e2be0) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_parse.cc:1034
+#7  0x00000000007a384d in do_handle_one_connection (thd_arg=0x452e2be0) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_connect.cc:982
+#8  0x00000000007a3363 in handle_one_connection (arg=0x452e2be0) at /home/chenhui/dba_7-0-48_BRANCH/sql/sql_connect.cc:898
+#9  0x0000000000af57f4 in pfs_spawn_thread (arg=0x45386870) at /home/chenhui/dba_7-0-48_BRANCH/storage/perfschema/pfs.cc:1860
+#10 0x00007ffff7bc61c3 in ?? ()
+#11 0x0000000000000000 in ?? ()
+
+
+4.词法分析
+
+在sql/lex.h中定义了MySQL关键字和函数关键字，用两个数组存储。
+
+关键字 static SYMBOL symbols[]
+
+函数 static SYMBOL sql_functions[]
+
+5.The Skeleton of the Server Code
+mysqld_main
+--handle_connections_sockets
+----create_new_thread
+
+6. MySQL51_ares  FieldLongEncrypt::store
+
+mysql_insert
+--fill_record_n_invoke_before_triggers
+----fill_record
+------Item::save_in_field
+--------FieldLongEncrypt::store
+----------my_aes_get_size
+----------my_aes_encrypt
+------------my_aes_create_key
+------------rijndaelEncrypt
+
+Breakpoint 1, FieldVarstringEncrypt::store (this=0x7f5c0400b308, from=0x7f5c04004f28 "test", length=4, cs=0xd5f900 <my_charset_utf8_general_ci>) at field.cc:10447
+10447   {
+(gdb) bt
+#0  FieldVarstringEncrypt::store (this=0x7f5c0400b308, from=0x7f5c04004f28 "test", length=4, cs=0xd5f900 <my_charset_utf8_general_ci>) at field.cc:10447
+#1  0x0000000000527535 in Item::save_str_value_in_field (this=this@entry=0x7f5c04004f30, field=field@entry=0x7f5c0400b308, result=<optimized out>) at item.cc:374
+#2  0x0000000000527573 in Item_string::save_in_field (this=0x7f5c04004f30, field=0x7f5c0400b308, no_conversions=<optimized out>) at item.cc:5216
+#3  0x00000000006194ec in fill_record (thd=thd@entry=0x8370f10, ptr=0x7f5c0400b280, values=..., ignore_errors=ignore_errors@entry=false) at sql_base.cc:8433
+#4  0x00000000006195e6 in fill_record_n_invoke_before_triggers (thd=thd@entry=0x8370f10, ptr=<optimized out>, values=..., ignore_errors=ignore_errors@entry=false, triggers=0x0, 
+    event=event@entry=TRG_EVENT_INSERT) at sql_base.cc:8474
+#5  0x0000000000656ea5 in mysql_insert (thd=thd@entry=0x8370f10, table_list=0x7f5c04004b38, fields=..., values_list=..., update_fields=..., update_values=..., duplic=DUP_ERROR, 
+    ignore=false) at sql_insert.cc:804
+#6  0x00000000005dab74 in mysql_execute_command (thd=thd@entry=0x8370f10) at sql_parse.cc:3580
+#7  0x00000000005e0afd in mysql_parse (thd=thd@entry=0x8370f10, rawbuf=0x7f5c04004aa0 "insert into t values(4,'test')", length=30, found_semicolon=found_semicolon@entry=0x7f5ceec5b7e0)
+    at sql_parse.cc:6453
+#8  0x00000000005e1cb3 in dispatch_command (command=command@entry=COM_QUERY, thd=thd@entry=0x8370f10, packet=packet@entry=0x83c8c01 "insert into t values(4,'test')", 
+    packet_length=packet_length@entry=30) at sql_parse.cc:1306
+#9  0x00000000005e36e3 in do_command (thd=0x8370f10) at sql_parse.cc:919
+#10 0x00000000005d16ec in handle_one_connection (arg=<optimized out>) at sql_connect.cc:1454
+#11 0x00007f5cee8611c3 in start_thread () from /opt/compiler/gcc-4.8.2/lib/libpthread.so.0
+#12 0x00007f5cecc5512d in clone () from /opt/compiler/gcc-4.8.2/lib/libc.so.6
+
+
+7.FieldVarstringEncrypt::val_str 
+
+mysql_execute_command
+--execute_sqlcom_select
+----handle_select
+------mysql_select
+--------JOIN::exec
+----------do_select
+------------sub_select
+--------------evaluate_join_record
+----------------end_send
+------------------select_send::send_data
+--------------------Item_field::send
+----------------------Protocol_text::store 
+------------------------FieldVarstringEncrypt::val_str
+--------------------------my_aes_decrypt
+----------------------------my_aes_create_key
+----------------------------rijndaelDecrypt
+
+(gdb) bt
+#0  FieldVarstringEncrypt::val_str (this=0x7f1ff400b328, val_buffer=0x7f20e793ba00, val_ptr=0x7f20e793ba00) at field.cc:10684
+#1  0x00000000005c0644 in val_str (str=0x7f20e793ba00, this=<optimized out>) at field.h:128
+#2  Protocol_text::store (this=0x8371cb0, field=<optimized out>) at protocol.cc:1014
+#3  0x0000000000520d6a in Item_field::send (this=<optimized out>, protocol=<optimized out>, buffer=<optimized out>) at item.cc:5692
+#4  0x00000000005b30b2 in select_send::send_data (this=0x7f1ff4005008, items=...) at sql_class.cc:1747
+#5  0x000000000062e756 in end_send (join=0x7f1ff4005028, join_tab=<optimized out>, end_of_records=<optimized out>) at sql_select.cc:12383
+#6  0x000000000062b90f in evaluate_join_record (join=join@entry=0x7f1ff4005028, join_tab=join_tab@entry=0x7f1ff410c2b0, error=<optimized out>) at sql_select.cc:11599
+#7  0x000000000062bb55 in sub_select (join=join@entry=0x7f1ff4005028, join_tab=join_tab@entry=0x7f1ff410c2b0, end_of_records=end_of_records@entry=false) at sql_select.cc:11473
+#8  0x000000000063b7a1 in do_select (join=join@entry=0x7f1ff4005028, fields=fields@entry=0x8373958, table=table@entry=0x0, procedure=0x0) at sql_select.cc:11231
+#9  0x000000000064e85e in JOIN::exec (this=this@entry=0x7f1ff4005028) at sql_select.cc:2343
+#10 0x0000000000648c79 in mysql_select (thd=thd@entry=0x83717b0, rref_pointer_array=rref_pointer_array@entry=0x8373a20, tables=0x7f1ff4004c30, wild_num=<optimized out>, fields=..., 
+    conds=<optimized out>, og_num=0, order=0x0, group=0x0, having=0x0, proc_param=0x0, select_options=select_options@entry=2147764736, result=result@entry=0x7f1ff4005008, unit=unit@entry=
+    0x8373420, select_lex=select_lex@entry=0x8373850) at sql_select.cc:2553
+#11 0x0000000000648efa in handle_select (thd=thd@entry=0x83717b0, lex=lex@entry=0x8373380, result=result@entry=0x7f1ff4005008, setup_tables_done_option=setup_tables_done_option@entry=0)
+    at sql_select.cc:269
+#12 0x00000000005d1c92 in execute_sqlcom_select (thd=thd@entry=0x83717b0, all_tables=0x7f1ff4004c30) at sql_parse.cc:5536
+#13 0x00000000005d88f4 in mysql_execute_command (thd=thd@entry=0x83717b0) at sql_parse.cc:2563
+#14 0x00000000005e0afd in mysql_parse (thd=thd@entry=0x83717b0, rawbuf=0x7f1ff4004ac0 "select * from t", length=15, found_semicolon=found_semicolon@entry=0x7f20e793d7e0)
+    at sql_parse.cc:6453
+#15 0x00000000005e1cb3 in dispatch_command (command=command@entry=COM_QUERY, thd=thd@entry=0x83717b0, packet=packet@entry=0x83c8d11 "", packet_length=packet_length@entry=15)
+    at sql_parse.cc:1306
+#16 0x00000000005e36e3 in do_command (thd=0x83717b0) at sql_parse.cc:919
+#17 0x00000000005d16ec in handle_one_connection (arg=<optimized out>) at sql_connect.cc:1454
+#18 0x00007f20e75aa1c3 in start_thread () from /opt/compiler/gcc-4.8.2/lib/libpthread.so.0
+#19 0x00007f20e599e12d in clone () from /opt/compiler/gcc-4.8.2/lib/libc.so.6
+
+8.key初始化acl_getroot
+handle_one_connection
+--login_connection
+----check_connection
+------check_user
+--------acl_getroot
+
+dispatch_command
+//case COM_CHANGE_USER:
+--check_user
+----acl_getroot
+
+9.Security_context
+
+几种特殊情况，默认拥有权限。
+init_slave_thread
+acl_getroot_no_password
+    /*
+      here if mysqld's been started with --skip-grant-tables option.
+    */
+    sctx->skip_grants();
+
+
+10.ACL_USER:encrypt_user
+
+(1)acl_load
+
+(1.1)acl_init
+mysql_server_init
+--init_embedded_server
+----acl_init
+------acl_reload
+--------acl_load//把mysql.user中，encrypt列都读出来。
+----------encrypt_user
+      // field encrypt
+        if (table->s->fields >= 40)
+        {
+            char *encrypt = get_field(thd->mem_root, table->field[next_field++]);
+            if (!strncmp(encrypt, "Y", 1))
+            {
+                user.encrypt_user = true;
+            } else
+            {
+                user.encrypt_user = false;
+            }
+        }
+(1.2)reload_acl_and_cache
+reload_acl_and_cache
+--acl_reload
+----acl_load
+------encrypt_user
+
+(2)acl_update_user
+(3)acl_insert_user
+--encrypt_user
+
+11.Create_field::create_length_to_internal_length
+
+mysql_prepare_create_table
+--create_length_to_internal_length
+----my_aes_get_size
+----calc_pack_length//int/long/float/double，加密后长度都变成16
