@@ -181,3 +181,37 @@ struct st_mysql_plugin *mysql_mandatory_plugins[]=
   builtin_binlog_plugin, builtin_mysql_password_plugin,  builtin_csv_plugin, builtin_heap_plugin, builtin_myisam_plugin, builtin_myisammrg_plugin, 0
 };
 ```
+
+#7.stack of init plugin
+
+```cpp
+(gdb) bt
+#0  tokudb_init_func (p=0x1629dc0) at /home/chenhui/mysql-5623-trunk/storage/tokudb/hatoku_hton.cc:271
+#1  0x00000000005b3971 in ha_initialize_handlerton (plugin=0x14df668) at /home/chenhui/mysql-5623-trunk/sql/handler.cc:665
+#2  0x00000000006fc200 in plugin_initialize (plugin=plugin@entry=0x14df668) at /home/chenhui/mysql-5623-trunk/sql/sql_plugin.cc:1137
+#3  0x00000000007019a8 in plugin_init (argc=argc@entry=0x138f390 <remaining_argc>, argv=<optimized out>, flags=flags@entry=0) at /home/chenhui/mysql-5623-trunk/sql/sql_plugin.cc:1431
+#4  0x00000000005aa752 in init_server_components () at /home/chenhui/mysql-5623-trunk/sql/mysqld.cc:4898
+#5  mysqld_main (argc=98, argv=0x13fe4d8) at /home/chenhui/mysql-5623-trunk/sql/mysqld.cc:5495
+#6  0x00007ffff6bdbbd5 in __libc_start_main () from /opt/compiler/gcc-4.8.2/lib/libc.so.6
+#7  0x000000000059ee95 in _start ()
+(gdb) p p
+$1 = (void *) 0x1629dc0
+(gdb) p ( (handlerton *) p)
+$2 = (handlerton *) 0x1629dc0
+(gdb) p *( (handlerton *) p)
+$3 = {state = SHOW_OPTION_YES, db_type = DB_TYPE_UNKNOWN, slot = 4294967295, savepoint_offset = 0, close_connection = 0x0, savepoint_set = 0x0, savepoint_rollback = 0x0, savepoint_rollback_can_release_mdl = 0x0, savepoint_release = 0x0, commit = 0x0,
+  rollback = 0x0, prepare = 0x0, recover = 0x0, commit_by_xid = 0x0, rollback_by_xid = 0x0, create_cursor_read_view = 0x0, set_cursor_read_view = 0x0, close_cursor_read_view = 0x0, create = 0x0, drop_database = 0x0, panic = 0x0, start_consistent_snapshot = 0x0,
+  flush_logs = 0x0, show_status = 0x0, partition_flags = 0x0, alter_table_flags = 0x0, alter_tablespace = 0x0, fill_is_table = 0x0, flags = 0, binlog_func = 0x0, binlog_log_query = 0x0, release_temporary_latches = 0x0, get_log_status = 0x0,
+  create_iterator = 0x0, discover = 0x0, find_files = 0x0, table_exists_in_engine = 0x0, make_pushed_join = 0x0, system_database = 0x0, is_supported_system_table = 0x0, license = 0, data = 0x0}
+(gdb) f 2
+#2  0x00000000006fc200 in plugin_initialize (plugin=plugin@entry=0x14df668) at /home/chenhui/mysql-5623-trunk/sql/sql_plugin.cc:1137
+1137        if ((*plugin_type_initialize[plugin->plugin->type])(plugin))
+(gdb) info args
+plugin = 0x14df668
+(gdb) p plugin
+$4 = (st_plugin_int *) 0x14df668
+(gdb) p *plugin
+$5 = {name = {str = 0x7fffc1d4a563 "TokuDB", length = 6}, plugin = 0x7fffc1fbc6c0 <_mysql_plugin_declarations_>, plugin_dl = 0x14d6a68, state = 4, ref_count = 0, data = 0x1629dc0, mem_root = {free = 0x14e0df0, used = 0x0, pre_alloc = 0x14e0df0, min_malloc = 32,
+    block_size = 4064, block_num = 4, first_block_usage = 0, error_handler = 0x0}, system_vars = 0x14da9f8, load_option = PLUGIN_ON}
+
+```
