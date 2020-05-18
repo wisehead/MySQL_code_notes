@@ -44,3 +44,60 @@ dispatch_command
 --MYSQL_END_STATEMENT(thd->m_statement_psi, thd->get_stmt_da());
 --MYSQL_COMMAND_DONE(res);
 ```
+
+#2.do_command
+```cpp
+caller:
+--do_handle_one_connection
+
+/**
+  Read one command from connection and execute it (query or simple command).
+  This function is called in loop from thread function.
+
+  For profiling to work, it must never be called recursively.
+
+  @retval
+    0  success
+  @retval
+    1  request of thread shutdown (see dispatch_command() description)
+*/
+do_command
+--my_net_read
+--command= (enum enum_server_command) (uchar) packet[0];
+--dispatch_command
+```
+
+#3.handle_one_connection
+
+```cpp
+caller:
+--pfs_spawn_thread
+
+/*
+  Thread handler for a connection
+
+  SYNOPSIS
+    handle_one_connection()
+    arg   Connection object (THD)
+
+  IMPLEMENTATION
+    This function (normally) does the following:
+    - Initialize thread
+    - Initialize THD to be used with this thread
+    - Authenticate user
+    - Execute all queries sent on the connection
+    - Take connection down
+    - End thread  / Handle next connection using thread from thread cache
+*/
+
+handle_one_connection
+--mysql_thread_set_psi_id
+----get_thread
+----set_thread_id
+--do_handle_one_connection
+----thd_prepare_connection
+----while (thd_is_connection_alive(thd))
+----do_command//in while
+--end_connection(thd)
+--close_connection(thd);
+```
