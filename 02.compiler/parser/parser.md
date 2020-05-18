@@ -17,4 +17,35 @@
 
 ```
 
-#2.
+#2.mysql_parse
+
+```cpp
+caller:
+--dispatch_command
+
+/*
+  When you modify mysql_parse(), you may need to mofify
+  mysql_test_parse_for_slave() in this same file.
+*/
+
+/**
+  Parse a query.
+
+  @param       thd     Current thread
+  @param       rawbuf  Begining of the query text
+  @param       length  Length of the query text
+  @param[out]  found_semicolon For multi queries, position of the character of
+                               the next query in the query text.
+*/
+
+mysql_parse
+--lex_start
+--mysql_reset_thd_for_next_command
+--query_cache_send_result_to_client
+--parse_sql
+--mysql_rewrite_query
+--mysql_execute_command
+--THD::end_statement
+----lex_end
+
+```
