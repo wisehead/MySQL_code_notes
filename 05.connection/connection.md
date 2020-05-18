@@ -101,3 +101,33 @@ handle_one_connection
 --end_connection(thd)
 --close_connection(thd);
 ```
+
+#4.create_thread_to_handle_connection
+
+```cpp
+caller:
+mysqld_main
+--init_common_variables
+----get_options
+------one_thread_per_connection_scheduler
+--------create_thread_to_handle_connection
+
+create_thread_to_handle_connection
+--//if (blocked_pthread_count <=  wake_pthread)
+--mysql_thread_create(key_thread_one_connection,
+                                    &thd->real_id, &connection_attrib,
+                                    handle_one_connection,
+                                    (void*) thd)))
+--add_global_thread                                    
+```
+
+#5.mysql_thread_create
+
+```cpp
+mysql_thread_create    
+--inline_mysql_thread_create    
+----spawn_thread
+------spawn_thread_v1
+--------pthread_create(thread, attr, pfs_spawn_thread, psi_arg);
+----------pfs_spawn_thread
+```

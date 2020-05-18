@@ -13,3 +13,14 @@ pfs_spawn_thread
 --(*user_start_routine)(user_arg);///* Then, execute the user code for this thread. */
 --handle_one_connection
 ```
+
+#2.mysql_thread_create
+
+```cpp
+mysql_thread_create    
+--inline_mysql_thread_create    
+----spawn_thread
+------spawn_thread_v1
+--------pthread_create(thread, attr, pfs_spawn_thread, psi_arg);
+----------pfs_spawn_thread
+```
