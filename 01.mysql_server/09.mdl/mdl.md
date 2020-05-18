@@ -28,3 +28,33 @@ caller:
 MDL_request::init
 --mdl_key_init
 ```
+
+#2.MDL_context::acquire_locks
+
+```cpp
+/**
+  Acquire exclusive locks. There must be no granted locks in the
+  context.
+
+  This is a replacement of lock_table_names(). It is used in
+  RENAME, DROP and other DDL SQL statements.
+
+  @param  mdl_requests  List of requests for locks to be acquired.
+
+  @param lock_wait_timeout  Seconds to wait before timeout.
+
+  @note The list of requests should not contain non-exclusive lock requests.
+        There should not be any acquired locks in the context.
+
+  @note Assumes that one already owns scoped intention exclusive lock.
+
+  @retval FALSE  Success
+  @retval TRUE   Failure
+*/
+MDL_context::acquire_locks
+--my_qsort
+--acquire_lock
+----mdl_request_ptr_cmp
+------MDL_key::cmp
+
+```

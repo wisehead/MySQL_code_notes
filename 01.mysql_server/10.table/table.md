@@ -29,5 +29,6 @@ open_and_lock_tables
 ```cpp
 open_tables
 --lock_table_names
-
+----mdl_requests.push_front(&table->mdl_request);
+----MDL_context::acquire_locks
 ```
