@@ -260,7 +260,7 @@ mysql_optional_plugins
 ```
 
 
-#10.todo
+#10.stack
 ```cpp
 (gdb) bt
 #0  plugin_dl_add (dl=dl@entry=0x7fffffffd8b0, report=report@entry=1) at /home/chenhui/mysql-5623-trunk/sql/sql_plugin.cc:484
@@ -281,4 +281,55 @@ Num     Type           Disp Enb Address            What
 4       breakpoint     keep y   0x00000000005790fb in plugin_load(MEM_ROOT*, int*, char**) at /home/chenhui/mysql-5623-trunk/sql/sql_plugin.cc:1500
 5       breakpoint     keep y   0x000000000070162b in plugin_init(int*, char**, int) at /home/chenhui/mysql-5623-trunk/sql/sql_plugin.cc:1401
         breakpoint already hit 1 time
+```
+
+#11.plugin_load_list
+```cpp
+caller:
+--plugin_init
+
+plugin_load_list
+--plugin_dl_add
+----plugin_dl_find
+----dlopen
+----dlsym
+----plugin_dl_insert_or_reuse
+--plugin_add
+----plugin_find_internal
+```
+
+#11.2 dl_plugin details debug info
+```cpp
+(gdb) p plugin_dl.plugins[0]
+$123 = {type = 1, info = 0x7fffc1fbc6b0 <tokudb_storage_engine>, name = 0x7fffc1d4a563 "TokuDB", author = 0x7fffc1d4a554 "Percona", descr = 0x7fffc1d4dc98 "Percona TokuDB Storage Engine with Fractal Tree(tm) Technology", license = 1,
+  init = 0x7fffc1b80080 <tokudb_init_func(void*)>, deinit = 0x7fffc1b6b4c0 <tokudb_done_func(void*)>, version = 0, status_vars = 0x7fffc1fbca80 <toku_global_status_variables_export>, system_vars = 0x7fffc1fbd840 <tokudb::sysvars::system_variables>,
+  __reserved1 = 0x0, flags = 0}
+(gdb) p plugin_dl.plugins[1]
+$124 = {type = 4, info = 0x7fffc1fbcae8 <tokudb::information_schema::trx_information_schema>, name = 0x7fffc1d4fc78 "TokuDB_trx", author = 0x7fffc1d4a554 "Percona", descr = 0x7fffc1d4dc98 "Percona TokuDB Storage Engine with Fractal Tree(tm) Technology",
+  license = 1, init = 0x7fffc1b9ab20 <tokudb::information_schema::trx_init(void*)>, deinit = 0x7fffc1b9ab40 <tokudb::information_schema::trx_done(void*)>, version = 0, status_vars = 0x0, system_vars = 0x0, __reserved1 = 0x0, flags = 0}
+(gdb) p plugin_dl.plugins[2]
+$125 = {type = 4, info = 0x7fffc1fbcae4 <tokudb::information_schema::lock_waits_information_schema>, name = 0x7fffc1d4fbc6 "TokuDB_lock_waits", author = 0x7fffc1d4a554 "Percona",
+  descr = 0x7fffc1d4dc98 "Percona TokuDB Storage Engine with Fractal Tree(tm) Technology", license = 1, init = 0x7fffc1b9ab50 <tokudb::information_schema::lock_waits_init(void*)>, deinit = 0x7fffc1b9ab70 <tokudb::information_schema::lock_waits_done(void*)>,
+  version = 0, status_vars = 0x0, system_vars = 0x0, __reserved1 = 0x0, flags = 0}
+(gdb) p plugin_dl.plugins[3]
+$126 = {type = 4, info = 0x7fffc1fbcae0 <tokudb::information_schema::locks_information_schema>, name = 0x7fffc1d4fb2b "TokuDB_locks", author = 0x7fffc1d4a554 "Percona", descr = 0x7fffc1d4dc98 "Percona TokuDB Storage Engine with Fractal Tree(tm) Technology",
+  license = 1, init = 0x7fffc1b9ab80 <tokudb::information_schema::locks_init(void*)>, deinit = 0x7fffc1b9aba0 <tokudb::information_schema::locks_done(void*)>, version = 0, status_vars = 0x0, system_vars = 0x0, __reserved1 = 0x0, flags = 0}
+(gdb) n
+627       plugin_dl.dl.length= dl->length * files_charset_info->mbmaxlen + 1;
+(gdb) p plugin_dl.plugins[4]
+$127 = {type = 4, info = 0x7fffc1fbcadc <tokudb::information_schema::file_map_information_schema>, name = 0x7fffc1d4fb1b "TokuDB_file_map", author = 0x7fffc1d4a554 "Percona",
+  descr = 0x7fffc1d4dc98 "Percona TokuDB Storage Engine with Fractal Tree(tm) Technology", license = 1, init = 0x7fffc1b9abb0 <tokudb::information_schema::file_map_init(void*)>, deinit = 0x7fffc1b9abd0 <tokudb::information_schema::file_map_done(void*)>,
+  version = 0, status_vars = 0x0, system_vars = 0x0, __reserved1 = 0x0, flags = 0}
+(gdb) p plugin_dl.plugins[5]
+$128 = {type = 4, info = 0x7fffc1fbcad8 <tokudb::information_schema::fractal_tree_info_information_schema>, name = 0x7fffc1d4fab4 "TokuDB_fractal_tree_info", author = 0x7fffc1d4a554 "Percona",
+  descr = 0x7fffc1d4dc98 "Percona TokuDB Storage Engine with Fractal Tree(tm) Technology", license = 1, init = 0x7fffc1b9abe0 <tokudb::information_schema::fractal_tree_info_init(void*)>,
+  deinit = 0x7fffc1b9ac00 <tokudb::information_schema::fractal_tree_info_done(void*)>, version = 0, status_vars = 0x0, system_vars = 0x0, __reserved1 = 0x0, flags = 0}
+(gdb) p plugin_dl.plugins[6]
+$129 = {type = 4, info = 0x7fffc1fbcad4 <tokudb::information_schema::fractal_tree_block_map_information_schema>, name = 0x7fffc1d4fa69 "TokuDB_fractal_tree_block_map", author = 0x7fffc1d4a554 "Percona",
+  descr = 0x7fffc1d4dc98 "Percona TokuDB Storage Engine with Fractal Tree(tm) Technology", license = 1, init = 0x7fffc1b9ac10 <tokudb::information_schema::fractal_tree_block_map_init(void*)>,
+  deinit = 0x7fffc1b9ac30 <tokudb::information_schema::fractal_tree_block_map_done(void*)>, version = 0, status_vars = 0x0, system_vars = 0x0, __reserved1 = 0x0, flags = 0}
+(gdb) p plugin_dl.plugins[7]
+$130 = {type = 4, info = 0x7fffc1fbcad0 <tokudb::information_schema::background_job_status_information_schema>, name = 0x7fffc1d4fa04 "TokuDB_background_job_status", author = 0x7fffc1d4a554 "Percona",
+  descr = 0x7fffc1d4dc98 "Percona TokuDB Storage Engine with Fractal Tree(tm) Technology", license = 1, init = 0x7fffc1b9ac40 <tokudb::information_schema::background_job_status_init(void*)>,
+  deinit = 0x7fffc1b9ac60 <tokudb::information_schema::background_job_status_done(void*)>, version = 0, status_vars = 0x0, system_vars = 0x0, __reserved1 = 0x0, flags = 0}
 ```
