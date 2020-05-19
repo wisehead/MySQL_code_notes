@@ -131,3 +131,46 @@ mysql_thread_create
 --------pthread_create(thread, attr, pfs_spawn_thread, psi_arg);
 ----------pfs_spawn_thread
 ```
+
+#6. handle_connections_sockets
+主要代码在sql/mysqld.cc中(handle_connections_sockets)，精简后的代码如下：
+
+```cpp
+
+pthread_handler_t handle_connections_sockets(void *arg __attribute__((unused))) {
+    FD_SET(unix_sock,&clientFDs); // unix_socket在network_init中被打开
+    while (!abort_loop) { // abort_loop是全局变量，在某些情况下被置为1表示要退出。
+        readFDs=clientFDs; // 需要监听的socket
+        select((int) max_used_connection,&readFDs,0,0,0); // select异步(?科学家解释下是同步还是异步)监听，当接收到??以后返回。
+        new_sock = accept(sock, my_reinterpret_cast(struct sockaddr *) (&cAddr),   &length); // 接受请求
+        thd= new THD; // 创建mysqld任务线程描述符，它封装了一个客户端连接请求的所有信息
+        vio_tmp=vio_new(new_sock, VIO_TYPE_SOCKET, VIO_LOCALHOST); // 网络操作抽象层
+        my_net_init(&thd->net,vio_tmp)); // 初始化任务线程描述符的网络操作
+        create_new_thread(thd); // 创建任务线程
+    }
+}
+```
+
+#6. create_new_thread
+
+```cpp
+caller:
+--handle_connections_sockets
+
+static void create_new_thread(THD *thd) {
+    NET *net=&thd->net;
+    if (connection_count >= max_connections + 1 || abort_loop) { // 看看当前连接数是不是超过了系统配置允许的最大值，如果是就断开连接。
+        close_connection(thd, ER_CON_COUNT_ERROR, 1);
+        delete thd;
+    }
+    ++connection_count;
+    thread_scheduler.add_connection(thd); // 将新连接加入到thread_scheduler的连接队列中。
+}
+
+create_new_thread
+--MYSQL_CALLBACK(thd->scheduler, add_connection, (thd));
+--one_thread_per_connection_scheduler
+--create_thread_to_handle_connection
+----mysql_thread_create
+
+```
