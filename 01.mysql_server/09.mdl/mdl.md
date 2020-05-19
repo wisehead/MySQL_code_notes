@@ -144,5 +144,16 @@ acquire_lock
 ----thd_wait_end
 ```
 
+#5.MDL_context::release_lock
+
+```cpp
+MDL_context::release_lock
+--MDL_lock::Ticket_list::remove_ticket
+----m_list.remove(ticket)
+----clear_bit_if_not_in_list(ticket->get_type());
+--m_tickets[duration].remove(ticket);
+--MDL_ticket::destroy(ticket);
+```
+
 
 
