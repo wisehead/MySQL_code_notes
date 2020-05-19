@@ -128,6 +128,20 @@ acquire_lock
 --MDL_wait::timed_wait
 ----ENTER_COND
 ------THD::enter_cond
+--------THD::enter_stage
+----------MYSQL_SET_STAGE
+------------inline_mysql_set_stage
+--------------start_stage_v1
+----------------my_pthread_getspecific_ptr
+------------------my_pthread_getspecific
+--------------------my_pthread_getspecific_imp
+----------------------pthread_getspecific
+----thd_wait_begin (thd=0x0, wait_type=2) at /home/chenhui/mysql-5623-trunk/sql/sql_class.cc:4352
+------MYSQL_CALLBACK(thd->scheduler, thd_wait_begin, (thd, wait_type));
+----mysql_cond_timedwait
+------inline_mysql_cond_timedwait
+--------pthread_cond_wait
+----thd_wait_end
 ```
 
 

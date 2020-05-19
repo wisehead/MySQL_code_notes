@@ -29,3 +29,29 @@ struct st_mysql_cond
 */
 typedef struct st_mysql_cond mysql_cond_t;
 ```
+
+#2.struct st_my_thread_var
+
+```cpp
+struct st_my_thread_var
+{
+  int thr_errno;
+  mysql_cond_t suspend;
+  mysql_mutex_t mutex;
+  mysql_mutex_t * volatile current_mutex;
+  mysql_cond_t * volatile current_cond;
+  pthread_t pthread_self;
+  my_thread_id id;
+  int cmp_length;
+  int volatile abort;
+  my_bool init;
+  struct st_my_thread_var *next,**prev;
+  void *opt_info;
+  void  *stack_ends_here;
+#ifndef DBUG_OFF
+  void *dbug;
+  char name[THREAD_NAME_SIZE+1];
+#endif
+};
+
+```
