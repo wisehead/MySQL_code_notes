@@ -32,3 +32,11 @@ open_tables
 ----mdl_requests.push_front(&table->mdl_request);
 ----MDL_context::acquire_locks
 ```
+
+#3.open_temporary_tables
+
+```cpp
+open_temporary_tables
+--open_temporary_table
+----find_temporary_table
+```
