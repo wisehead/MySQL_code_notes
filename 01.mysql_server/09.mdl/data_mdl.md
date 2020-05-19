@@ -604,4 +604,115 @@ private:
 };
 ```
 
-#11.
+#11.MDL_ticket
+
+```cpp
+/**
+  A granted metadata lock.
+
+  @warning MDL_ticket members are private to the MDL subsystem.
+
+  @note Multiple shared locks on a same object are represented by a
+        single ticket. The same does not apply for other lock types.
+
+  @note There are two groups of MDL_ticket members:
+        - "Externally accessible". These members can be accessed from
+          threads/contexts different than ticket owner in cases when
+          ticket participates in some list of granted or waiting tickets
+          for a lock. Therefore one should change these members before
+          including then to waiting/granted lists or while holding lock
+          protecting those lists.
+        - "Context private". Such members are private to thread/context
+          owning this ticket. I.e. they should not be accessed from other
+          threads/contexts.
+*/
+
+class MDL_ticket : public MDL_wait_for_subgraph
+{
+public:
+  /**
+    Pointers for participating in the list of lock requests for this context.
+    Context private.
+  */
+  MDL_ticket *next_in_context;
+  MDL_ticket **prev_in_context;
+  /**
+    Pointers for participating in the list of satisfied/pending requests
+    for the lock. Externally accessible.
+  */
+  MDL_ticket *next_in_lock;
+  MDL_ticket **prev_in_lock;
+
+
+private:
+  friend class MDL_context;
+private:
+  /** Type of metadata lock. Externally accessible. */
+  enum enum_mdl_type m_type;
+#ifndef DBUG_OFF
+  /**
+    Duration of lock represented by this ticket.
+    Context private. Debug-only.
+  */
+  enum_mdl_duration m_duration;
+#endif
+  /**
+    Context of the owner of the metadata lock ticket. Externally accessible.
+  */
+  MDL_context *m_ctx;
+
+  /**
+    Pointer to the lock object for this lock ticket. Externally accessible.
+  */
+  MDL_lock *m_lock;
+};
+```
+
+#12.MDL_scoped_lock
+
+```cpp
+  switch (mdl_key->mdl_namespace())
+  {
+    case MDL_key::GLOBAL:
+    case MDL_key::SCHEMA:
+    case MDL_key::COMMIT:
+    case MDL_key::BACKUP:
+    case MDL_key::BINLOG:
+      return new (std::nothrow) MDL_scoped_lock(mdl_key, map_part);
+    default:
+      return new (std::nothrow) MDL_object_lock(mdl_key, map_part);
+  }
+
+/**
+  An implementation of the scoped metadata lock. The only locking modes
+  which are supported at the moment are SHARED and INTENTION EXCLUSIVE
+  and EXCLUSIVE
+*/
+
+class MDL_scoped_lock : public MDL_lock
+{
+private:
+  static const bitmap_t m_granted_incompatible[MDL_TYPE_END];
+  static const bitmap_t m_waiting_incompatible[MDL_TYPE_END];
+};
+```
+
+#13. MDL_object_lock
+
+```cpp
+/**
+  An implementation of a per-object lock. Supports SHARED, SHARED_UPGRADABLE,
+  SHARED HIGH PRIORITY and EXCLUSIVE locks.
+*/
+
+class MDL_object_lock : public MDL_lock
+{
+private:
+  static const bitmap_t m_granted_incompatible[MDL_TYPE_END];
+  static const bitmap_t m_waiting_incompatible[MDL_TYPE_END];
+
+public:
+  /** Members for linking the object into the list of unused objects. */
+  MDL_object_lock *next_in_cache, **prev_in_cache;
+};
+```

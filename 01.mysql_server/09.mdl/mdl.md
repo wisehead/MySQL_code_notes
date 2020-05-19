@@ -101,3 +101,14 @@ open_table
 ----MDL_context::try_acquire_lock
 ```
 
+#4.4 acquire_lock
+
+```cpp
+acquire_lock
+--MDL_context::try_acquire_lock_impl
+----MDL_context::find_ticket
+------MDL_ticket::has_stronger_or_equal_type
+----MDL_context::clone_ticket
+------MDL_lock::create
+```
+
