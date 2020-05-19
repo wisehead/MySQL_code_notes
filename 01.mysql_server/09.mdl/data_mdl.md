@@ -716,3 +716,165 @@ public:
   MDL_object_lock *next_in_cache, **prev_in_cache;
 };
 ```
+
+#14.MDL_object_lock::m_granted_incompatible
+
+```cpp
+/**
+  Compatibility (or rather "incompatibility") matrices for per-object
+  metadata lock. Arrays of bitmaps which elements specify which granted/
+  waiting locks are incompatible with type of lock being requested.
+
+  The first array specifies if particular type of request can be satisfied
+  if there is granted lock of certain type.
+
+     Request  |  Granted requests for lock       |
+      type    | S  SH  SR  SW  SU  SNW  SNRW  X  |
+    ----------+----------------------------------+
+    S         | +   +   +   +   +   +    +    -  |
+    SH        | +   +   +   +   +   +    +    -  |
+    SR        | +   +   +   +   +   +    -    -  |
+    SW        | +   +   +   +   +   -    -    -  |
+    SU        | +   +   +   +   -   -    -    -  |
+    SNW       | +   +   +   -   -   -    -    -  |
+    SNRW      | +   +   -   -   -   -    -    -  |
+    X         | -   -   -   -   -   -    -    -  |
+    SU -> X   | -   -   -   -   0   0    0    0  |
+    SNW -> X  | -   -   -   0   0   0    0    0  |
+    SNRW -> X | -   -   0   0   0   0    0    0  |
+
+  The second array specifies if particular type of request can be satisfied
+  if there is waiting request for the same lock of certain type. In other
+  words it specifies what is the priority of different lock types.
+
+     Request  |  Pending requests for lock      |
+      type    | S  SH  SR  SW  SU  SNW  SNRW  X |
+    ----------+---------------------------------+
+    S         | +   +   +   +   +   +     +   - |
+    SH        | +   +   +   +   +   +     +   + |
+    SR        | +   +   +   +   +   +     -   - |
+    SW        | +   +   +   +   +   -     -   - |
+    SU        | +   +   +   +   +   +     +   - |
+    SNW       | +   +   +   +   +   +     +   - |
+    SNRW      | +   +   +   +   +   +     +   - |
+    X         | +   +   +   +   +   +     +   + |
+    SU -> X   | +   +   +   +   +   +     +   + |
+    SNW -> X  | +   +   +   +   +   +     +   + |
+    SNRW -> X | +   +   +   +   +   +     +   + |
+
+  Here: "+" -- means that request can be satisfied
+        "-" -- means that request can't be satisfied and should wait
+        "0" -- means impossible situation which will trigger assert
+
+  @note In cases then current context already has "stronger" type
+        of lock on the object it will be automatically granted
+        thanks to usage of the MDL_context::find_ticket() method.
+
+  @note IX locks are excluded since they are not used for per-object
+        metadata locks.
+*/
+const MDL_lock::bitmap_t
+MDL_object_lock::m_granted_incompatible[MDL_TYPE_END] =
+{
+  0,
+  MDL_BIT(MDL_EXCLUSIVE),
+  MDL_BIT(MDL_EXCLUSIVE),
+  MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_SHARED_NO_READ_WRITE),
+  MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_SHARED_NO_READ_WRITE) |
+    MDL_BIT(MDL_SHARED_NO_WRITE),
+  MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_SHARED_NO_READ_WRITE) |
+    MDL_BIT(MDL_SHARED_NO_WRITE) | MDL_BIT(MDL_SHARED_UPGRADABLE),
+  MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_SHARED_NO_READ_WRITE) |
+    MDL_BIT(MDL_SHARED_NO_WRITE) | MDL_BIT(MDL_SHARED_UPGRADABLE) |
+    MDL_BIT(MDL_SHARED_WRITE),
+  MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_SHARED_NO_READ_WRITE) |
+    MDL_BIT(MDL_SHARED_NO_WRITE) | MDL_BIT(MDL_SHARED_UPGRADABLE) |
+    MDL_BIT(MDL_SHARED_WRITE) | MDL_BIT(MDL_SHARED_READ),
+  MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_SHARED_NO_READ_WRITE) |
+    MDL_BIT(MDL_SHARED_NO_WRITE) | MDL_BIT(MDL_SHARED_UPGRADABLE) |
+    MDL_BIT(MDL_SHARED_WRITE) | MDL_BIT(MDL_SHARED_READ) |
+    MDL_BIT(MDL_SHARED_HIGH_PRIO) | MDL_BIT(MDL_SHARED)
+};
+
+
+const MDL_lock::bitmap_t
+MDL_object_lock::m_waiting_incompatible[MDL_TYPE_END] =
+{
+  0,
+  MDL_BIT(MDL_EXCLUSIVE),
+  0,
+  MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_SHARED_NO_READ_WRITE),
+  MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_SHARED_NO_READ_WRITE) |
+    MDL_BIT(MDL_SHARED_NO_WRITE),
+  MDL_BIT(MDL_EXCLUSIVE),
+  MDL_BIT(MDL_EXCLUSIVE),
+  MDL_BIT(MDL_EXCLUSIVE),
+  0
+};
+```
+
+#15.MDL_scoped_lock::m_granted_incompatible
+
+```cpp
+/**
+  Compatibility (or rather "incompatibility") matrices for scoped metadata
+  lock. Arrays of bitmaps which elements specify which granted/waiting locks
+  are incompatible with type of lock being requested.
+
+  The first array specifies if particular type of request can be satisfied
+  if there is granted scoped lock of certain type.
+
+             | Type of active   |
+     Request |   scoped lock    |
+      type   | IS(*)  IX   S  X |
+    ---------+------------------+
+    IS       |  +      +   +  + |
+    IX       |  +      +   -  - |
+    S        |  +      -   +  - |
+    X        |  +      -   -  - |
+
+  The second array specifies if particular type of request can be satisfied
+  if there is already waiting request for the scoped lock of certain type.
+  I.e. it specifies what is the priority of different lock types.
+
+             |    Pending      |
+     Request |  scoped lock    |
+      type   | IS(*)  IX  S  X |
+    ---------+-----------------+
+    IS       |  +      +  +  + |
+    IX       |  +      +  -  - |
+    S        |  +      +  +  - |
+    X        |  +      +  +  + |
+
+  Here: "+" -- means that request can be satisfied
+        "-" -- means that request can't be satisfied and should wait
+
+  (*)  Since intention shared scoped locks are compatible with all other
+       type of locks we don't even have any accounting for them.
+
+  Note that relation between scoped locks and objects locks requested
+  by statement is not straightforward and is therefore fully defined
+  by SQL-layer.
+  For example, in order to support global read lock implementation
+  SQL-layer acquires IX lock in GLOBAL namespace for each statement
+  that can modify metadata or data (i.e. for each statement that
+  needs SW, SU, SNW, SNRW or X object locks). OTOH, to ensure that
+  DROP DATABASE works correctly with concurrent DDL, IX metadata locks
+  in SCHEMA namespace are acquired for DDL statements which can update
+  metadata in the schema (i.e. which acquire SU, SNW, SNRW and X locks
+  on schema objects) and aren't acquired for DML.
+*/
+
+const MDL_lock::bitmap_t MDL_scoped_lock::m_granted_incompatible[MDL_TYPE_END] =
+{
+  MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_SHARED),
+  MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_INTENTION_EXCLUSIVE), 0, 0, 0, 0, 0, 0,
+  MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_SHARED) | MDL_BIT(MDL_INTENTION_EXCLUSIVE)
+};
+
+const MDL_lock::bitmap_t MDL_scoped_lock::m_waiting_incompatible[MDL_TYPE_END] =
+{
+  MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_SHARED),
+  MDL_BIT(MDL_EXCLUSIVE), 0, 0, 0, 0, 0, 0, 0
+};
+```

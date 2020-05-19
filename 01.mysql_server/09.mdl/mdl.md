@@ -109,6 +109,18 @@ acquire_lock
 ----MDL_context::find_ticket
 ------MDL_ticket::has_stronger_or_equal_type
 ----MDL_context::clone_ticket
-------MDL_lock::create
+------MDL_ticket::create
+------ticket->m_lock->m_granted.add_ticket(ticket);
+------m_tickets[mdl_request->duration].push_front(ticket);
+----MDL_ticket::create
+----MDL_map::find_or_insert
+------MDL_map_partition::find_or_insert
+--------my_hash_search_using_hash_value
+--------MDL_lock::create
+--------my_hash_insert
+--------MDL_map_partition::move_from_hash_to_lock_mutex
+----MDL_lock::can_grant_lock
 ```
+
+
 
