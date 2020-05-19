@@ -120,6 +120,14 @@ acquire_lock
 --------my_hash_insert
 --------MDL_map_partition::move_from_hash_to_lock_mutex
 ----MDL_lock::can_grant_lock
+----lock->m_granted.add_ticket(ticket);//lock保存ticket
+----m_tickets[mdl_request->duration].push_front(ticket);//context保存tickets
+----mdl_request->ticket= ticket;//mdl_request保存tickets
+--lock->m_waiting.add_ticket(ticket);//无法直接获取ticket，因为锁兼容不允许。需要lock wait。
+--MDL_context::find_deadlock
+--MDL_wait::timed_wait
+----ENTER_COND
+------THD::enter_cond
 ```
 
 
