@@ -1,3 +1,13 @@
+#0.importanct structs
+
+```cpp
+首先：enum_mdl_namespace 表示mdl_request的作用域，比如alter table操作，需要获取TABLE作用域。
+
+然后：enum_mdl_duration 表示mdl_request的持久类型，比如alter table操作，类型是MDL_STATEMENT，即语句结束，就释放mdl锁。又比如autocommit=0；select 操作，类型是MDL_TRANSACTION，必须在显示的commit，才释放mdl锁。
+
+最后：enum_mdl_type 表示mdl_request的lock类型，根据这个枚举类型，来判断是否兼容和互斥。
+```
+
 #1.class MDL_request
 
 ```cpp
@@ -557,3 +567,41 @@ public:
     bitmap_t m_bitmap;
   };
 ```
+
+#10.class MDL_wait
+
+```cpp
+/**
+  A reliable way to wait on an MDL lock.
+*/
+
+class MDL_wait
+{
+public:
+  MDL_wait();
+  ~MDL_wait();
+
+  enum enum_wait_status { EMPTY = 0, GRANTED, VICTIM, TIMEOUT, KILLED };
+
+  bool set_status(enum_wait_status result_arg);
+  enum_wait_status get_status();
+  void reset_status();
+  enum_wait_status timed_wait(MDL_context_owner *owner,
+                              struct timespec *abs_timeout,
+                              bool signal_timeout,
+                              const PSI_stage_info *wait_state_name);
+private:
+  /**
+    Condvar which is used for waiting until this context's pending
+    request can be satisfied or this thread has to perform actions
+    to resolve a potential deadlock (we subscribe to such
+    notification by adding a ticket corresponding to the request
+    to an appropriate queue of waiters).
+  */
+  mysql_mutex_t m_LOCK_wait_status;
+  mysql_cond_t m_COND_wait_status;
+  enum_wait_status m_wait_status;
+};
+```
+
+#11.

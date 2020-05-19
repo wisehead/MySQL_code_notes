@@ -58,3 +58,46 @@ MDL_context::acquire_locks
 ------MDL_key::cmp
 
 ```
+
+#3.MDL_context::init
+```cpp
+//创建connection过程中，初始化mdl_context.
+//函数调用：
+THD::THD
+--MDL_context::init//每一个connection对应一个mdl_context
+```
+
+#4. acquire_lock
+#4.1 stack
+```cpp
+说明：首先进行兼容性判断，如果兼容，那么就把ticket加入到队列中，加锁成功。
+
+　　函数调用栈
+
+　　 open_and_lock_tables
+
+　　　　open_table
+
+1. 排他锁使用
+　　lock_table_names
+　　MDL_context::acquire_locks
+2. 共享锁使用
+　　open_table_get_mdl_lock
+　　MDL_context::try_acquire_lock
+```
+
+#4.2 排他锁使用
+```cpp
+lock_table_names
+--MDL_context::acquire_locks
+----acquire_lock
+```
+
+#4.3 共享锁使用
+
+```cpp
+open_table
+--open_table_get_mdl_lock
+----MDL_context::try_acquire_lock
+```
+
