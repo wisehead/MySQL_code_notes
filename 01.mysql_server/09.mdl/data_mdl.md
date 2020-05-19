@@ -188,4 +188,60 @@ enum enum_mdl_duration {
 };    
 ```
 
-#3.class MDL_key todo
+#3.class MDL_key
+
+```cpp
+/**
+  Metadata lock object key.
+
+  A lock is requested or granted based on a fully qualified name and type.
+  E.g. They key for a table consists of <0 (=table)>+<database>+<table name>.
+  Elsewhere in the comments this triple will be referred to simply as "key"
+  or "name".
+*/
+
+class MDL_key
+{
+private:
+  uint16 m_length;
+  uint16 m_db_name_length;
+  char m_ptr[MAX_MDLKEY_LENGTH];
+  static PSI_stage_info m_namespace_to_wait_state_name[NAMESPACE_END];
+};
+
+
+                            
+```
+
+#4.enum enum_mdl_namespace
+
+```cpp
+  /**
+    Object namespaces.
+    Sic: when adding a new member to this enum make sure to
+    update m_namespace_to_wait_state_name array in mdl.cc!
+
+    Different types of objects exist in different namespaces
+     - TABLE is for tables and views.
+     - FUNCTION is for stored functions.
+     - PROCEDURE is for stored procedures.
+     - TRIGGER is for triggers.
+     - EVENT is for event scheduler events
+    Note that although there isn't metadata locking on triggers,
+    it's necessary to have a separate namespace for them since
+    MDL_key is also used outside of the MDL subsystem.
+  */
+  enum enum_mdl_namespace { GLOBAL=0,
+                            BACKUP,
+                            SCHEMA,
+                            TABLE,
+                            FUNCTION,
+                            PROCEDURE,
+                            TRIGGER,
+                            EVENT,
+                            COMMIT,
+                            USER_LOCK,           /* user level locks. */
+                            BINLOG,
+                            /* This should be the last ! */
+                            NAMESPACE_END };
+```
