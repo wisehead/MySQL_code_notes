@@ -43,8 +43,3 @@ open_temporary_tables
 ----find_temporary_table
 ```
 
-#4.open_and_process_table
-
-```cpp
-
-```
