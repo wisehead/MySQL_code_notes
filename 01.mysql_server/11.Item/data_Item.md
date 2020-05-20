@@ -1,24 +1,5 @@
 #<center>Item</center>
 
-
-#1.Item_field
-
-```cpp
-//sql/item.h
-
-class Item_field :public Item_ident
-{
-protected:
-  void set_field(Field *field);
-public:
-  Field *field,*result_field;
-  Item_equal *item_equal;
-  bool no_const_subst;
-...
-...
-}
-```
-
 #2. cmp_item_row
 
 ```cpp
