@@ -1,23 +1,5 @@
 #Field
 
-#1.Item_field
-
-```cp
-//sql/item.h
-
-class Item_field :public Item_ident
-{
-protected:
-  void set_field(Field *field);
-public:
-  Field *field,*result_field;
-  Item_equal *item_equal;
-  bool no_const_subst;
-...
-...
-}
-```
-
 #2.Field
 
 ```cpp
@@ -110,3 +92,47 @@ Field (abstract)
 Field是Table的一部分，属于元信息结构。
 
 Item_field属于AST的一部分。
+
+#5.class Field_iterator_table_ref
+
+```cpp
+/*
+  Generic iterator over the fields of an arbitrary table reference.
+
+  DESCRIPTION
+    This class unifies the various ways of iterating over the columns
+    of a table reference depending on the type of SQL entity it
+    represents. If such an entity represents a nested table reference,
+    this iterator encapsulates the iteration over the columns of the
+    members of the table reference.
+
+  IMPLEMENTATION
+    The implementation assumes that all underlying NATURAL/USING table
+    references already contain their result columns and are linked into
+    the list TABLE_LIST::next_name_resolution_table.
+*/
+
+class Field_iterator_table_ref: public Field_iterator
+{
+  TABLE_LIST *table_ref, *first_leaf, *last_leaf;
+  Field_iterator_table        table_field_it;
+  Field_iterator_view         view_field_it;
+  Field_iterator_natural_join natural_join_it;
+  Field_iterator *field_it;
+  void set_field_iterator();
+public:
+  Field_iterator_table_ref() :field_it(NULL) {}
+  void set(TABLE_LIST *table);
+  void next();
+  bool end_of_fields()
+  { return (table_ref == last_leaf && field_it->end_of_fields()); }
+  const char *name() { return field_it->name(); }
+  const char *get_table_name();
+  const char *get_db_name();
+  GRANT_INFO *grant();
+  Item *create_item(THD *thd) { return field_it->create_item(thd); }
+  Field *field() { return field_it->field(); }
+  Natural_join_column *get_or_create_column_ref(THD *thd, TABLE_LIST *parent_table_ref);
+  Natural_join_column *get_natural_column_ref();
+};
+```
