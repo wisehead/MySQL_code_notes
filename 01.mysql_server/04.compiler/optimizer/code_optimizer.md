@@ -39,4 +39,6 @@ JOIN::optimize
 ----SQL_SELECT *sel= tab->select= new (thd->mem_root) SQL_SELECT;
 ----pushdown_on_conditions
 --make_join_readinfo
+----setup_join_buffering
+--pick_table_access_method
 ```
