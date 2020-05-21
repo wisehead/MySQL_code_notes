@@ -36,4 +36,6 @@ JOIN::optimize
 --JOIN::set_access_methods
 --make_join_select
 ----add_not_null_conds
+----SQL_SELECT *sel= tab->select= new (thd->mem_root) SQL_SELECT;
+----pushdown_on_conditions
 ```
