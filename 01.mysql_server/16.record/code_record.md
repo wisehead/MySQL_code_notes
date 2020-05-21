@@ -102,4 +102,16 @@ init_read_record
 --------dict_index_copy_types
 ----------dict_field_get_col
 ----------dict_col_copy_type
+--handler::extra_opt
+```
+
+#2.rr_sequential
+
+```cpp
+caller:
+--sub_select
+
+rr_sequential
+--handler::ha_rnd_next
+----ha_innobase::rnd_next
 ```
