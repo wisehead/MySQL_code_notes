@@ -61,6 +61,30 @@ JOIN::exec
 ----select_result::prepare2
 --select_send::send_result_set_metadata
 ----Protocol::send_result_set_metadata
+--do_select
+```
+
+#3. do_select
+
+```cpp
+caller:
+--do_select
+
+/**
+  Make a join of all tables and write it on socket or to table.
+
+  @retval
+    0  if ok
+  @retval
+    1  if error is sent
+  @retval
+    -1  if error should be sent
+*/
+do_select
+--sub_select
+----st_join_table::prepare_scan
+----join_init_read_record
+------init_read_record
 ```
 
 
