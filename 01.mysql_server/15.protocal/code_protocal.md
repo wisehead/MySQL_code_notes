@@ -13,4 +13,9 @@ Protocol::send_result_set_metadata
 --store
 ----Protocol::store_string_aux
 ------net_store_data
+--------copy_and_convert
+----------my_convert
+--write
+----my_net_write
+--write_eof_packet
 ```
