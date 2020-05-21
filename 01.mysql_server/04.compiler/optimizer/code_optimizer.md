@@ -29,4 +29,8 @@ JOIN::optimize
 ------ha_innobase::info
 --------ha_innobase::info_low
 ----------dict_table_stats_lock
+----outer_join_nest
+----Optimize_table_order
+----JOIN::refine_best_rowcount
+----JOIN::get_best_combination
 ```
