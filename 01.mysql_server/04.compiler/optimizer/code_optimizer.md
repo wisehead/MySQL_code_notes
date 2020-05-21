@@ -33,4 +33,7 @@ JOIN::optimize
 ----Optimize_table_order
 ----JOIN::refine_best_rowcount
 ----JOIN::get_best_combination
+--JOIN::set_access_methods
+--make_join_select
+----add_not_null_conds
 ```
