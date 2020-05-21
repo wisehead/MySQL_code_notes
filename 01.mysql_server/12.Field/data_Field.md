@@ -136,3 +136,22 @@ public:
   Natural_join_column *get_natural_column_ref();
 };
 ```
+
+#6.class Send_field
+
+```cpp
+/*
+  A class for sending info to the client
+*/
+
+class Send_field :public Sql_alloc {
+ public:
+  const char *db_name;
+  const char *table_name,*org_table_name;
+  const char *col_name,*org_col_name;
+  ulong length;
+  uint charsetnr, flags, decimals;
+  enum_field_types type;
+  Send_field() {}
+};
+```

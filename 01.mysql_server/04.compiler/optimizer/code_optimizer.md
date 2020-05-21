@@ -42,3 +42,33 @@ JOIN::optimize
 ----setup_join_buffering
 --pick_table_access_method
 ```
+
+#2.JOIN::exec
+
+```cpp
+caller:
+--mysql_execute_select
+
+/**
+  Execute select, executor entry point.
+
+  @todo
+    When can we have here thd->net.report_error not zero?
+*/
+JOIN::exec
+--JOIN::prepare_result
+----st_select_lex::handle_derived
+----select_result::prepare2
+--select_send::send_result_set_metadata
+----Protocol::send_result_set_metadata
+```
+
+
+
+
+
+
+
+
+
+
