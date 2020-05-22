@@ -64,50 +64,7 @@ JOIN::exec
 --do_select
 ```
 
-#3. do_select
 
-```cpp
-caller:
---do_select
-
-/**
-  Make a join of all tables and write it on socket or to table.
-
-  @retval
-    0  if ok
-  @retval
-    1  if error is sent
-  @retval
-    -1  if error should be sent
-*/
-do_select
---sub_select
-----st_join_table::prepare_scan
-----join_init_read_record
-------init_read_record
-----rr_sequential
-----evaluate_join_record
-------end_send
---------select_send::send_data
-----------Protocol::send_result_set_row
-------------Item_field::send
---------------Protocol_text::store
-----------------val_str
-------------------Field_long::val_str
---------------------longget
---------------------my_long10_to_str_8bit
-----------------store_string_aux
-------------set
-----------inc_sent_row_count
-----------Protocol::write
-------------my_net_write
---------------net_write_buff
-```
-
-#4.todo work.
-
-```cpp
-```
 
 
 

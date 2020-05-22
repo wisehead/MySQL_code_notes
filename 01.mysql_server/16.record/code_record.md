@@ -114,4 +114,7 @@ caller:
 rr_sequential
 --handler::ha_rnd_next
 ----ha_innobase::rnd_next
+------general_fetch
+--------innobase_srv_conc_enter_innodb
+--------row_search_for_mysql
 ```
