@@ -20,6 +20,10 @@ row_search_for_mysql
 ----btr_cur_get_rec
 ------page_cur_get_rec
 --rec_get_offsets_func
+----dict_index_get_n_fields
+----rec_offs_set_n_fields
+----rec_init_offsets
+------rec_init_offsets_comp_ordinary
 ```
 
 #2.sel_restore_position_for_mysql
