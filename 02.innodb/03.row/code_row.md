@@ -25,6 +25,11 @@ row_search_for_mysql
 ----rec_init_offsets
 ------rec_init_offsets_comp_ordinary
 --lock_clust_rec_cons_read_sees
+--rec_get_deleted_flag
+----rec_get_bit_field_1
+----REC_NEW_INFO_BITS = 5, REC_INFO_DELETED_FLAG = 0x20UL, REC_INFO_BITS_SHIFT = 0
+--row_search_idx_cond_check
+--row_sel_store_mysql_rec
 ```
 
 #2.sel_restore_position_for_mysql
@@ -42,4 +47,14 @@ sel_restore_position_for_mysql
 ------rw_lock_s_lock_nowait
 ------mtr_memo_push
 --------slot = (mtr_memo_slot_t*) dyn_array_push(memo, sizeof *slot);
+```
+
+#3.row_sel_store_mysql_rec
+
+```cpp
+caller:
+--row_search_for_mysql
+
+row_sel_store_mysql_rec
+--
 ```
