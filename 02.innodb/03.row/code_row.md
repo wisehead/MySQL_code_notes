@@ -19,6 +19,7 @@ row_search_for_mysql
 ----btr_pcur_get_btr_cur
 ----btr_cur_get_rec
 ------page_cur_get_rec
+--rec_get_offsets_func
 ```
 
 #2.sel_restore_position_for_mysql
