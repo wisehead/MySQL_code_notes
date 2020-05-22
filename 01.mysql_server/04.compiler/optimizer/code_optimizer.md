@@ -96,6 +96,12 @@ do_select
 ------------------Field_long::val_str
 --------------------longget
 --------------------my_long10_to_str_8bit
+----------------store_string_aux
+------------set
+----------inc_sent_row_count
+----------Protocol::write
+------------my_net_write
+--------------net_write_buff
 ```
 
 #4.todo work.
