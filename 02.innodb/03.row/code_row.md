@@ -14,6 +14,11 @@ row_search_for_mysql
 ------fork->thrs.start
 --que_thr_move_to_run_state_for_mysql
 --sel_restore_position_for_mysql
+--btr_pcur_move_to_next
+--btr_pcur_get_rec
+----btr_pcur_get_btr_cur
+----btr_cur_get_rec
+------page_cur_get_rec
 ```
 
 #2.sel_restore_position_for_mysql
