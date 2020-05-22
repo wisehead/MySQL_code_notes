@@ -1,41 +1,4 @@
-#Field
-
-#2.Field
-
-```cpp
-class Field
-{
-public：
-  uchar     *ptr;           // Position to field in record
-
-protected:
-  /**
-     Byte where the @c NULL bit is stored inside a record. If this Field is a
-     @c NOT @c NULL field, this member is @c NULL.
-  */
-  uchar     *null_ptr;
-}
-
-public:
-  /*
-    Note that you can use table->in_use as replacement for current_thd member
-    only inside of val_*() and store() members (e.g. you can't use it in cons)
-  */
-  TABLE *table;                                 // Pointer for table
-  TABLE *orig_table;                            // Pointer to original table
-  const char    **table_name, *field_name;
-  LEX_STRING    comment;
-  /* Field is part of the following keys */
-  key_map key_start;                /* Keys that starts with this field */
-  key_map part_of_key;              /* All keys that includes this field */
-  key_map part_of_key_not_clustered;/* ^ but only for non-clustered keys */
-  key_map part_of_sortkey;          /* ^ but only keys usable for sorting */
-...
-...
-}  
-```
-
-#3.Field类家族
+#1.Field类家族
 
 ```cpp
 //sql/field.h
@@ -87,13 +50,13 @@ Field (abstract)
 
 ```
 
-#4.Field和Item_field的区别
+#2.Field和Item_field的区别
 
 Field是Table的一部分，属于元信息结构。
 
 Item_field属于AST的一部分。
 
-#5.class Field_iterator_table_ref
+#3.class Field_iterator_table_ref
 
 ```cpp
 /*
@@ -137,7 +100,7 @@ public:
 };
 ```
 
-#6.class Send_field
+#4.class Send_field
 
 ```cpp
 /*
