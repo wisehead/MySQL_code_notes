@@ -25,4 +25,10 @@ caller:
 sel_restore_position_for_mysql
 --btr_pcur_restore_position_func
 ----buf_page_optimistic_get
+------buf_page_set_accessed
+------buf_page_make_young_if_needed
+--------buf_page_peek_if_too_old
+------rw_lock_s_lock_nowait
+------mtr_memo_push
+--------slot = (mtr_memo_slot_t*) dyn_array_push(memo, sizeof *slot);
 ```
