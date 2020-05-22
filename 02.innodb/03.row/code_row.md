@@ -30,6 +30,7 @@ row_search_for_mysql
 ----REC_NEW_INFO_BITS = 5, REC_INFO_DELETED_FLAG = 0x20UL, REC_INFO_BITS_SHIFT = 0
 --row_search_idx_cond_check
 --row_sel_store_mysql_rec
+--row_sel_store_row_id_to_prebuilt
 ```
 
 #2.sel_restore_position_for_mysql
@@ -56,5 +57,8 @@ caller:
 --row_search_for_mysql
 
 row_sel_store_mysql_rec
---
+--row_sel_store_mysql_field_func
+----rec_get_nth_field
+------rec_get_nth_field_offs
+----row_sel_field_store_in_mysql_format_func
 ```
