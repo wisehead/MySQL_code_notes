@@ -24,6 +24,7 @@ row_search_for_mysql
 ----rec_offs_set_n_fields
 ----rec_init_offsets
 ------rec_init_offsets_comp_ordinary
+--lock_clust_rec_cons_read_sees
 ```
 
 #2.sel_restore_position_for_mysql
