@@ -35,5 +35,8 @@ btr_pcur_store_position
 ----btr_cur_get_page_cur
 --page_cur_get_rec
 --page_is_empty
---
+--dict_index_copy_rec_order_prefix
+----dict_index_get_n_unique_in_tree
+------dict_index_get_n_unique
+----rec_copy_prefix_to_buf
 ```
