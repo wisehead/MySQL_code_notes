@@ -15,3 +15,14 @@ btr_pcur_move_to_next
 --------page_rec_get_next_low
 ----------rec_get_next_offs
 ```
+
+#2.btr_pcur_store_position
+
+```cpp
+caller:
+--row_search_for_mysql
+
+btr_pcur_store_position
+--btr_pcur_get_block
+----
+```
