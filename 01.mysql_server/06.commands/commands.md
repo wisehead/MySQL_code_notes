@@ -48,4 +48,9 @@ mysql_execute_command
 --execute_sqlcom_select
 --trans_commit_stmt
 --close_thread_tables
+----ha_innobase::extra
+----mark_temp_tables_as_free_for_reuse
+----binlog_flush_pending_rows_event
+------THD::binlog_flush_pending_rows_event
+--------THD::binlog_get_pending_rows_event
 ```
