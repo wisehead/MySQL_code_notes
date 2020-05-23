@@ -47,4 +47,5 @@ mysql_execute_command
 ----check_table_access
 --execute_sqlcom_select
 --trans_commit_stmt
+--close_thread_tables
 ```
