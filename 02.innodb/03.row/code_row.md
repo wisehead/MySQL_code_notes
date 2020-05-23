@@ -31,6 +31,11 @@ row_search_for_mysql
 --row_search_idx_cond_check
 --row_sel_store_mysql_rec
 --row_sel_store_row_id_to_prebuilt
+----dict_index_get_sys_col_pos
+------dict_table_get_sys_col
+------dict_col_get_clust_pos
+----rec_get_nth_field
+--btr_pcur_store_position
 ```
 
 #2.sel_restore_position_for_mysql
