@@ -117,4 +117,5 @@ rr_sequential
 ------general_fetch
 --------innobase_srv_conc_enter_innodb
 --------row_search_for_mysql
+--------innobase_srv_conc_exit_innodb
 ```

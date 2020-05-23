@@ -36,6 +36,8 @@ row_search_for_mysql
 ------dict_col_get_clust_pos
 ----rec_get_nth_field
 --btr_pcur_store_position
+--que_thr_stop_for_mysql_no_error
+--mtr_commit(&mtr)
 ```
 
 #2.sel_restore_position_for_mysql
