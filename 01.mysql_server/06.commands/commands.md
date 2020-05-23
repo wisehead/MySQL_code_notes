@@ -70,4 +70,12 @@ mysql_execute_command
 --------ha_innobase::reset
 --------handler::unbind_psi
 ----------unbind_table_v1
+--------lock
+----------inline_mysql_mutex_lock
+--------release_table
+--MDL_context::release_transactional_locks
+----MDL_context::release_locks_stored_before
+------release_lock
+--------lock->remove_ticket(&MDL_lock::m_granted, ticket);
+--------MDL_ticket::destroy(ticket);
 ```
