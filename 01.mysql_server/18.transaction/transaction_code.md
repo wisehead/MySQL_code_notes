@@ -5,4 +5,5 @@ caller:
 --mysql_execute_command
 
 trans_commit_stmt
+--ha_commit_trans
 ```
