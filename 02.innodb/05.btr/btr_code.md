@@ -24,5 +24,16 @@ caller:
 
 btr_pcur_store_position
 --btr_pcur_get_block
-----
+----btr_pcur_get_btr_cur
+----btr_cur_get_block
+------btr_cur_get_page_cur
+------page_cur_get_block
+--btr_pcur_get_btr_cur
+--btr_cur_get_index
+--btr_pcur_get_page_cur
+----btr_pcur_get_btr_cur
+----btr_cur_get_page_cur
+--page_cur_get_rec
+--page_is_empty
+--
 ```
