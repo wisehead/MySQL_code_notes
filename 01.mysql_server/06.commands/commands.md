@@ -46,4 +46,5 @@ mysql_execute_command
 --select_precheck
 ----check_table_access
 --execute_sqlcom_select
+--trans_commit_stmt
 ```
