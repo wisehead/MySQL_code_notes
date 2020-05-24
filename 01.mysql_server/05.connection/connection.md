@@ -40,6 +40,13 @@ dispatch_command
 --mysql_parse
 --thd->update_server_status();
 --thd->protocol->end_statement()
+----Protocol::send_eof
+------net_send_eof
+--------write_eof_packet
+----------my_net_write
+------------net_write_buff
+--------------memcpy(net->write_pos, packet, len);
+--------------
 --mysql_audit_general
 --MYSQL_END_STATEMENT(thd->m_statement_psi, thd->get_stmt_da());
 --MYSQL_COMMAND_DONE(res);
