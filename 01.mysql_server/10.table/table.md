@@ -79,3 +79,12 @@ get_table_share
 ----------intern_plugin_lock
 ```
 
+#6.open_table_from_share
+
+```cpp
+caller:
+--open_table
+
+open_table_from_share
+--
+```
