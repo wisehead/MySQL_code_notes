@@ -41,6 +41,8 @@ mysql_execute_command
 --resolve_in_table_list_only
 --deny_updates_if_read_only_option
 --open_temporary_tables
+----open_temporary_table
+------find_temporary_table
 --switch (lex->sql_command)
 --case SQLCOM_SELECT:
 --select_precheck

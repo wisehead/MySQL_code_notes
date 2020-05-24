@@ -24,7 +24,26 @@ open_and_lock_tables
 --open_tables
 ```
 
-#2. open_tables
+#2. open_normal_and_derived_tables
+
+```cpp
+open_normal_and_derived_tables
+--open_tables
+```
+
+#3.open_temporary_tables
+
+```cpp
+caller:
+--mysql_execute_command
+
+open_temporary_tables
+--open_temporary_table
+----find_temporary_table
+```
+
+
+#4. open_tables
 
 ```cpp
 open_tables
@@ -32,21 +51,14 @@ open_tables
 ----mdl_requests.push_front(&table->mdl_request);
 ----MDL_context::acquire_locks
 --open_and_process_table
-----
+----open_table
+------get_table_def_key
+--------
 ```
 
-#3.open_temporary_tables
+#5.open_table
 
 ```cpp
-open_temporary_tables
---open_temporary_table
-----find_temporary_table
-```
 
-#4. open_normal_and_derived_tables
-
-```cpp
-open_normal_and_derived_tables
---open_tables
 ```
 
