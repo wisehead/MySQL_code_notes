@@ -86,5 +86,16 @@ caller:
 --open_table
 
 open_table_from_share
---
+--handler::ha_open
+----ha_innobase::open
+------normalize_table_name_low
+------get_share
+------dict_table_open_on_name
+--------dict_load_table
+----------dict_table_get_low
+------------dict_table_check_if_in_cache_low
+----------dtuple_create
+------------dtuple_create_from_mem
+
+
 ```
