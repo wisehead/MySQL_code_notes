@@ -53,12 +53,29 @@ open_tables
 --open_and_process_table
 ----open_table
 ------get_table_def_key
---------
+------get_table_share_with_discover
+--------get_table_share
+----------alloc_table_share
+----------open_table_def
+------open_table_from_share
 ```
 
-#5.open_table
+#5. get_table_share
 
 ```cpp
+caller:
+--get_table_share_with_discover
 
+
+get_table_share
+--alloc_table_share
+--open_table_def
+----inline_mysql_file_open
+------my_open
+----inline_mysql_file_read
+----open_binary_frm
+------ha_lock_engine
+--------plugin_lock
+----------intern_plugin_lock
 ```
 
