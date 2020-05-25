@@ -105,4 +105,10 @@ open_table_from_share
 ------------trx_start_internal_low
 --------------trx_start_low
 ------------pars_info_create
+------------pars_info_add_str_literal
+--------------pars_info_add_literal
+------------pars_info_bind_function
+--------------callback is dict_stats_fetch_table_stats_step
+------------que_eval_sql//innodb内部调用sql 的方法
+--------------pars_sql
 ```
