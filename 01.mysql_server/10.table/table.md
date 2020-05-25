@@ -94,4 +94,15 @@ open_table_from_share
 --------dict_load_table//see 01.dic
 --------dict_move_to_mru
 ----------UT_LIST_ADD_FIRST(table_LRU, dict_sys->table_LRU, table);
+------innobase_copy_frm_flags_from_table_share
+------dict_stats_init
+--------dict_stats_update
+----------dict_stats_table_clone_create
+----------dict_stats_fetch_from_ps
+------------dict_stats_empty_table
+------------trx_allocate_for_background
+--------------trx_create_low
+------------trx_start_internal_low
+--------------trx_start_low
+------------pars_info_create
 ```
