@@ -58,7 +58,17 @@ btr_pcur_open_low
 ```cpp
 btr_cur_search_to_nth_level
 --btr_cur_get_and_clear_intention
---
+--mtr_set_savepoint
+--btr_cur_latch_for_root_leaf
+--buf_page_get_gen
+--btr_page_get_level_low
+--page_cur_search_with_match
+----page_check_dir
+----page_dir_slot_get_rec
+----ut_pair_min
+----rec_get_offsets_func
+------rec_get_n_fields_old
+------rec_init_offsets
 ```
 
 
