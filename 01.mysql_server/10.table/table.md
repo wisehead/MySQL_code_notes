@@ -113,4 +113,12 @@ open_table_from_share
 --------------pars_sql
 --------------que_fork_start_command
 ------------trx_commit_for_mysql
+----------dict_table_stats_lock
+----------dict_stats_empty_table
+----------dict_stats_copy
+----------dict_table_stats_unlock
+----------dict_stats_table_clone_free
+------row_create_prebuilt
+------innobase_build_index_translation
+------thr_lock_data_init
 ```

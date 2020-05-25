@@ -69,3 +69,12 @@ row_sel_store_mysql_rec
 ------rec_get_nth_field_offs
 ----row_sel_field_store_in_mysql_format_func
 ```
+
+#4.row_create_prebuilt
+
+```cpp
+caller:
+--ha_innobase::open
+
+row_create_prebuilt
+```
