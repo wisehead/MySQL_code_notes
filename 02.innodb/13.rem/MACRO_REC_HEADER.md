@@ -40,3 +40,16 @@ in addition to the data and the offsets */
 # define REC_OFFS_HEADER_SIZE   2
 #endif /* UNIV_DEBUG */
 ```
+
+#4.REC_NEXT
+
+```cpp
+//每个rec可以找到下一条record。
+#define REC_NEXT        2
+```
+
+#5.REC_OLD_N_FIELDS(old)
+
+```cpp
+#define REC_OLD_N_FIELDS 4
+```
