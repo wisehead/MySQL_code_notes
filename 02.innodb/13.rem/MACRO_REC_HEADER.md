@@ -1,19 +1,41 @@
 #1.MACRO REC_HEADER
-##1.1 New/Compact
 
 ```cpp
-New/Compact
+/* We list the byte offsets from the origin of the record, the mask,
+and the shift needed to obtain each bit-field of the record. */
 
-Old
+#define REC_NEXT        2
+#define REC_NEXT_MASK       0xFFFFUL
+#define REC_NEXT_SHIFT      0
 
+#define REC_OLD_SHORT       3   /* This is single byte bit-field */
+#define REC_OLD_SHORT_MASK  0x1UL
+#define REC_OLD_SHORT_SHIFT 0
 
-```
+#define REC_OLD_N_FIELDS    4
+#define REC_OLD_N_FIELDS_MASK   0x7FEUL
+#define REC_OLD_N_FIELDS_SHIFT  1
 
-##1.2 Old
-```cpp
-New/Compact
+#define REC_NEW_STATUS      3   /* This is single byte bit-field */
+#define REC_NEW_STATUS_MASK 0x7UL
+#define REC_NEW_STATUS_SHIFT    0
 
-Old
+#define REC_OLD_HEAP_NO     5
+#define REC_HEAP_NO_MASK    0xFFF8UL
+#if 0 /* defined in rem0rec.h for use of page0zip.cc */
+#define REC_NEW_HEAP_NO     4
+#define REC_HEAP_NO_SHIFT   3
+#endif
+
+#define REC_OLD_N_OWNED     6   /* This is single byte bit-field */
+#define REC_NEW_N_OWNED     5   /* This is single byte bit-field */
+#define REC_N_OWNED_MASK    0xFUL
+#define REC_N_OWNED_SHIFT   0
+
+#define REC_OLD_INFO_BITS   6   /* This is single byte bit-field */
+#define REC_NEW_INFO_BITS   5   /* This is single byte bit-field */
+#define REC_INFO_BITS_MASK  0xF0UL
+#define REC_INFO_BITS_SHIFT 0
 
 
 ```
@@ -41,15 +63,9 @@ in addition to the data and the offsets */
 #endif /* UNIV_DEBUG */
 ```
 
-#4.REC_NEXT
+#4.INFO
 
 ```cpp
 //每个rec可以找到下一条record。
 #define REC_NEXT        2
-```
-
-#5.REC_OLD_N_FIELDS(old)
-
-```cpp
-#define REC_OLD_N_FIELDS 4
 ```

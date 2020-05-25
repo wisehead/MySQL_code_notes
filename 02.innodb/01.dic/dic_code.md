@@ -1,4 +1,4 @@
-#1. dict_table_open_on_name
+#1. dict_load_table
 
 ```cpp
 caller:
@@ -19,4 +19,10 @@ dict_table_open_on_name
 ------dict_field_get_col
 ----btr_pcur_open_on_user_rec_func
 ------btr_pcur_open_low
+----btr_pcur_is_on_user_rec
+----rec_get_nth_field_offs_old
+----dict_load_table_low
+------rec_get_deleted_flag
+------rec_get_n_fields_old
+
 ```
