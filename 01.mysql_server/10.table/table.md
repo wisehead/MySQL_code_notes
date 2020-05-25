@@ -111,9 +111,6 @@ open_table_from_share
 --------------callback is dict_stats_fetch_table_stats_step
 ------------que_eval_sql//innodb内部调用sql 的方法
 --------------pars_sql
-----------------yyparse
-------------------pars_select_statement
---------------------pars_retrieve_table_list_defs
-----------------------pars_retrieve_table_def
-------------------------dict_table_open_on_name
+--------------que_fork_start_command
+------------trx_commit_for_mysql
 ```
