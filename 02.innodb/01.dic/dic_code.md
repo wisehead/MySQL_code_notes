@@ -13,4 +13,9 @@ dict_table_open_on_name
 ----dtuple_get_nth_field
 ----dfield_set_data
 ----dict_index_copy_types
+------dict_index_get_nth_field
+------dtuple_get_nth_field
+------dfield_get_type
+------dict_field_get_col
+----btr_pcur_open_on_user_rec_func
 ```
