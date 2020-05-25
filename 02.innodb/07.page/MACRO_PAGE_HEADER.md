@@ -42,3 +42,39 @@ typedef byte        page_header_t;
                 B-tree, but not in the root of an ibuf tree */
                 
 ```
+
+#2. PAGE_DIR
+
+```cpp
+//注意page dir是逆序的，从后向前。
+
+/* Offset of the directory start down from the page end. We call the
+slot with the highest file address directory start, as it points to
+the first record in the list of records. */
+#define PAGE_DIR        FIL_PAGE_DATA_END
+
+/* We define a slot in the page directory as two bytes */
+#define PAGE_DIR_SLOT_SIZE  2
+
+/* The offset of the physically lower end of the directory, counted from
+page end, when the page is empty */
+#define PAGE_EMPTY_DIR_START    (PAGE_DIR + 2 * PAGE_DIR_SLOT_SIZE)
+
+define FIL_PAGE_DATA_END   8   /*!< size of the page trailer */
+
+Gets pointer to nth directory slot.
+@return pointer to dir slot */
+UNIV_INLINE
+page_dir_slot_t*
+page_dir_get_nth_slot(
+/*==================*/
+    const page_t*   page,   /*!< in: index page */
+    ulint       n)  /*!< in: position */
+{
+    ut_ad(page_dir_get_n_slots(page) > n);
+
+    return((page_dir_slot_t*)
+           page + UNIV_PAGE_SIZE - PAGE_DIR
+           - (n + 1) * PAGE_DIR_SLOT_SIZE);
+}
+```

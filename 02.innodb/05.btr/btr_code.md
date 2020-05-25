@@ -69,6 +69,11 @@ btr_cur_search_to_nth_level
 ----rec_get_offsets_func
 ------rec_get_n_fields_old
 ------rec_init_offsets
+----cmp_dtuple_rec_with_match_low
+------dtuple_get_nth_field
+------rec_get_nth_field_offs
+--------rec_byte = cmp_collate(rec_byte);
+--------dtuple_byte = cmp_collate(dtuple_byte);
 ```
 
 
