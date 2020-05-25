@@ -91,11 +91,7 @@ open_table_from_share
 ------normalize_table_name_low
 ------get_share
 ------dict_table_open_on_name
---------dict_load_table
-----------dict_table_get_low
-------------dict_table_check_if_in_cache_low
-----------dtuple_create
-------------dtuple_create_from_mem
-
-
+--------dict_load_table//see 01.dic
+--------dict_move_to_mru
+----------UT_LIST_ADD_FIRST(table_LRU, dict_sys->table_LRU, table);
 ```
