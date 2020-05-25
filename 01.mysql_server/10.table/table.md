@@ -29,6 +29,7 @@ open_and_lock_tables
 ```cpp
 open_normal_and_derived_tables
 --open_tables
+--mysql_handle_derived
 ```
 
 #3.open_temporary_tables
@@ -121,4 +122,7 @@ open_table_from_share
 ------row_create_prebuilt
 ------innobase_build_index_translation
 ------thr_lock_data_init
+----open_table_entry_fini
+----Table_cache::add_used_table
+----TABLE::init
 ```
