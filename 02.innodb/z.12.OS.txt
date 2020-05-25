@@ -1,6 +1,4 @@
-1.os_event_wait_low
-
-
+1.os_event_wait_low 
 
 2.´ò¿ªLOG FILE, O_DIRECT
 
