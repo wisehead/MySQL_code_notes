@@ -52,3 +52,10 @@ mysql_parse
 ----lex_end
 
 ```
+
+#3.MYSQLparse
+
+```cpp
+MYSQLparse
+--MYSQLlex
+```
