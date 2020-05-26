@@ -41,8 +41,11 @@ caller:
 mysql_parse
 --lex_start
 --mysql_reset_thd_for_next_command
+----THD::reset_for_next_command
 --query_cache_send_result_to_client
+----Query_cache::send_result_to_client
 --parse_sql
+----MYSQLparse
 --mysql_rewrite_query
 --mysql_execute_command
 --THD::end_statement
