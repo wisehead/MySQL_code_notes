@@ -19,19 +19,3 @@ tokudb-engine::get_next(current_key)
  tokudb-engine::get_next(current_key) 
  --> tokudb-engine::parse_next
 ```
-
-#2.Internal Node
-在内存中，TokuDB内节点(internal node)的每个message buffer都有２个重要数据结构：
-
-1) FIFO结构，保存{key, value} 2) OMT结构，保存{key, FIFO-offset} 由于FIFO不具备快速查找特性，就利用OMT来做快速查找(根据key查到value)。
-
-这样，当内节点发生cache miss的时候，索引层需要做：
-
-1) 从磁盘读取节点内容到内存 2) 构造FIFO结构 3) 根据FIFO构造OMT结构(做排序) 由于TokuDB内部有不少性能探(ji)针(shu)，他们发现步骤3)是个不小的性能消耗点，因为每次都要把message buffer做下排序构造出OMT，于是在7.5.0版本，把OMT的FIFO-offset(已排序)也持久化到磁盘，这样排序的损耗就没了。
-
-#3. redo and undo
-
-```cpp
-toku_log_enq_insert
-
-```
