@@ -1,4 +1,4 @@
-#1.REDO_BLOCK_HEADER
+#1.LOG_BLOCK_HEADER
 
 ```cpp
 /* Offsets of a log block header */
