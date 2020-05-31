@@ -1,32 +1,5 @@
----
-title: InnoDB（四）：Concurrency Control - MySQL Notes - 百度Wiki平台
-category: default
-tags: 
-  - wiki.baidu.com
-created_at: 2020-05-31 18:33:03
-original_url: http://wiki.baidu.com/pages/viewpage.action?pageId=469786203
----
+# [InnoDB（四）：Concurrency Control]
 
-*   [F收藏](# "收藏 (f)")
-*   [关注](# "关注(w)")
-*   [S分享](# "Share this page with others (s或 k)")
-*   [空间管理员](# "查看空间管理员")
-
-1.  [页面](http://wiki.baidu.com/collector/pages.action?key=MySQLNotes&src=breadcrumbs-collector)
-2.  [MySQL Notes](http://wiki.baidu.com/display/MySQLNotes/MySQL+Notes?src=breadcrumbs)
-3.  [InnoDB](http://wiki.baidu.com/display/MySQLNotes/InnoDB?src=breadcrumbs-parent)
-
-[跳到banner的尾部](#page-banner-end)
-
-[回到标题开始](#page-banner-start)
-
-# [InnoDB（四）：Concurrency Control](http://wiki.baidu.com/pages/viewpage.action?pageId=469786203)
-
-[转至元数据结尾](#page-metadata-end)
-
-*   由 [吴昊](http://wiki.baidu.com/display/~wuhao27)创建, 最后修改于[2020-05-12](http://wiki.baidu.com/pages/diffpagesbyversion.action?pageId=469786203&selectedPageVersions=65&selectedPageVersions=66 "查看变更")
-
-[转至元数据起始](#page-metadata-start)
 
 InnoDB使用Undo日志来实现MVCC（多版本并发控制）
 
@@ -258,7 +231,7 @@ SELECT * FROM t WHERE id='10';
 
 ### 【0】事务提交后，其 Undo日志 会如何处理？
 
-事务提交后，其 undo 日志 **TRX\_UNDO\_STATE** （ [InnoDB（七）：Undo log](http://wiki.baidu.com/pages/viewpage.action?pageId=533141612) ）域会被置成如下一种状态：TRX\_UNDO\_CACHED / TRX\_UNDO\_TO\_FREE / TRX\_UNDO\_TO\_PURGE
+事务提交后，其 undo 日志 **TRX\_UNDO\_STATE** 域会被置成如下一种状态：TRX\_UNDO\_CACHED / TRX\_UNDO\_TO\_FREE / TRX\_UNDO\_TO\_PURGE
 
 ```plain
 trx_undo_set_state_at_finish {
@@ -499,31 +472,11 @@ trx_rollback_for_mysql
 
 ## 参考
 
-1.  [InnoDB（六）：Query Graph](http://wiki.baidu.com/pages/viewpage.action?pageId=520795206)
+
 2.  [MySQL · 引擎特性 · InnoDB 事务系统](http://mysql.taobao.org/monthly/2017/12/01/)
 3.  [InnoDB多版本(MVCC)实现简要分析](http://hedengcheng.com/?p=148)
 4.  [MySQL · 引擎特性 · InnoDB 事务系统](http://mysql.taobao.org/monthly/2017/12/01/)
 5.  [InnoDB Rollback Segment & Undo Page Deallocation实现源码分析](http://hedengcheng.com/?p=191#_Toc322972194)
 
   
-
-赞成为第一个赞同者
-
-*   无标签
-*   [编辑标签](# "编辑标签 (l)")
-
-[![用户图标: 添加头像](assets/1590921183-f00a283b92d885aa4be05f5e9828756a.png)](http://wiki.baidu.com/users/profile/editmyprofilepicture.action)
-
-编写评论...
-
----------------------------------------------------
-
-
-原网址: [访问](http://wiki.baidu.com/pages/viewpage.action?pageId=469786203)
-
-创建于: 2020-05-31 18:33:03
-
-目录: default
-
-标签: `wiki.baidu.com`
 
