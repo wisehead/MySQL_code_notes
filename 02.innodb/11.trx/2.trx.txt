@@ -124,8 +124,8 @@ p trx_sys->rw_trx_list.start->trx_list.next->id
 $102 = {
 magic_n = 91118598, 
 mutex = {event = 0x1281cb50, lock_word = 0 '\000', waiters = 0, list = {prev = 0x127d2a78, next = 0x1281b358}, 
-    file_name = 0x1035ad8 "/home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc", line = 1170, level = 297, 
-    cfile_name = 0x1062160 "/home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc", cline = 108, count_os_wait = 0, thread_id = 18446744073709551615, magic_n = 979585, cmutex_name = 0x0, 
+    file_name = 0x1035ad8 "/home/chenhui/mysql-xxx-5623/storage/innobase/que/que0que.cc", line = 1170, level = 297, 
+    cfile_name = 0x1062160 "/home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0trx.cc", cline = 108, count_os_wait = 0, thread_id = 18446744073709551615, magic_n = 979585, cmutex_name = 0x0, 
     ib_mutex_type = 0, pfs_psi = 0x0}, 
 state = TRX_STATE_ACTIVE, 
 lock = {n_active_thrs = 1, que_state = TRX_QUE_RUNNING, wait_lock = 0x0, deadlock_mark = 0, was_chosen_as_deadlock_victim = 0, 
@@ -142,11 +142,11 @@ in_ro_trx_list = 0, in_rw_trx_list = 1, mysql_trx_list = {prev = 0x0, next = 0x0
   error_key_num = 0, sess = 0x1283a7f8, graph = 0x0, global_read_view_heap = 0x12800b20, global_read_view = 0x0, read_view = 0x0, 
 trx_savepoints = {count = 0, start = 0x0, end = 0x0}, 
 undo_mutex = {event = 0x12829a10, lock_word = 0 '\000', waiters = 0, list = {prev = 0x0, next = 0x127d2790}, file_name = 0x105a6de "not yet reserved", line = 0, level = 700, 
-    cfile_name = 0x1062160 "/home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc", cline = 125, count_os_wait = 0, thread_id = 0, magic_n = 979585, cmutex_name = 0x0, ib_mutex_type = 0, 
+    cfile_name = 0x1062160 "/home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0trx.cc", cline = 125, count_os_wait = 0, thread_id = 0, magic_n = 979585, cmutex_name = 0x0, ib_mutex_type = 0, 
     pfs_psi = 0x0}, 
 undo_no = 0, last_sql_stat_start = {least_undo_no = 0}, rseg = 0x127cebb8, insert_undo = 0x0, update_undo = 0x0, roll_limit = 0, pages_undone = 0, undo_no_arr = 0x0, 
 n_autoinc_rows = 0, autoinc_locks = 0x1280c628, read_only = 0, auto_commit = 0, will_lock = 1, ddl = true, fts_trx = 0x0, fts_next_doc_id = 0, flush_tables = 0, start_line = 2062, 
-  start_file = 0x104bf28 "/home/chenhui/mysql-baidu-5623/storage/innobase/row/row0sel.cc", api_trx = false, api_auto_commit = false, read_write = true, detailed_error = '\000' <repeats 255 times>}
+  start_file = 0x104bf28 "/home/chenhui/mysql-xxx-5623/storage/innobase/row/row0sel.cc", api_trx = false, api_auto_commit = false, read_write = true, detailed_error = '\000' <repeats 255 times>}
   
 19.问题三，trx_sys_validate_trx_list_low
 
@@ -170,29 +170,29 @@ trx_sys_validate_trx_list_low
    1292     return(TRUE);
    1293 }
    
-Breakpoint 1, trx_sys_validate_trx_list_low (trx_list=0x127c0ad0) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0sys.cc:1275
+Breakpoint 1, trx_sys_validate_trx_list_low (trx_list=0x127c0ad0) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0sys.cc:1275
 1275            const trx_t*    prev_trx = NULL;
 (gdb) bt 
-#0  trx_sys_validate_trx_list_low (trx_list=0x127c0ad0) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0sys.cc:1275
-#1  0x0000000000c7faec in trx_sys_validate_trx_list () at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0sys.cc:1305
-#2  0x0000000000c842b7 in trx_start_low (trx=0x127d2788) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:903
-#3  0x0000000000c874eb in trx_start_if_not_started_xa_low (trx=0x127d2788) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:2233
-#4  0x0000000000c2d57f in row_sel_step (thr=0x128bcea8) at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0sel.cc:2062
-#5  0x0000000000bbf866 in que_thr_step (thr=0x128bcea8) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1083
-#6  0x0000000000bbfba5 in que_run_threads_low (thr=0x128bcea8) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1167
-#7  0x0000000000bbfd6a in que_run_threads (thr=0x128bcea8) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1208
+#0  trx_sys_validate_trx_list_low (trx_list=0x127c0ad0) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0sys.cc:1275
+#1  0x0000000000c7faec in trx_sys_validate_trx_list () at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0sys.cc:1305
+#2  0x0000000000c842b7 in trx_start_low (trx=0x127d2788) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0trx.cc:903
+#3  0x0000000000c874eb in trx_start_if_not_started_xa_low (trx=0x127d2788) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0trx.cc:2233
+#4  0x0000000000c2d57f in row_sel_step (thr=0x128bcea8) at /home/chenhui/mysql-xxx-5623/storage/innobase/row/row0sel.cc:2062
+#5  0x0000000000bbf866 in que_thr_step (thr=0x128bcea8) at /home/chenhui/mysql-xxx-5623/storage/innobase/que/que0que.cc:1083
+#6  0x0000000000bbfba5 in que_run_threads_low (thr=0x128bcea8) at /home/chenhui/mysql-xxx-5623/storage/innobase/que/que0que.cc:1167
+#7  0x0000000000bbfd6a in que_run_threads (thr=0x128bcea8) at /home/chenhui/mysql-xxx-5623/storage/innobase/que/que0que.cc:1208
 #8  0x0000000000bbffd0 in que_eval_sql (info=0x0, 
-    sql=0x1040ae0 <row_merge_drop_temp_indexes()::sql> "PROCEDURE DROP_TEMP_INDEXES_PROC () IS\nixid CHAR;\nfound INT;\nDECLARE CURSOR index_cur IS\n SELECT ID FROM SYS_INDEXES\n WHERE SUBSTR(NAME,0,1)='\377'\nFOR UPDATE;\nBEGIN\nfound := 1;\nOPEN index_cur;\nWHILE fou"..., reserve_dict_mutex=0, trx=0x127d2788) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1285
-#9  0x0000000000bf8886 in row_merge_drop_temp_indexes () at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0merge.cc:2907
-#10 0x0000000000b7bf32 in recv_recovery_rollback_active () at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:3476
-#11 0x0000000000c5880b in innobase_start_or_create_for_mysql () at /home/chenhui/mysql-baidu-5623/storage/innobase/srv/srv0start.cc:2560
-#12 0x0000000000b09022 in innobase_init (p=0x193d7f0) at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:3365
-#13 0x0000000000644ded in ha_initialize_handlerton (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:662
-#14 0x00000000007f12e8 in plugin_initialize (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1137
-#15 0x00000000007f1d5d in plugin_init (argc=0x17fb1c8 <remaining_argc>, argv=0x185d598, flags=0) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1431
-#16 0x000000000062f666 in init_server_components () at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:4849
-#17 0x0000000000630563 in mysqld_main (argc=94, argv=0x185d598) at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:5444
-#18 0x0000000000625bb0 in main (argc=1, argv=0x7fffffffe848) at /home/chenhui/mysql-baidu-5623/sql/main.cc:25
+    sql=0x1040ae0 <row_merge_drop_temp_indexes()::sql> "PROCEDURE DROP_TEMP_INDEXES_PROC () IS\nixid CHAR;\nfound INT;\nDECLARE CURSOR index_cur IS\n SELECT ID FROM SYS_INDEXES\n WHERE SUBSTR(NAME,0,1)='\377'\nFOR UPDATE;\nBEGIN\nfound := 1;\nOPEN index_cur;\nWHILE fou"..., reserve_dict_mutex=0, trx=0x127d2788) at /home/chenhui/mysql-xxx-5623/storage/innobase/que/que0que.cc:1285
+#9  0x0000000000bf8886 in row_merge_drop_temp_indexes () at /home/chenhui/mysql-xxx-5623/storage/innobase/row/row0merge.cc:2907
+#10 0x0000000000b7bf32 in recv_recovery_rollback_active () at /home/chenhui/mysql-xxx-5623/storage/innobase/log/log0recv.cc:3476
+#11 0x0000000000c5880b in innobase_start_or_create_for_mysql () at /home/chenhui/mysql-xxx-5623/storage/innobase/srv/srv0start.cc:2560
+#12 0x0000000000b09022 in innobase_init (p=0x193d7f0) at /home/chenhui/mysql-xxx-5623/storage/innobase/handler/ha_innodb.cc:3365
+#13 0x0000000000644ded in ha_initialize_handlerton (plugin=0x192ff48) at /home/chenhui/mysql-xxx-5623/sql/handler.cc:662
+#14 0x00000000007f12e8 in plugin_initialize (plugin=0x192ff48) at /home/chenhui/mysql-xxx-5623/sql/sql_plugin.cc:1137
+#15 0x00000000007f1d5d in plugin_init (argc=0x17fb1c8 <remaining_argc>, argv=0x185d598, flags=0) at /home/chenhui/mysql-xxx-5623/sql/sql_plugin.cc:1431
+#16 0x000000000062f666 in init_server_components () at /home/chenhui/mysql-xxx-5623/sql/mysqld.cc:4849
+#17 0x0000000000630563 in mysqld_main (argc=94, argv=0x185d598) at /home/chenhui/mysql-xxx-5623/sql/mysqld.cc:5444
+#18 0x0000000000625bb0 in main (argc=1, argv=0x7fffffffe848) at /home/chenhui/mysql-xxx-5623/sql/main.cc:25
 
 
 20。问题四
@@ -211,21 +211,21 @@ trx_free_for_background
     293     ut_a(trx->read_view == NULL);
     
     
-Breakpoint 1, trx_free_for_background (trx=0x12880738) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:261
+Breakpoint 1, trx_free_for_background (trx=0x12880738) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0trx.cc:261
 261             if (trx->declared_to_be_inside_innodb) {
 (gdb) bt
-#0  trx_free_for_background (trx=0x12880738) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:261
-#1  0x0000000000c782df in trx_rollback_resurrected (trx=0x12880738, all=0) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:700
-#2  0x0000000000c7856c in trx_rollback_or_clean_recovered (all=0) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:768
-#3  0x0000000000b7bec5 in recv_recovery_from_checkpoint_finish () at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:3448
-#4  0x0000000000c5837d in innobase_start_or_create_for_mysql () at /home/chenhui/mysql-baidu-5623/storage/innobase/srv/srv0start.cc:2443
-#5  0x0000000000b09022 in innobase_init (p=0x193d7f0) at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:3365
-#6  0x0000000000644ded in ha_initialize_handlerton (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:662
-#7  0x00000000007f12e8 in plugin_initialize (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1137
-#8  0x00000000007f1d5d in plugin_init (argc=0x17fb1c8 <remaining_argc>, argv=0x185d598, flags=0) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1431
-#9  0x000000000062f666 in init_server_components () at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:4849
-#10 0x0000000000630563 in mysqld_main (argc=94, argv=0x185d598) at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:5444
-#11 0x0000000000625bb0 in main (argc=1, argv=0x7fffffffe848) at /home/chenhui/mysql-baidu-5623/sql/main.cc:25  
+#0  trx_free_for_background (trx=0x12880738) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0trx.cc:261
+#1  0x0000000000c782df in trx_rollback_resurrected (trx=0x12880738, all=0) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0roll.cc:700
+#2  0x0000000000c7856c in trx_rollback_or_clean_recovered (all=0) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0roll.cc:768
+#3  0x0000000000b7bec5 in recv_recovery_from_checkpoint_finish () at /home/chenhui/mysql-xxx-5623/storage/innobase/log/log0recv.cc:3448
+#4  0x0000000000c5837d in innobase_start_or_create_for_mysql () at /home/chenhui/mysql-xxx-5623/storage/innobase/srv/srv0start.cc:2443
+#5  0x0000000000b09022 in innobase_init (p=0x193d7f0) at /home/chenhui/mysql-xxx-5623/storage/innobase/handler/ha_innodb.cc:3365
+#6  0x0000000000644ded in ha_initialize_handlerton (plugin=0x192ff48) at /home/chenhui/mysql-xxx-5623/sql/handler.cc:662
+#7  0x00000000007f12e8 in plugin_initialize (plugin=0x192ff48) at /home/chenhui/mysql-xxx-5623/sql/sql_plugin.cc:1137
+#8  0x00000000007f1d5d in plugin_init (argc=0x17fb1c8 <remaining_argc>, argv=0x185d598, flags=0) at /home/chenhui/mysql-xxx-5623/sql/sql_plugin.cc:1431
+#9  0x000000000062f666 in init_server_components () at /home/chenhui/mysql-xxx-5623/sql/mysqld.cc:4849
+#10 0x0000000000630563 in mysqld_main (argc=94, argv=0x185d598) at /home/chenhui/mysql-xxx-5623/sql/mysqld.cc:5444
+#11 0x0000000000625bb0 in main (argc=1, argv=0x7fffffffe848) at /home/chenhui/mysql-xxx-5623/sql/main.cc:25  
 
 
 
@@ -256,7 +256,7 @@ innobase_start_or_create_for_mysql
 $10 = 47424359
 (gdb) p *trx
 $11 = {magic_n = 91118598, mutex = {event = 0x1a80f20, lock_word = 0 '\000', waiters = 0, list = {prev = 0x1a80cf8, next = 0x1a7fda8}, file_name = 0x105a6de "not yet reserved", 
-    line = 0, level = 297, cfile_name = 0x1062160 "/home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc", cline = 108, count_os_wait = 0, thread_id = 0, magic_n = 979585, 
+    line = 0, level = 297, cfile_name = 0x1062160 "/home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0trx.cc", cline = 108, count_os_wait = 0, thread_id = 0, magic_n = 979585, 
     cmutex_name = 0x0, ib_mutex_type = 0, pfs_psi = 0x0}, state = TRX_STATE_COMMITTED_IN_MEMORY, lock = {n_active_thrs = 0, que_state = TRX_QUE_RUNNING, wait_lock = 0x0, 
     deadlock_mark = 0, was_chosen_as_deadlock_victim = 0, wait_started = 0, wait_thr = 0x0, lock_heap = 0x1a81040, trx_locks = {count = 0, start = 0x0, end = 0x0}, 
     table_locks = 0x1a814c8, cancel = 0}, is_recovered = 1, op_info = 0x10621bc "", isolation_level = 2, check_foreigns = 1, is_registered = 0, owns_prepare_mutex = 0, 
@@ -266,7 +266,7 @@ $11 = {magic_n = 91118598, mutex = {event = 0x1a80f20, lock_word = 0 '\000', wai
   mysql_log_offset = 0, n_mysql_tables_in_use = 0, mysql_n_tables_locked = 0, trx_list = {prev = 0x0, next = 0x0}, in_ro_trx_list = 0, in_rw_trx_list = 0, mysql_trx_list = {prev = 0x0, 
     next = 0x0}, in_mysql_trx_list = 0, error_state = DB_SUCCESS, error_info = 0x0, error_key_num = 0, sess = 0x1a3bbf8, graph = 0x0, global_read_view_heap = 0x1a811c0, 
   global_read_view = 0x0, read_view = 0x0, trx_savepoints = {count = 0, start = 0x0, end = 0x0}, undo_mutex = {event = 0x1a80fb0, lock_word = 0 '\000', waiters = 0, list = {prev = 0x0, 
-      next = 0x1a80a10}, file_name = 0x105a6de "not yet reserved", line = 0, level = 700, cfile_name = 0x1062160 "/home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc", 
+      next = 0x1a80a10}, file_name = 0x105a6de "not yet reserved", line = 0, level = 700, cfile_name = 0x1062160 "/home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0trx.cc", 
     cline = 125, count_os_wait = 0, thread_id = 0, magic_n = 979585, cmutex_name = 0x0, ib_mutex_type = 0, pfs_psi = 0x0}, undo_no = 0, last_sql_stat_start = {least_undo_no = 0}, 
   rseg = 0x1a3a628, insert_undo = 0x0, update_undo = 0x1a3ab98, roll_limit = 0, pages_undone = 0, undo_no_arr = 0x0, n_autoinc_rows = 0, autoinc_locks = 0x1a813d8, read_only = 0, 
   auto_commit = 0, will_lock = 0, ddl = false, fts_trx = 0x0, fts_next_doc_id = 0, flush_tables = 0, start_line = 0, start_file = 0x0, api_trx = false, api_auto_commit = false, 
@@ -354,33 +354,33 @@ lock_trx_release_locks
 trx_resurrect_insert
 trx_resurrect_update_in_prepared_state
 
-#0  trx_undo_update_cleanup (trx=0x128662b8, undo_page=0x7fffb6428000 "\256\326\026/", mtr=0x7ffe0a6e9910) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0undo.cc:1931
-#1  0x0000000000c845b5 in trx_write_serialisation_history (trx=0x128662b8, mtr=0x7ffe0a6e9910) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:1003
-#2  0x0000000000c85777 in trx_commit_low (trx=0x128662b8, mtr=0x7ffe0a6e9910) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:1371
-#3  0x0000000000c85820 in trx_commit (trx=0x128662b8) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:1418
-#4  0x0000000000c794e6 in trx_rollback_finish (trx=0x128662b8) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:1320
-#5  0x0000000000c77fe6 in trx_rollback_active (trx=0x128662b8) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:607
-#6  0x0000000000c7831b in trx_rollback_resurrected (trx=0x128662b8, all=1) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:705
-#7  0x0000000000c7856c in trx_rollback_or_clean_recovered (all=1) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:768
-#8  0x0000000000c7869b in trx_rollback_or_clean_all_recovered (arg=0x0) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:809
+#0  trx_undo_update_cleanup (trx=0x128662b8, undo_page=0x7fffb6428000 "\256\326\026/", mtr=0x7ffe0a6e9910) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0undo.cc:1931
+#1  0x0000000000c845b5 in trx_write_serialisation_history (trx=0x128662b8, mtr=0x7ffe0a6e9910) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0trx.cc:1003
+#2  0x0000000000c85777 in trx_commit_low (trx=0x128662b8, mtr=0x7ffe0a6e9910) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0trx.cc:1371
+#3  0x0000000000c85820 in trx_commit (trx=0x128662b8) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0trx.cc:1418
+#4  0x0000000000c794e6 in trx_rollback_finish (trx=0x128662b8) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0roll.cc:1320
+#5  0x0000000000c77fe6 in trx_rollback_active (trx=0x128662b8) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0roll.cc:607
+#6  0x0000000000c7831b in trx_rollback_resurrected (trx=0x128662b8, all=1) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0roll.cc:705
+#7  0x0000000000c7856c in trx_rollback_or_clean_recovered (all=1) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0roll.cc:768
+#8  0x0000000000c7869b in trx_rollback_or_clean_all_recovered (arg=0x0) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0roll.cc:809
 #9  0x00007ffff7bc61c3 in ?? ()
 #10 0x0000000000000000 in ?? ()
 
 
 (gdb) info br
 Num     Type           Disp Enb Address            What
-1       breakpoint     keep y   0x0000000000c82550 in trx_free_for_background(trx_t*) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:261
+1       breakpoint     keep y   0x0000000000c82550 in trx_free_for_background(trx_t*) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0trx.cc:261
         breakpoint already hit 11 times
-2       breakpoint     keep y   0x0000000000c781c2 in trx_rollback_resurrected(trx_t*, ulint) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:677
+2       breakpoint     keep y   0x0000000000c781c2 in trx_rollback_resurrected(trx_t*, ulint) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0roll.cc:677
         breakpoint already hit 90 times
-3       breakpoint     keep y   0x0000000000b6905a in lock_trx_release_locks(trx_t*) at /home/chenhui/mysql-baidu-5623/storage/innobase/lock/lock0lock.cc:6817
+3       breakpoint     keep y   0x0000000000b6905a in lock_trx_release_locks(trx_t*) at /home/chenhui/mysql-xxx-5623/storage/innobase/lock/lock0lock.cc:6817
         breakpoint already hit 10 times
-4       breakpoint     keep y   0x0000000000c83388 in trx_resurrect_insert(trx_undo_t*, trx_rseg_t*) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:510
+4       breakpoint     keep y   0x0000000000c83388 in trx_resurrect_insert(trx_undo_t*, trx_rseg_t*) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0trx.cc:510
 5       breakpoint     keep y   0x0000000000c835b1 in trx_resurrect_update_in_prepared_state(trx_t*, trx_undo_t const*) 
-                                                   at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:596
-6       breakpoint     keep y   0x0000000000c8e443 in trx_undo_update_cleanup(trx_t*, unsigned char*, mtr_t*) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0undo.cc:1931
+                                                   at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0trx.cc:596
+6       breakpoint     keep y   0x0000000000c8e443 in trx_undo_update_cleanup(trx_t*, unsigned char*, mtr_t*) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0undo.cc:1931
         breakpoint already hit 9 times
-7       breakpoint     keep y   0x0000000000c8582e in trx_cleanup_at_db_startup(trx_t*) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:1431
+7       breakpoint     keep y   0x0000000000c8582e in trx_cleanup_at_db_startup(trx_t*) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0trx.cc:1431
 (gdb) disable
 
 22.trx_rollback_or_clean_recovered
@@ -406,21 +406,21 @@ row_sel
 
 24.trx_undo_page_report_insert
 //Reports in the undo log of an insert of a clustered index record.
-#5  0x0000000000bbf866 in que_thr_step (thr=0x128bcea8) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1083
-#6  0x0000000000bbfba5 in que_run_threads_low (thr=0x128bcea8) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1167
-#7  0x0000000000bbfd6a in que_run_threads (thr=0x128bcea8) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1208
+#5  0x0000000000bbf866 in que_thr_step (thr=0x128bcea8) at /home/chenhui/mysql-xxx-5623/storage/innobase/que/que0que.cc:1083
+#6  0x0000000000bbfba5 in que_run_threads_low (thr=0x128bcea8) at /home/chenhui/mysql-xxx-5623/storage/innobase/que/que0que.cc:1167
+#7  0x0000000000bbfd6a in que_run_threads (thr=0x128bcea8) at /home/chenhui/mysql-xxx-5623/storage/innobase/que/que0que.cc:1208
 #8  0x0000000000bbffd0 in que_eval_sql (info=0x0, 
-    sql=0x1040ae0 <row_merge_drop_temp_indexes()::sql> "PROCEDURE DROP_TEMP_INDEXES_PROC () IS\nixid CHAR;\nfound INT;\nDECLARE CURSOR index_cur IS\n SELECT ID FROM SYS_INDEXES\n WHERE SUBSTR(NAME,0,1)='\377'\nFOR UPDATE;\nBEGIN\nfound := 1;\nOPEN index_cur;\nWHILE fou"..., reserve_dict_mutex=0, trx=0x127d2788) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1285
-#9  0x0000000000bf8886 in row_merge_drop_temp_indexes () at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0merge.cc:2907
-#10 0x0000000000b7bf32 in recv_recovery_rollback_active () at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:3476
-#11 0x0000000000c5880b in innobase_start_or_create_for_mysql () at /home/chenhui/mysql-baidu-5623/storage/innobase/srv/srv0start.cc:2560
-#12 0x0000000000b09022 in innobase_init (p=0x193d7f0) at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:3365
-#13 0x0000000000644ded in ha_initialize_handlerton (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:662
-#14 0x00000000007f12e8 in plugin_initialize (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1137
-#15 0x00000000007f1d5d in plugin_init (argc=0x17fb1c8 <remaining_argc>, argv=0x185d598, flags=0) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1431
-#16 0x000000000062f666 in init_server_components () at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:4849
-#17 0x0000000000630563 in mysqld_main (argc=94, argv=0x185d598) at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:5444
-#18 0x0000000000625bb0 in main (argc=1, argv=0x7fffffffe848) at /home/chenhui/mysql-baidu-5623/sql/main.cc:25
+    sql=0x1040ae0 <row_merge_drop_temp_indexes()::sql> "PROCEDURE DROP_TEMP_INDEXES_PROC () IS\nixid CHAR;\nfound INT;\nDECLARE CURSOR index_cur IS\n SELECT ID FROM SYS_INDEXES\n WHERE SUBSTR(NAME,0,1)='\377'\nFOR UPDATE;\nBEGIN\nfound := 1;\nOPEN index_cur;\nWHILE fou"..., reserve_dict_mutex=0, trx=0x127d2788) at /home/chenhui/mysql-xxx-5623/storage/innobase/que/que0que.cc:1285
+#9  0x0000000000bf8886 in row_merge_drop_temp_indexes () at /home/chenhui/mysql-xxx-5623/storage/innobase/row/row0merge.cc:2907
+#10 0x0000000000b7bf32 in recv_recovery_rollback_active () at /home/chenhui/mysql-xxx-5623/storage/innobase/log/log0recv.cc:3476
+#11 0x0000000000c5880b in innobase_start_or_create_for_mysql () at /home/chenhui/mysql-xxx-5623/storage/innobase/srv/srv0start.cc:2560
+#12 0x0000000000b09022 in innobase_init (p=0x193d7f0) at /home/chenhui/mysql-xxx-5623/storage/innobase/handler/ha_innodb.cc:3365
+#13 0x0000000000644ded in ha_initialize_handlerton (plugin=0x192ff48) at /home/chenhui/mysql-xxx-5623/sql/handler.cc:662
+#14 0x00000000007f12e8 in plugin_initialize (plugin=0x192ff48) at /home/chenhui/mysql-xxx-5623/sql/sql_plugin.cc:1137
+#15 0x00000000007f1d5d in plugin_init (argc=0x17fb1c8 <remaining_argc>, argv=0x185d598, flags=0) at /home/chenhui/mysql-xxx-5623/sql/sql_plugin.cc:1431
+#16 0x000000000062f666 in init_server_components () at /home/chenhui/mysql-xxx-5623/sql/mysqld.cc:4849
+#17 0x0000000000630563 in mysqld_main (argc=94, argv=0x185d598) at /home/chenhui/mysql-xxx-5623/sql/mysqld.cc:5444
+#18 0x0000000000625bb0 in main (argc=1, argv=0x7fffffffe848) at /home/chenhui/mysql-xxx-5623/sql/main.cc:25
 
 que_eval_sql
 --que_run_threads
@@ -983,20 +983,20 @@ trx_sys_flush_max_trx_id
 2121721 trx_purge_get_rseg_with_min_trx_id() purge_sys->iter.trx_no is:0, purge_sys->rseg is:b768328, rseg->id is:122, last_trx_no is:48440396,
 
 
-#0  buf_page_get_gen (space=0, zip_size=0, offset=5, rw_latch=2, guess=0x0, mode=10, file=0x1062c68 "/home/chenhui/mysql-baidu-5623/storage/innobase/include/trx0sys.ic", line=103, 
-    mtr=0x7fffffff8d20) at /home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0buf.cc:3392
-#1  0x0000000000c7c361 in trx_sysf_get (mtr=0x7fffffff8d20) at /home/chenhui/mysql-baidu-5623/storage/innobase/include/trx0sys.ic:103
-#2  0x0000000000c7d3e8 in trx_rseg_get_n_undo_tablespaces (space_ids=0x7fffffff9260) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0rseg.cc:397
+#0  buf_page_get_gen (space=0, zip_size=0, offset=5, rw_latch=2, guess=0x0, mode=10, file=0x1062c68 "/home/chenhui/mysql-xxx-5623/storage/innobase/include/trx0sys.ic", line=103, 
+    mtr=0x7fffffff8d20) at /home/chenhui/mysql-xxx-5623/storage/innobase/buf/buf0buf.cc:3392
+#1  0x0000000000c7c361 in trx_sysf_get (mtr=0x7fffffff8d20) at /home/chenhui/mysql-xxx-5623/storage/innobase/include/trx0sys.ic:103
+#2  0x0000000000c7d3e8 in trx_rseg_get_n_undo_tablespaces (space_ids=0x7fffffff9260) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0rseg.cc:397
 #3  0x0000000000c57c80 in srv_undo_tablespaces_init (create_new_db=0, n_conf_tablespaces=0, n_opened=0x1532a38 <srv_undo_tablespaces_open>)
-    at /home/chenhui/mysql-baidu-5623/storage/innobase/srv/srv0start.cc:1334
-#4  0x0000000000c59399 in innobase_start_or_create_for_mysql () at /home/chenhui/mysql-baidu-5623/storage/innobase/srv/srv0start.cc:2275
-#5  0x0000000000b091d2 in innobase_init (p=0x19407f0) at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:3365
-#6  0x0000000000644f9d in ha_initialize_handlerton (plugin=0x1932f48) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:662
-#7  0x00000000007f1498 in plugin_initialize (plugin=0x1932f48) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1137
-#8  0x00000000007f1f0d in plugin_init (argc=0x17fe1c8 <remaining_argc>, argv=0x1860598, flags=0) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1431
-#9  0x000000000062f816 in init_server_components () at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:4849
-#10 0x0000000000630713 in mysqld_main (argc=95, argv=0x1860598) at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:5444
-#11 0x0000000000625d60 in main (argc=1, argv=0x7fffffffe758) at /home/chenhui/mysql-baidu-5623/sql/main.cc:25
+    at /home/chenhui/mysql-xxx-5623/storage/innobase/srv/srv0start.cc:1334
+#4  0x0000000000c59399 in innobase_start_or_create_for_mysql () at /home/chenhui/mysql-xxx-5623/storage/innobase/srv/srv0start.cc:2275
+#5  0x0000000000b091d2 in innobase_init (p=0x19407f0) at /home/chenhui/mysql-xxx-5623/storage/innobase/handler/ha_innodb.cc:3365
+#6  0x0000000000644f9d in ha_initialize_handlerton (plugin=0x1932f48) at /home/chenhui/mysql-xxx-5623/sql/handler.cc:662
+#7  0x00000000007f1498 in plugin_initialize (plugin=0x1932f48) at /home/chenhui/mysql-xxx-5623/sql/sql_plugin.cc:1137
+#8  0x00000000007f1f0d in plugin_init (argc=0x17fe1c8 <remaining_argc>, argv=0x1860598, flags=0) at /home/chenhui/mysql-xxx-5623/sql/sql_plugin.cc:1431
+#9  0x000000000062f816 in init_server_components () at /home/chenhui/mysql-xxx-5623/sql/mysqld.cc:4849
+#10 0x0000000000630713 in mysqld_main (argc=95, argv=0x1860598) at /home/chenhui/mysql-xxx-5623/sql/mysqld.cc:5444
+#11 0x0000000000625d60 in main (argc=1, argv=0x7fffffffe758) at /home/chenhui/mysql-xxx-5623/sql/main.cc:25
 
 
 44.purge_sys->rseg->last_trx_no
