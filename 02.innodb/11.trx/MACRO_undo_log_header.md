@@ -38,4 +38,23 @@ page of an update undo log segment. */
 #define TRX_UNDO_HISTORY_NODE   34  /*!< If the log is put to the history
                     list, the file list node is here */
 /*-------------------------------------------------------------*/
+每个事务都有一个 Undo Log Header，当（UPDATE/DELETE）事务结束后，Undo Log Header被加入到 History List 中。注：Undo Log Header 仅存在于 Undo Log Header Page 上
+
+TRX_UNDO_TRX_ID（0，8字节）：事务ID（事务开始的逻辑时间）
+
+TRX_UNDO_TRX_NO（8，8字节）：事务NO.（事务结束的逻辑时间）
+TRX_UNDO_DEL_MARKS（16，2字节）：如果事务可能造成“DELETE MARK”某个索引记录
+TRX_UNDO_LOG_START（18，2字节）：此事务中第一个 undo record 的偏移
+
+TRX_UNDO_XID_EXISTS（20，1字节）：Undo Log Header 中是否 XID？
+
+TRX_UNDO_DICT_TRANS（21，1字节）：事务是否是"create table"/"create index or drop"？ 
+
+TRX_UNDO_TABLE_ID（22，8字节）：如果TRX_UNDO_DICT_TRANS是TRUE，保存的是table_id
+
+TRX_UNDO_NEXT_LOG（30，2字节）：当前 Page（Undo Log Header Page）的下一个 Undo Log Header
+
+TRX_UNDO_PREV_LOG（32，2字节）：当前 Page（Undo Log Header Page）的上一个 Undo Log Header
+
+TRX_UNDO_HISTORY_NODE（34，6字节）：指向 History List 中下一个 Page（Undo Log Header Page）
 ```
