@@ -432,26 +432,26 @@ trx_rollback_or_clean_recovered 可能来自 DECLARE_THREAD(trx_rollback_or_clean_al
 
 (gdb) info br
 Num     Type           Disp Enb Address            What
-1       breakpoint     keep y   0x0000000000b84dd0 in buf_flush_note_modification(buf_block_t*, mtr_t*) at /home/chenhui/mysql-baidu-5623/storage/innobase/include/buf0flu.ic:63
+1       breakpoint     keep y   0x0000000000b84dd0 in buf_flush_note_modification(buf_block_t*, mtr_t*) at /home/chenhui/mysql-xxx-5623/storage/innobase/include/buf0flu.ic:63
         breakpoint already hit 3 times
-2       breakpoint     keep y   0x0000000000ce4814 in buf_pool_invalidate() at /home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0buf.cc:5174
-3       breakpoint     keep y   0x0000000000b7b546 in recv_recovery_from_checkpoint_start_func(unsigned long, unsigned long) at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:3020
+2       breakpoint     keep y   0x0000000000ce4814 in buf_pool_invalidate() at /home/chenhui/mysql-xxx-5623/storage/innobase/buf/buf0buf.cc:5174
+3       breakpoint     keep y   0x0000000000b7b546 in recv_recovery_from_checkpoint_start_func(unsigned long, unsigned long) at /home/chenhui/mysql-xxx-5623/storage/innobase/log/log0recv.cc:3020
         breakpoint already hit 1 time
-4       breakpoint     keep y   0x0000000000c7e7b9 in trx_sys_init_at_db_start() at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0sys.cc:496
+4       breakpoint     keep y   0x0000000000c7e7b9 in trx_sys_init_at_db_start() at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0sys.cc:496
         breakpoint already hit 1 time
-5       breakpoint     keep y   0x0000000000b7bd65 in recv_recovery_from_checkpoint_finish() at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:3378
+5       breakpoint     keep y   0x0000000000b7bd65 in recv_recovery_from_checkpoint_finish() at /home/chenhui/mysql-xxx-5623/storage/innobase/log/log0recv.cc:3378
         breakpoint already hit 1 time
-6       breakpoint     keep y   0x0000000000c78365 in trx_rollback_or_clean_recovered(unsigned long) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:734
+6       breakpoint     keep y   0x0000000000c78365 in trx_rollback_or_clean_recovered(unsigned long) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0roll.cc:734
         breakpoint already hit 2 times
 7       breakpoint     keep y   0x0000000000b7acbf in recv_scan_log_recs(unsigned long, unsigned long, unsigned char const*, unsigned long, unsigned long, unsigned long*, unsigned long*) 
-                                                   at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:2696
+                                                   at /home/chenhui/mysql-xxx-5623/storage/innobase/log/log0recv.cc:2696
         breakpoint already hit 7 times
-8       breakpoint     keep n   0x0000000000c836fc in trx_resurrect_update(trx_t*, trx_undo_t*, trx_rseg_t*) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:633
+8       breakpoint     keep n   0x0000000000c836fc in trx_resurrect_update(trx_t*, trx_undo_t*, trx_rseg_t*) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0trx.cc:633
         breakpoint already hit 2 times
-9       breakpoint     keep y   0x0000000000b79951 in recv_apply_hashed_log_recs(unsigned long) at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:1851
-10      breakpoint     keep n   0x0000000000c781c2 in trx_rollback_resurrected(trx_t*, ulint) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:677
+9       breakpoint     keep y   0x0000000000b79951 in recv_apply_hashed_log_recs(unsigned long) at /home/chenhui/mysql-xxx-5623/storage/innobase/log/log0recv.cc:1851
+10      breakpoint     keep n   0x0000000000c781c2 in trx_rollback_resurrected(trx_t*, ulint) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0roll.cc:677
         breakpoint already hit 3 times
-11      breakpoint     keep y   0x0000000000b7becb in recv_recovery_rollback_active() at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:3462
+11      breakpoint     keep y   0x0000000000b7becb in recv_recovery_rollback_active() at /home/chenhui/mysql-xxx-5623/storage/innobase/log/log0recv.cc:3462
 
 
 16.recv_apply_hashed_log_recs
@@ -735,11 +735,11 @@ clone.
 #9  0x0000000000929f43 in innobase_end (hton=<optimized out>,
 #10 0x00000000005a7adb in ha_finalize_handlerton (plugin=0x147e758)
 #11 0x00000000006ef3b9 in plugin_deinitialize (ref_check=true,
-#12 reap_plugins () at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1023
+#12 reap_plugins () at /home/chenhui/mysql-xxx-5623/sql/sql_plugin.cc:1023
 #13 0x00000000006f138b in plugin_shutdown ()
 #14 0x000000000059b523 in clean_up (print_message=print_message@entry=true)
 #15 0x000000000059b87d in clean_up (print_message=true)
-#16 unireg_end () at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:1753
+#16 unireg_end () at /home/chenhui/mysql-xxx-5623/sql/mysqld.cc:1753
 #17 0x00000000005a07ab in kill_server (sig_ptr=0x0)
 #18 0x00000000005a087e in kill_server_thread (arg=arg@entry=0x7f7886ea2de0)
 #19 0x000000000091b403 in pfs_spawn_thread (arg=0x7f7554005250)

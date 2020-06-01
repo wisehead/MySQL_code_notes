@@ -213,11 +213,11 @@ clone.
 #9  0x0000000000929f43 in innobase_end (hton=<optimized out>,
 #10 0x00000000005a7adb in ha_finalize_handlerton (plugin=0x147e758)
 #11 0x00000000006ef3b9 in plugin_deinitialize (ref_check=true,
-#12 reap_plugins () at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1023
+#12 reap_plugins () at /home/chenhui/mysql-xxx-5623/sql/sql_plugin.cc:1023
 #13 0x00000000006f138b in plugin_shutdown ()
 #14 0x000000000059b523 in clean_up (print_message=print_message@entry=true)
 #15 0x000000000059b87d in clean_up (print_message=true)
-#16 unireg_end () at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:1753
+#16 unireg_end () at /home/chenhui/mysql-xxx-5623/sql/mysqld.cc:1753
 #17 0x00000000005a07ab in kill_server (sig_ptr=0x0)
 #18 0x00000000005a087e in kill_server_thread (arg=arg@entry=0x7f7886ea2de0)
 #19 0x000000000091b403 in pfs_spawn_thread (arg=0x7f7554005250)

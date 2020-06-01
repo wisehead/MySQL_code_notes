@@ -1,32 +1,5 @@
----
-title: InnoDB（三）：Crash Recovery - MySQL Notes - 百度Wiki平台
-category: default
-tags: 
-  - wiki.baidu.com
-created_at: 2020-05-30 20:16:56
-original_url: http://wiki.baidu.com/pages/viewpage.action?pageId=435201546
----
+# [InnoDB（三）：Crash Recovery]
 
-*   [F收藏](# "收藏 (f)")
-*   [关注](# "关注(w)")
-*   [S分享](# "Share this page with others (s或 k)")
-*   [空间管理员](# "查看空间管理员")
-
-1.  [页面](http://wiki.baidu.com/collector/pages.action?key=MySQLNotes&src=breadcrumbs-collector)
-2.  [MySQL Notes](http://wiki.baidu.com/display/MySQLNotes/MySQL+Notes?src=breadcrumbs)
-3.  [InnoDB](http://wiki.baidu.com/display/MySQLNotes/InnoDB?src=breadcrumbs-parent)
-
-[跳到banner的尾部](#page-banner-end)
-
-[回到标题开始](#page-banner-start)
-
-# [InnoDB（三）：Crash Recovery](http://wiki.baidu.com/pages/viewpage.action?pageId=435201546)
-
-[转至元数据结尾](#page-metadata-end)
-
-*   由 [吴昊](http://wiki.baidu.com/display/~wuhao27)创建, 最后修改于[2020-04-04](http://wiki.baidu.com/pages/diffpagesbyversion.action?pageId=435201546&selectedPageVersions=118&selectedPageVersions=119 "查看变更")
-
-[转至元数据起始](#page-metadata-start)
 
 ## 为什么需要Crash Recovery？
 
@@ -249,7 +222,7 @@ InnoDB的Crash有如下四种可能：
     *   处于【Prepare】的事务：由MySQL Server层决定回滚或者提交（e.g 根据Binlog）
     *   处于【Active   】的事务：回滚
 
-根据[MySQL的事务模型](http://wiki.baidu.com/pages/viewpage.action?pageId=467667118)，来论证一下这个流程的正确性：
+根据[MySQL的事务模型](http://wiki.xxx.com/pages/viewpage.action?pageId=467667118)，来论证一下这个流程的正确性：
 
 *   Checkpoint之前的事务对数据库的修改已持久化，因此只需要处理Checkpoint之后的事务
 *   从Checkpoint开始“前滚”Redo日志：
@@ -678,9 +651,9 @@ Session 2:
 
 ### MySQL Binlog辅助InnoDB恢复
 
-详细参考[物理复制（八）：GaiaDB的崩溃恢复](http://wiki.baidu.com/pages/viewpage.action?pageId=485716353)。这里要说明一个关键问题
+详细参考[物理复制（八）：GaiaDB的崩溃恢复](http://wiki.xxx.com/pages/viewpage.action?pageId=485716353)。这里要说明一个关键问题
 
-根据[MySQL 5.6：事务模型](http://wiki.baidu.com/pages/viewpage.action?pageId=467667118)，InnoDB的事务提交步骤如下（函数trx\_commit）：
+根据[MySQL 5.6：事务模型](http://wiki.xxx.com/pages/viewpage.action?pageId=467667118)，InnoDB的事务提交步骤如下（函数trx\_commit）：
 
 1.  清理insert\_undo日志
 2.  将update\_undo日志加入回滚段的History-List（Purge线程定期清理）
@@ -717,39 +690,39 @@ TRX\_STATE\_PREPARED的事务在Crash前可能已经完成了多个步骤，为�
 ```plain
 #0  lock_rec_create (type_mode=1059, block=0x7f8ff56bc000, heap_no=16, index=index@entry=0x4b9bd18, trx=0x4b922d8, 
     caller_owns_trx_mutex=caller_owns_trx_mutex@entry=0)
-    at /home/wuhao27/workspace/baidu/dba/mysql-5623-trunk/storage/innobase/lock/lock0lock.cc:1793
+    at /home/yyy/workspace/xxx/dba/mysql-5623-trunk/storage/innobase/lock/lock0lock.cc:1793
 #1  0x0000000000951f28 in lock_rec_add_to_queue (type_mode=<optimized out>, type_mode@entry=1059, block=block@entry=0x7f8ff56bc000, 
     heap_no=heap_no@entry=16, index=index@entry=0x4b9bd18, trx=trx@entry=0x4b922d8, caller_owns_trx_mutex=0)
-    at /home/wuhao27/workspace/baidu/dba/mysql-5623-trunk/storage/innobase/lock/lock0lock.cc:2102
+    at /home/yyy/workspace/xxx/dba/mysql-5623-trunk/storage/innobase/lock/lock0lock.cc:2102
 #2  0x000000000095281f in lock_rec_convert_impl_to_expl (block=block@entry=0x7f8ff56bc000, rec=<optimized out>, index=index@entry=0x4b9bd18, 
-    offsets=<optimized out>) at /home/wuhao27/workspace/baidu/dba/mysql-5623-trunk/storage/innobase/lock/lock0lock.cc:6101
+    offsets=<optimized out>) at /home/yyy/workspace/xxx/dba/mysql-5623-trunk/storage/innobase/lock/lock0lock.cc:6101
 #3  0x0000000000959259 in lock_clust_rec_read_check_and_lock (flags=flags@entry=0, block=0x7f8ff56bc000, rec=<optimized out>, 
     index=index@entry=0x4b9bd18, offsets=<optimized out>, mode=LOCK_X, gap_mode=<optimized out>, thr=<optimized out>, 
-    thr@entry=0x7f8fa000eb38) at /home/wuhao27/workspace/baidu/dba/mysql-5623-trunk/storage/innobase/lock/lock0lock.cc:6378
+    thr@entry=0x7f8fa000eb38) at /home/yyy/workspace/xxx/dba/mysql-5623-trunk/storage/innobase/lock/lock0lock.cc:6378
 #4  0x000000000057d59b in sel_set_rec_lock (block=<optimized out>, rec=<optimized out>, index=0x4b9bd18, offsets=<optimized out>, 
     mode=<optimized out>, type=<optimized out>, thr=0x7f8fa000eb38)
-    at /home/wuhao27/workspace/baidu/dba/mysql-5623-trunk/storage/innobase/row/row0sel.cc:1011
+    at /home/yyy/workspace/xxx/dba/mysql-5623-trunk/storage/innobase/row/row0sel.cc:1011
 #5  0x00000000009c6a01 in row_search_for_mysql (buf=buf@entry=0x7f8fa000e258 "\375\310", mode=1, mode@entry=0, prebuilt=0x7f8fa000e4e8, 
     match_mode=match_mode@entry=0, direction=direction@entry=1)
-    at /home/wuhao27/workspace/baidu/dba/mysql-5623-trunk/storage/innobase/row/row0sel.cc:4499
+    at /home/yyy/workspace/xxx/dba/mysql-5623-trunk/storage/innobase/row/row0sel.cc:4499
 #6  0x000000000092734e in general_fetch (match_mode=0, direction=1, buf=0x7f8fa000e258 "\375\310", this=0x7f8fa000df90)
-    at /home/wuhao27/workspace/baidu/dba/mysql-5623-trunk/storage/innobase/handler/ha_innodb.cc:7818
+    at /home/yyy/workspace/xxx/dba/mysql-5623-trunk/storage/innobase/handler/ha_innodb.cc:7818
 #7  ha_innobase::rnd_next (this=0x7f8fa000df90, buf=0x7f8fa000e258 "\375\310")
-    at /home/wuhao27/workspace/baidu/dba/mysql-5623-trunk/storage/innobase/handler/ha_innodb.cc:8034
+    at /home/yyy/workspace/xxx/dba/mysql-5623-trunk/storage/innobase/handler/ha_innodb.cc:8034
 #8  0x00000000005ad5d5 in handler::ha_rnd_next (this=0x7f8fa000df90, buf=0x7f8fa000e258 "\375\310")
-    at /home/wuhao27/workspace/baidu/dba/mysql-5623-trunk/sql/handler.cc:2688
-#9  0x000000000082a830 in rr_sequential (info=0x7f909dd6b6c0) at /home/wuhao27/workspace/baidu/dba/mysql-5623-trunk/sql/records.cc:478
+    at /home/yyy/workspace/xxx/dba/mysql-5623-trunk/sql/handler.cc:2688
+#9  0x000000000082a830 in rr_sequential (info=0x7f909dd6b6c0) at /home/yyy/workspace/xxx/dba/mysql-5623-trunk/sql/records.cc:478
 #10 0x000000000076607a in mysql_update (thd=thd@entry=0x4c18260, table_list=<optimized out>, fields=..., values=..., conds=0x7f8fa0005e08, 
     order_num=<optimized out>, order=<optimized out>, limit=18446744073709551615, handle_duplicates=DUP_ERROR, ignore=false, 
     found_return=found_return@entry=0x7f909dd6bab0, updated_return=updated_return@entry=0x7f909dd6c010)
-    at /home/wuhao27/workspace/baidu/dba/mysql-5623-trunk/sql/sql_update.cc:742
+    at /home/yyy/workspace/xxx/dba/mysql-5623-trunk/sql/sql_update.cc:742
 #11 0x00000000006f80fc in mysql_execute_command (thd=thd@entry=0x4c18260)
-    at /home/wuhao27/workspace/baidu/dba/mysql-5623-trunk/sql/sql_parse.cc:3323
+    at /home/yyy/workspace/xxx/dba/mysql-5623-trunk/sql/sql_parse.cc:3323
 #12 0x00000000006fbec8 in mysql_parse (thd=thd@entry=0x4c18260, rawbuf=<optimized out>, length=<optimized out>, 
-    parser_state=parser_state@entry=0x7f909dd6c750) at /home/wuhao27/workspace/baidu/dba/mysql-5623-trunk/sql/sql_parse.cc:6373
+    parser_state=parser_state@entry=0x7f909dd6c750) at /home/yyy/workspace/xxx/dba/mysql-5623-trunk/sql/sql_parse.cc:6373
 #13 0x00000000006fd447 in dispatch_command (command=COM_QUERY, thd=0x4c18260, packet=<optimized out>, packet_length=<optimized out>)
-    at /home/wuhao27/workspace/baidu/dba/mysql-5623-trunk/sql/sql_parse.cc:1332
-#14 0x00000000006ff0c4 in do_command (thd=<optimized out>) at /home/wuhao27/workspace/baidu/dba/mysql-5623-trunk/sql/sql_parse.cc:1034
+    at /home/yyy/workspace/xxx/dba/mysql-5623-trunk/sql/sql_parse.cc:1332
+#14 0x00000000006ff0c4 in do_command (thd=<optimized out>) at /home/yyy/workspace/xxx/dba/mysql-5623-trunk/sql/sql_parse.cc:1034
 ```
 
 2\. Crash Recovery详细的流程
@@ -813,23 +786,4 @@ innobase_init()
    |-recv_recovery_from_checkpoint_finish()          完成崩溃恢复
 ```
 
-赞成为第一个赞同者
-
-*   无标签
-*   [编辑标签](# "编辑标签 (l)")
-
-[![用户图标: 添加头像](assets/1590841016-f00a283b92d885aa4be05f5e9828756a.png)](http://wiki.baidu.com/users/profile/editmyprofilepicture.action)
-
-编写评论...
-
----------------------------------------------------
-
-
-原网址: [访问](http://wiki.baidu.com/pages/viewpage.action?pageId=435201546)
-
-创建于: 2020-05-30 20:16:56
-
-目录: default
-
-标签: `wiki.baidu.com`
 

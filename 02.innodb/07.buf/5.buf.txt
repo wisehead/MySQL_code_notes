@@ -1124,35 +1124,35 @@ buf_page_get_gen
  
 (gdb) bt
 #0 0x00007f786a89a8ac in pthread_kill () from /lib64/libpthread.so.0
-#1 0x00000000006511c8 in handle_fatal_signal (sig=6) at /home/cds/mysql-baidu-5623/sql/signal_handler.cc:230
+#1 0x00000000006511c8 in handle_fatal_signal (sig=6) at /home/cds/mysql-xxx-5623/sql/signal_handler.cc:230
 #2 <signal handler called>
 #3 0x00007f7869749925 in raise () from /lib64/libc.so.6
 #4 0x00007f786974b105 in abort () from /lib64/libc.so.6
-#5 0x0000000000a8b686 in buf_page_get_gen (space=12, zip_size=0, offset=1424350, rw_latch=1, guess=<value optimized out>, mode=10, file=0xce7aa0 "/home/cds/mysql-baidu-5623/storage/innobase/row/row0sel.cc", line=4138, mtr=0x7f76adb1c560) at /home/cds/mysql-baidu-5623/storage/innobase/buf/buf0buf.cc:2646
-#6 0x0000000000a74992 in btr_cur_search_to_nth_level (index=0x7f7688021648, level=0, tuple=0x7f763405c018, mode=2, latch_mode=1, cursor=0x7f763405bd10, has_search_latch=0, file=0xce7aa0 "/home/cds/mysql-baidu-5623/storage/innobase/row/row0sel.cc", line=4138, mtr=0x7f76adb1c560) at /home/cds/mysql-baidu-5623/storage/innobase/btr/btr0cur.cc:611
+#5 0x0000000000a8b686 in buf_page_get_gen (space=12, zip_size=0, offset=1424350, rw_latch=1, guess=<value optimized out>, mode=10, file=0xce7aa0 "/home/cds/mysql-xxx-5623/storage/innobase/row/row0sel.cc", line=4138, mtr=0x7f76adb1c560) at /home/cds/mysql-xxx-5623/storage/innobase/buf/buf0buf.cc:2646
+#6 0x0000000000a74992 in btr_cur_search_to_nth_level (index=0x7f7688021648, level=0, tuple=0x7f763405c018, mode=2, latch_mode=1, cursor=0x7f763405bd10, has_search_latch=0, file=0xce7aa0 "/home/cds/mysql-xxx-5623/storage/innobase/row/row0sel.cc", line=4138, mtr=0x7f76adb1c560) at /home/cds/mysql-xxx-5623/storage/innobase/btr/btr0cur.cc:611
 #7 0x0000000000a268f5 in btr_pcur_open_with_no_init_func (buf=0x7f763405b3e0 "\377", mode=2, prebuilt=0x7f763405bc98, match_mode=<value optimized out>, 
-direction=<value optimized out>) at /home/cds/mysql-baidu-5623/storage/innobase/include/btr0pcur.ic:485
+direction=<value optimized out>) at /home/cds/mysql-xxx-5623/storage/innobase/include/btr0pcur.ic:485
 #8 row_search_for_mysql (buf=0x7f763405b3e0 "\377", mode=2, prebuilt=0x7f763405bc98, match_mode=<value optimized out>, direction=<value optimized out>)
-at /home/cds/mysql-baidu-5623/storage/innobase/row/row0sel.cc:4138
-#9 0x000000000098a798 in ha_innobase::index_read (this=0x7f763405aff0, buf=0x7f763405b3e0 "\377", key_ptr=<value optimized out>, key_len=4, find_flag=<value optimized out>) at /home/cds/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:7579
-#10 0x0000000000594b4e in ha_index_read_map (this=0x7f763405aff0, start_key=<value optimized out>, end_key=<value optimized out>, eq_range_arg=<value optimized out>, sorted=<value optimized out>) at /home/cds/mysql-baidu-5623/sql/handler.cc:2752
-#11 handler::read_range_first (this=0x7f763405aff0, start_key=<value optimized out>, end_key=<value optimized out>, eq_range_arg=<value optimized out>, sorted=<value optimized out>) at /home/cds/mysql-baidu-5623/sql/handler.cc:6693
-#12 0x00000000005950c8 in multi_range_read_next (this=<value optimized out>, range_info=0x7f76adb1cec8) at /home/cds/mysql-baidu-5623/sql/handler.cc:5864
-#13 DsMrr_impl::dsmrr_next (this=<value optimized out>, range_info=0x7f76adb1cec8) at /home/cds/mysql-baidu-5623/sql/handler.cc:6223
-#14 0x00000000007f1642 in QUICK_RANGE_SELECT::get_next (this=0x7f766c05c2b0) at /home/cds/mysql-baidu-5623/sql/opt_range.cc:10639
-#15 0x000000000081694b in rr_quick (info=0x7f76adb1d2f0) at /home/cds/mysql-baidu-5623/sql/records.cc:367
+at /home/cds/mysql-xxx-5623/storage/innobase/row/row0sel.cc:4138
+#9 0x000000000098a798 in ha_innobase::index_read (this=0x7f763405aff0, buf=0x7f763405b3e0 "\377", key_ptr=<value optimized out>, key_len=4, find_flag=<value optimized out>) at /home/cds/mysql-xxx-5623/storage/innobase/handler/ha_innodb.cc:7579
+#10 0x0000000000594b4e in ha_index_read_map (this=0x7f763405aff0, start_key=<value optimized out>, end_key=<value optimized out>, eq_range_arg=<value optimized out>, sorted=<value optimized out>) at /home/cds/mysql-xxx-5623/sql/handler.cc:2752
+#11 handler::read_range_first (this=0x7f763405aff0, start_key=<value optimized out>, end_key=<value optimized out>, eq_range_arg=<value optimized out>, sorted=<value optimized out>) at /home/cds/mysql-xxx-5623/sql/handler.cc:6693
+#12 0x00000000005950c8 in multi_range_read_next (this=<value optimized out>, range_info=0x7f76adb1cec8) at /home/cds/mysql-xxx-5623/sql/handler.cc:5864
+#13 DsMrr_impl::dsmrr_next (this=<value optimized out>, range_info=0x7f76adb1cec8) at /home/cds/mysql-xxx-5623/sql/handler.cc:6223
+#14 0x00000000007f1642 in QUICK_RANGE_SELECT::get_next (this=0x7f766c05c2b0) at /home/cds/mysql-xxx-5623/sql/opt_range.cc:10639
+#15 0x000000000081694b in rr_quick (info=0x7f76adb1d2f0) at /home/cds/mysql-xxx-5623/sql/records.cc:367
 #16 0x0000000000744642 in mysql_update (thd=0xcd2e8f0, table_list=0x7f766c020ec0, fields=..., values=..., conds=0x7f766c004f20, order_num=0, order=0x7f76adb1d2f0, limit=18446744073709551615, handle_duplicates=DUP_ERROR, ignore=false, found_return=0x7f76adb1e0d0, updated_return=0x7f76adb1e0c8)
-at /home/cds/mysql-baidu-5623/sql/sql_update.cc:742
-#17 0x00000000006d89ca in mysql_execute_command (thd=0xcd2e8f0) at /home/cds/mysql-baidu-5623/sql/sql_parse.cc:3307
+at /home/cds/mysql-xxx-5623/sql/sql_update.cc:742
+#17 0x00000000006d89ca in mysql_execute_command (thd=0xcd2e8f0) at /home/cds/mysql-xxx-5623/sql/sql_parse.cc:3307
 #18 0x00000000006e97a2 in Prepared_statement::execute (this=0x7f766c01f820, expanded_query=<value optimized out>, open_cursor=<value optimized out>)
-at /home/cds/mysql-baidu-5623/sql/sql_prepare.cc:4015
-#19 0x00000000006eda1a in Prepared_statement::execute_loop (this=0x7f766c01f820, expanded_query=0x7f76adb1e370, open_cursor=<value optimized out>, packet=<value optimized out>, packet_end=<value optimized out>) at /home/cds/mysql-baidu-5623/sql/sql_prepare.cc:3663
-#20 0x00000000006ee0e4 in mysqld_stmt_execute (thd=0xcd2e8f0, packet_arg=0xcd328f1 "\003", packet_length=<value optimized out>) at /home/cds/mysql-baidu-5623/sql/sql_prepare.cc:2700
+at /home/cds/mysql-xxx-5623/sql/sql_prepare.cc:4015
+#19 0x00000000006eda1a in Prepared_statement::execute_loop (this=0x7f766c01f820, expanded_query=0x7f76adb1e370, open_cursor=<value optimized out>, packet=<value optimized out>, packet_end=<value optimized out>) at /home/cds/mysql-xxx-5623/sql/sql_prepare.cc:3663
+#20 0x00000000006ee0e4 in mysqld_stmt_execute (thd=0xcd2e8f0, packet_arg=0xcd328f1 "\003", packet_length=<value optimized out>) at /home/cds/mysql-xxx-5623/sql/sql_prepare.cc:2700
 #21 0x00000000006dccc4 in dispatch_command (command=COM_STMT_EXECUTE, thd=0xcd2e8f0, packet=0xcd328f1 "\003", packet_length=<value optimized out>)
-at /home/cds/mysql-baidu-5623/sql/sql_parse.cc:1279
-#22 0x00000000006a4b6d in do_handle_one_connection (thd_arg=<value optimized out>) at /home/cds/mysql-baidu-5623/sql/sql_connect.cc:982
-#23 0x00000000006a4ca2 in handle_one_connection (arg=0xcd2e8f0) at /home/cds/mysql-baidu-5623/sql/sql_connect.cc:898
-#24 0x000000000092bf57 in pfs_spawn_thread (arg=0xccbbe80) at /home/cds/mysql-baidu-5623/storage/perfschema/pfs.cc:1860
+at /home/cds/mysql-xxx-5623/sql/sql_parse.cc:1279
+#22 0x00000000006a4b6d in do_handle_one_connection (thd_arg=<value optimized out>) at /home/cds/mysql-xxx-5623/sql/sql_connect.cc:982
+#23 0x00000000006a4ca2 in handle_one_connection (arg=0xcd2e8f0) at /home/cds/mysql-xxx-5623/sql/sql_connect.cc:898
+#24 0x000000000092bf57 in pfs_spawn_thread (arg=0xccbbe80) at /home/cds/mysql-xxx-5623/storage/perfschema/pfs.cc:1860
 #25 0x00007f786a8959d1 in start_thread () from /lib64/libpthread.so.0
 #26 0x00007f78697ffb5d in clone () from /lib64/libc.so.6
 
@@ -1468,39 +1468,39 @@ buf_LRU_block_free_non_file_page
 recv_sys_init
 --buf_flush_init_flush_rbt
 
-#0  buf_flush_init_flush_rbt () at /home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0flu.cc:314
-#1  0x0000000000b773a8 in recv_sys_init (available_memory=6442418176) at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:394
-#2  0x0000000000c57a60 in innobase_start_or_create_for_mysql () at /home/chenhui/mysql-baidu-5623/storage/innobase/srv/srv0start.cc:2060
-#3  0x0000000000b09022 in innobase_init (p=0x193d7f0) at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:3365
-#4  0x0000000000644ded in ha_initialize_handlerton (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:662
-#5  0x00000000007f12e8 in plugin_initialize (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1137
-#6  0x00000000007f1d5d in plugin_init (argc=0x17fb1c8 <remaining_argc>, argv=0x185d598, flags=0) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1431
-#7  0x000000000062f666 in init_server_components () at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:4849
-#8  0x0000000000630563 in mysqld_main (argc=94, argv=0x185d598) at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:5444
-#9  0x0000000000625bb0 in main (argc=1, argv=0x7fffffffe848) at /home/chenhui/mysql-baidu-5623/sql/main.cc:25
+#0  buf_flush_init_flush_rbt () at /home/chenhui/mysql-xxx-5623/storage/innobase/buf/buf0flu.cc:314
+#1  0x0000000000b773a8 in recv_sys_init (available_memory=6442418176) at /home/chenhui/mysql-xxx-5623/storage/innobase/log/log0recv.cc:394
+#2  0x0000000000c57a60 in innobase_start_or_create_for_mysql () at /home/chenhui/mysql-xxx-5623/storage/innobase/srv/srv0start.cc:2060
+#3  0x0000000000b09022 in innobase_init (p=0x193d7f0) at /home/chenhui/mysql-xxx-5623/storage/innobase/handler/ha_innodb.cc:3365
+#4  0x0000000000644ded in ha_initialize_handlerton (plugin=0x192ff48) at /home/chenhui/mysql-xxx-5623/sql/handler.cc:662
+#5  0x00000000007f12e8 in plugin_initialize (plugin=0x192ff48) at /home/chenhui/mysql-xxx-5623/sql/sql_plugin.cc:1137
+#6  0x00000000007f1d5d in plugin_init (argc=0x17fb1c8 <remaining_argc>, argv=0x185d598, flags=0) at /home/chenhui/mysql-xxx-5623/sql/sql_plugin.cc:1431
+#7  0x000000000062f666 in init_server_components () at /home/chenhui/mysql-xxx-5623/sql/mysqld.cc:4849
+#8  0x0000000000630563 in mysqld_main (argc=94, argv=0x185d598) at /home/chenhui/mysql-xxx-5623/sql/mysqld.cc:5444
+#9  0x0000000000625bb0 in main (argc=1, argv=0x7fffffffe848) at /home/chenhui/mysql-xxx-5623/sql/main.cc:25
 
 
 
 57.buf_flush_validate_low
 
 (gdb) bt
-#0  buf_flush_validate_low (buf_pool=0x7ffe268d9058) at /home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0flu.cc:2875
-#1  0x0000000000cf544d in buf_flush_validate (buf_pool=0x7ffe268d9058) at /home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0flu.cc:2943
-#2  0x0000000000ce51a6 in buf_pool_validate_instance (buf_pool=0x7ffe268d9058) at /home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0buf.cc:5413
-#3  0x0000000000ce520b in buf_validate () at /home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0buf.cc:5433
-#4  0x0000000000ce1bea in buf_page_get_known_nowait (rw_latch=2, block=0x7ffe367ab368, mode=52, file=0x1027108 "/home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc", 
-    line=1644, mtr=0x7fffffff9c50) at /home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0buf.cc:3964
-#5  0x0000000000b79374 in recv_recover_page_func (just_read_in=0, block=0x7ffe367ab368) at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:1645
-#6  0x0000000000b79b8f in recv_apply_hashed_log_recs (allow_ibuf=1) at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:1910
-#7  0x0000000000b7bd7f in recv_recovery_from_checkpoint_finish () at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:3380
-#8  0x0000000000c5837d in innobase_start_or_create_for_mysql () at /home/chenhui/mysql-baidu-5623/storage/innobase/srv/srv0start.cc:2443
-#9  0x0000000000b09022 in innobase_init (p=0x193d7f0) at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:3365
-#10 0x0000000000644ded in ha_initialize_handlerton (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:662
-#11 0x00000000007f12e8 in plugin_initialize (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1137
-#12 0x00000000007f1d5d in plugin_init (argc=0x17fb1c8 <remaining_argc>, argv=0x185d598, flags=0) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1431
-#13 0x000000000062f666 in init_server_components () at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:4849
-#14 0x0000000000630563 in mysqld_main (argc=94, argv=0x185d598) at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:5444
-#15 0x0000000000625bb0 in main (argc=1, argv=0x7fffffffe848) at /home/chenhui/mysql-baidu-5623/sql/main.cc:25
+#0  buf_flush_validate_low (buf_pool=0x7ffe268d9058) at /home/chenhui/mysql-xxx-5623/storage/innobase/buf/buf0flu.cc:2875
+#1  0x0000000000cf544d in buf_flush_validate (buf_pool=0x7ffe268d9058) at /home/chenhui/mysql-xxx-5623/storage/innobase/buf/buf0flu.cc:2943
+#2  0x0000000000ce51a6 in buf_pool_validate_instance (buf_pool=0x7ffe268d9058) at /home/chenhui/mysql-xxx-5623/storage/innobase/buf/buf0buf.cc:5413
+#3  0x0000000000ce520b in buf_validate () at /home/chenhui/mysql-xxx-5623/storage/innobase/buf/buf0buf.cc:5433
+#4  0x0000000000ce1bea in buf_page_get_known_nowait (rw_latch=2, block=0x7ffe367ab368, mode=52, file=0x1027108 "/home/chenhui/mysql-xxx-5623/storage/innobase/log/log0recv.cc", 
+    line=1644, mtr=0x7fffffff9c50) at /home/chenhui/mysql-xxx-5623/storage/innobase/buf/buf0buf.cc:3964
+#5  0x0000000000b79374 in recv_recover_page_func (just_read_in=0, block=0x7ffe367ab368) at /home/chenhui/mysql-xxx-5623/storage/innobase/log/log0recv.cc:1645
+#6  0x0000000000b79b8f in recv_apply_hashed_log_recs (allow_ibuf=1) at /home/chenhui/mysql-xxx-5623/storage/innobase/log/log0recv.cc:1910
+#7  0x0000000000b7bd7f in recv_recovery_from_checkpoint_finish () at /home/chenhui/mysql-xxx-5623/storage/innobase/log/log0recv.cc:3380
+#8  0x0000000000c5837d in innobase_start_or_create_for_mysql () at /home/chenhui/mysql-xxx-5623/storage/innobase/srv/srv0start.cc:2443
+#9  0x0000000000b09022 in innobase_init (p=0x193d7f0) at /home/chenhui/mysql-xxx-5623/storage/innobase/handler/ha_innodb.cc:3365
+#10 0x0000000000644ded in ha_initialize_handlerton (plugin=0x192ff48) at /home/chenhui/mysql-xxx-5623/sql/handler.cc:662
+#11 0x00000000007f12e8 in plugin_initialize (plugin=0x192ff48) at /home/chenhui/mysql-xxx-5623/sql/sql_plugin.cc:1137
+#12 0x00000000007f1d5d in plugin_init (argc=0x17fb1c8 <remaining_argc>, argv=0x185d598, flags=0) at /home/chenhui/mysql-xxx-5623/sql/sql_plugin.cc:1431
+#13 0x000000000062f666 in init_server_components () at /home/chenhui/mysql-xxx-5623/sql/mysqld.cc:4849
+#14 0x0000000000630563 in mysqld_main (argc=94, argv=0x185d598) at /home/chenhui/mysql-xxx-5623/sql/mysqld.cc:5444
+#15 0x0000000000625bb0 in main (argc=1, argv=0x7fffffffe848) at /home/chenhui/mysql-xxx-5623/sql/main.cc:25
 
 
 
@@ -1530,54 +1530,54 @@ buf_flush_relocate_on_flush_list
 60.buf_flush_note_modification
 
 (gdb) bt
-#0  buf_flush_note_modification (block=0x7ffe370d9168, mtr=0x7fffffffa070) at /home/chenhui/mysql-baidu-5623/storage/innobase/include/buf0flu.ic:63
-#1  0x0000000000b8598f in mtr_memo_slot_note_modification (mtr=0x7fffffffa070, slot=0x7fffffffa088) at /home/chenhui/mysql-baidu-5623/storage/innobase/mtr/mtr0mtr.cc:156
-#2  0x0000000000b85af9 in mtr_memo_note_modifications (mtr=0x7fffffffa070) at /home/chenhui/mysql-baidu-5623/storage/innobase/mtr/mtr0mtr.cc:193
-#3  0x0000000000b85bde in mtr_add_dirtied_pages_to_flush_list (mtr=0x7fffffffa070) at /home/chenhui/mysql-baidu-5623/storage/innobase/mtr/mtr0mtr.cc:224
-#4  0x0000000000b85d1d in mtr_log_reserve_and_write (mtr=0x7fffffffa070) at /home/chenhui/mysql-baidu-5623/storage/innobase/mtr/mtr0mtr.cc:270
-#5  0x0000000000b85fac in mtr_commit (mtr=0x7fffffffa070) at /home/chenhui/mysql-baidu-5623/storage/innobase/mtr/mtr0mtr.cc:324
-#6  0x0000000000c7e009 in trx_sys_flush_max_trx_id () at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0sys.cc:188
-#7  0x0000000000c81ad9 in trx_sys_get_new_trx_id () at /home/chenhui/mysql-baidu-5623/storage/innobase/include/trx0sys.ic:459
-#8  0x0000000000c840bb in trx_start_low (trx=0x127c61c8) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:873
-#9  0x0000000000c874eb in trx_start_if_not_started_xa_low (trx=0x127c61c8) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0trx.cc:2233
-#10 0x0000000000c2d57f in row_sel_step (thr=0x12892468) at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0sel.cc:2062
-#11 0x0000000000bbf866 in que_thr_step (thr=0x12892468) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1083
-#12 0x0000000000bbfba5 in que_run_threads_low (thr=0x12892468) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1167
-#13 0x0000000000bbfd6a in que_run_threads (thr=0x12892468) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1208
+#0  buf_flush_note_modification (block=0x7ffe370d9168, mtr=0x7fffffffa070) at /home/chenhui/mysql-xxx-5623/storage/innobase/include/buf0flu.ic:63
+#1  0x0000000000b8598f in mtr_memo_slot_note_modification (mtr=0x7fffffffa070, slot=0x7fffffffa088) at /home/chenhui/mysql-xxx-5623/storage/innobase/mtr/mtr0mtr.cc:156
+#2  0x0000000000b85af9 in mtr_memo_note_modifications (mtr=0x7fffffffa070) at /home/chenhui/mysql-xxx-5623/storage/innobase/mtr/mtr0mtr.cc:193
+#3  0x0000000000b85bde in mtr_add_dirtied_pages_to_flush_list (mtr=0x7fffffffa070) at /home/chenhui/mysql-xxx-5623/storage/innobase/mtr/mtr0mtr.cc:224
+#4  0x0000000000b85d1d in mtr_log_reserve_and_write (mtr=0x7fffffffa070) at /home/chenhui/mysql-xxx-5623/storage/innobase/mtr/mtr0mtr.cc:270
+#5  0x0000000000b85fac in mtr_commit (mtr=0x7fffffffa070) at /home/chenhui/mysql-xxx-5623/storage/innobase/mtr/mtr0mtr.cc:324
+#6  0x0000000000c7e009 in trx_sys_flush_max_trx_id () at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0sys.cc:188
+#7  0x0000000000c81ad9 in trx_sys_get_new_trx_id () at /home/chenhui/mysql-xxx-5623/storage/innobase/include/trx0sys.ic:459
+#8  0x0000000000c840bb in trx_start_low (trx=0x127c61c8) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0trx.cc:873
+#9  0x0000000000c874eb in trx_start_if_not_started_xa_low (trx=0x127c61c8) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0trx.cc:2233
+#10 0x0000000000c2d57f in row_sel_step (thr=0x12892468) at /home/chenhui/mysql-xxx-5623/storage/innobase/row/row0sel.cc:2062
+#11 0x0000000000bbf866 in que_thr_step (thr=0x12892468) at /home/chenhui/mysql-xxx-5623/storage/innobase/que/que0que.cc:1083
+#12 0x0000000000bbfba5 in que_run_threads_low (thr=0x12892468) at /home/chenhui/mysql-xxx-5623/storage/innobase/que/que0que.cc:1167
+#13 0x0000000000bbfd6a in que_run_threads (thr=0x12892468) at /home/chenhui/mysql-xxx-5623/storage/innobase/que/que0que.cc:1208
 #14 0x0000000000bbffd0 in que_eval_sql (info=0x0, 
-    sql=0x1040ae0 <row_merge_drop_temp_indexes()::sql> "PROCEDURE DROP_TEMP_INDEXES_PROC () IS\nixid CHAR;\nfound INT;\nDECLARE CURSOR index_cur IS\n SELECT ID FROM SYS_INDEXES\n WHERE SUBSTR(NAME,0,1)='\377'\nFOR UPDATE;\nBEGIN\nfound := 1;\nOPEN index_cur;\nWHILE fou"..., reserve_dict_mutex=0, trx=0x127c61c8) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1285
-#15 0x0000000000bf8886 in row_merge_drop_temp_indexes () at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0merge.cc:2907
-#16 0x0000000000b7bf32 in recv_recovery_rollback_active () at /home/chenhui/mysql-baidu-5623/storage/innobase/log/log0recv.cc:3476
-#17 0x0000000000c5880b in innobase_start_or_create_for_mysql () at /home/chenhui/mysql-baidu-5623/storage/innobase/srv/srv0start.cc:2560
-#18 0x0000000000b09022 in innobase_init (p=0x193d7f0) at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:3365
-#19 0x0000000000644ded in ha_initialize_handlerton (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:662
-#20 0x00000000007f12e8 in plugin_initialize (plugin=0x192ff48) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1137
-#21 0x00000000007f1d5d in plugin_init (argc=0x17fb1c8 <remaining_argc>, argv=0x185d598, flags=0) at /home/chenhui/mysql-baidu-5623/sql/sql_plugin.cc:1431
-#22 0x000000000062f666 in init_server_components () at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:4849
-#23 0x0000000000630563 in mysqld_main (argc=94, argv=0x185d598) at /home/chenhui/mysql-baidu-5623/sql/mysqld.cc:5444
-#24 0x0000000000625bb0 in main (argc=1, argv=0x7fffffffe848) at /home/chenhui/mysql-baidu-5623/sql/main.cc:25
+    sql=0x1040ae0 <row_merge_drop_temp_indexes()::sql> "PROCEDURE DROP_TEMP_INDEXES_PROC () IS\nixid CHAR;\nfound INT;\nDECLARE CURSOR index_cur IS\n SELECT ID FROM SYS_INDEXES\n WHERE SUBSTR(NAME,0,1)='\377'\nFOR UPDATE;\nBEGIN\nfound := 1;\nOPEN index_cur;\nWHILE fou"..., reserve_dict_mutex=0, trx=0x127c61c8) at /home/chenhui/mysql-xxx-5623/storage/innobase/que/que0que.cc:1285
+#15 0x0000000000bf8886 in row_merge_drop_temp_indexes () at /home/chenhui/mysql-xxx-5623/storage/innobase/row/row0merge.cc:2907
+#16 0x0000000000b7bf32 in recv_recovery_rollback_active () at /home/chenhui/mysql-xxx-5623/storage/innobase/log/log0recv.cc:3476
+#17 0x0000000000c5880b in innobase_start_or_create_for_mysql () at /home/chenhui/mysql-xxx-5623/storage/innobase/srv/srv0start.cc:2560
+#18 0x0000000000b09022 in innobase_init (p=0x193d7f0) at /home/chenhui/mysql-xxx-5623/storage/innobase/handler/ha_innodb.cc:3365
+#19 0x0000000000644ded in ha_initialize_handlerton (plugin=0x192ff48) at /home/chenhui/mysql-xxx-5623/sql/handler.cc:662
+#20 0x00000000007f12e8 in plugin_initialize (plugin=0x192ff48) at /home/chenhui/mysql-xxx-5623/sql/sql_plugin.cc:1137
+#21 0x00000000007f1d5d in plugin_init (argc=0x17fb1c8 <remaining_argc>, argv=0x185d598, flags=0) at /home/chenhui/mysql-xxx-5623/sql/sql_plugin.cc:1431
+#22 0x000000000062f666 in init_server_components () at /home/chenhui/mysql-xxx-5623/sql/mysqld.cc:4849
+#23 0x0000000000630563 in mysqld_main (argc=94, argv=0x185d598) at /home/chenhui/mysql-xxx-5623/sql/mysqld.cc:5444
+#24 0x0000000000625bb0 in main (argc=1, argv=0x7fffffffe848) at /home/chenhui/mysql-xxx-5623/sql/main.cc:25
 
 
 (gdb) bt
-#0  buf_flush_note_modification (block=0x7ffe36f77e28, mtr=0x7ffe0a6e2250) at /home/chenhui/mysql-baidu-5623/storage/innobase/include/buf0flu.ic:63
-#1  0x0000000000b8598f in mtr_memo_slot_note_modification (mtr=0x7ffe0a6e2250, slot=0x7ffe0a6e2268) at /home/chenhui/mysql-baidu-5623/storage/innobase/mtr/mtr0mtr.cc:156
-#2  0x0000000000b85af9 in mtr_memo_note_modifications (mtr=0x7ffe0a6e2250) at /home/chenhui/mysql-baidu-5623/storage/innobase/mtr/mtr0mtr.cc:193
-#3  0x0000000000b85bde in mtr_add_dirtied_pages_to_flush_list (mtr=0x7ffe0a6e2250) at /home/chenhui/mysql-baidu-5623/storage/innobase/mtr/mtr0mtr.cc:224
-#4  0x0000000000b85d1d in mtr_log_reserve_and_write (mtr=0x7ffe0a6e2250) at /home/chenhui/mysql-baidu-5623/storage/innobase/mtr/mtr0mtr.cc:270
-#5  0x0000000000b85fac in mtr_commit (mtr=0x7ffe0a6e2250) at /home/chenhui/mysql-baidu-5623/storage/innobase/mtr/mtr0mtr.cc:324
-#6  0x0000000000c8c705 in trx_undo_truncate_end_func (trx=0x128473a8, undo=0x128003e8, limit=0) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0undo.cc:1132
-#7  0x0000000000c78be3 in trx_roll_try_truncate (trx=0x128473a8) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:1015
+#0  buf_flush_note_modification (block=0x7ffe36f77e28, mtr=0x7ffe0a6e2250) at /home/chenhui/mysql-xxx-5623/storage/innobase/include/buf0flu.ic:63
+#1  0x0000000000b8598f in mtr_memo_slot_note_modification (mtr=0x7ffe0a6e2250, slot=0x7ffe0a6e2268) at /home/chenhui/mysql-xxx-5623/storage/innobase/mtr/mtr0mtr.cc:156
+#2  0x0000000000b85af9 in mtr_memo_note_modifications (mtr=0x7ffe0a6e2250) at /home/chenhui/mysql-xxx-5623/storage/innobase/mtr/mtr0mtr.cc:193
+#3  0x0000000000b85bde in mtr_add_dirtied_pages_to_flush_list (mtr=0x7ffe0a6e2250) at /home/chenhui/mysql-xxx-5623/storage/innobase/mtr/mtr0mtr.cc:224
+#4  0x0000000000b85d1d in mtr_log_reserve_and_write (mtr=0x7ffe0a6e2250) at /home/chenhui/mysql-xxx-5623/storage/innobase/mtr/mtr0mtr.cc:270
+#5  0x0000000000b85fac in mtr_commit (mtr=0x7ffe0a6e2250) at /home/chenhui/mysql-xxx-5623/storage/innobase/mtr/mtr0mtr.cc:324
+#6  0x0000000000c8c705 in trx_undo_truncate_end_func (trx=0x128473a8, undo=0x128003e8, limit=0) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0undo.cc:1132
+#7  0x0000000000c78be3 in trx_roll_try_truncate (trx=0x128473a8) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0roll.cc:1015
 #8  0x0000000000c78f01 in trx_roll_pop_top_rec_of_trx (trx=0x128473a8, limit=0, roll_ptr=0x7ffe0a6e2d10, heap=0x7ffe04028560)
-    at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:1130
-#9  0x0000000000c365df in row_undo (node=0x7ffe04028068, thr=0x7ffe04027eb0) at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0undo.cc:269
-#10 0x0000000000c367fc in row_undo_step (thr=0x7ffe04027eb0) at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0undo.cc:350
-#11 0x0000000000bbf964 in que_thr_step (thr=0x7ffe04027eb0) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1103
-#12 0x0000000000bbfba5 in que_run_threads_low (thr=0x7ffe04027eb0) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1167
-#13 0x0000000000bbfd6a in que_run_threads (thr=0x7ffe04027eb0) at /home/chenhui/mysql-baidu-5623/storage/innobase/que/que0que.cc:1208
-#14 0x0000000000c77fce in trx_rollback_active (trx=0x128473a8) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:605
-#15 0x0000000000c7831b in trx_rollback_resurrected (trx=0x128473a8, all=1) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:705
-#16 0x0000000000c7856c in trx_rollback_or_clean_recovered (all=1) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:768
-#17 0x0000000000c7869b in trx_rollback_or_clean_all_recovered (arg=0x0) at /home/chenhui/mysql-baidu-5623/storage/innobase/trx/trx0roll.cc:809
+    at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0roll.cc:1130
+#9  0x0000000000c365df in row_undo (node=0x7ffe04028068, thr=0x7ffe04027eb0) at /home/chenhui/mysql-xxx-5623/storage/innobase/row/row0undo.cc:269
+#10 0x0000000000c367fc in row_undo_step (thr=0x7ffe04027eb0) at /home/chenhui/mysql-xxx-5623/storage/innobase/row/row0undo.cc:350
+#11 0x0000000000bbf964 in que_thr_step (thr=0x7ffe04027eb0) at /home/chenhui/mysql-xxx-5623/storage/innobase/que/que0que.cc:1103
+#12 0x0000000000bbfba5 in que_run_threads_low (thr=0x7ffe04027eb0) at /home/chenhui/mysql-xxx-5623/storage/innobase/que/que0que.cc:1167
+#13 0x0000000000bbfd6a in que_run_threads (thr=0x7ffe04027eb0) at /home/chenhui/mysql-xxx-5623/storage/innobase/que/que0que.cc:1208
+#14 0x0000000000c77fce in trx_rollback_active (trx=0x128473a8) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0roll.cc:605
+#15 0x0000000000c7831b in trx_rollback_resurrected (trx=0x128473a8, all=1) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0roll.cc:705
+#16 0x0000000000c7856c in trx_rollback_or_clean_recovered (all=1) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0roll.cc:768
+#17 0x0000000000c7869b in trx_rollback_or_clean_all_recovered (arg=0x0) at /home/chenhui/mysql-xxx-5623/storage/innobase/trx/trx0roll.cc:809
 #18 0x00007ffff7bc61c3 in ?? ()
 #19 0x0000000000000000 in ?? ()
 
@@ -1593,14 +1593,14 @@ $5 = {
     frame = 0x7fffb50b8000 "", unzip_LRU = {prev = 0x0, next = 0x0}, in_unzip_LRU_list = 0, 
     
     mutex = {event = 0x12639d50, lock_word = 0 '\000', 
-    waiters = 0, list = {prev = 0x7ffe36f78198, next = 0x7ffe36f77c18}, file_name = 0x1071f20 "/home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0buf.cc", line = 2997, level = 146, 
-    cfile_name = 0x1071f20 "/home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0buf.cc", cline = 1092, count_os_wait = 0, thread_id = 18446744073709551615, magic_n = 979585, 
+    waiters = 0, list = {prev = 0x7ffe36f78198, next = 0x7ffe36f77c18}, file_name = 0x1071f20 "/home/chenhui/mysql-xxx-5623/storage/innobase/buf/buf0buf.cc", line = 2997, level = 146, 
+    cfile_name = 0x1071f20 "/home/chenhui/mysql-xxx-5623/storage/innobase/buf/buf0buf.cc", cline = 1092, count_os_wait = 0, thread_id = 18446744073709551615, magic_n = 979585, 
     cmutex_name = 0x0, ib_mutex_type = 0, pfs_psi = 0x0}, 
     
     lock = {lock_word = 0, waiters = 0, recursive = 1, writer_thread = 140729073415936, event = 0x12639de0, wait_ex_event = 0x12639e70, 
     list = {prev = 0x7ffe36f78048, next = 0x7ffe36f77d88}, debug_list = {count = 1, start = 0x7ffe04028818, end = 0x7ffe04028818}, level = 2000, pfs_psi = 0x0, count_os_wait = 0, 
-    cfile_name = 0x1071f20 "/home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0buf.cc", last_s_file_name = 0x105f7f8 "/home/chenhui/mysql-baidu-5623/storage/innobase/include/trx0undo.ic", 
-    last_x_file_name = 0x1063520 "/home/chenhui/mysql-baidu-5623/storage/innobase/include/trx0undo.ic", writer_is_wait_ex = 0, cline = 1094, last_s_line = 191, last_x_line = 171, 
+    cfile_name = 0x1071f20 "/home/chenhui/mysql-xxx-5623/storage/innobase/buf/buf0buf.cc", last_s_file_name = 0x105f7f8 "/home/chenhui/mysql-xxx-5623/storage/innobase/include/trx0undo.ic", 
+    last_x_file_name = 0x1063520 "/home/chenhui/mysql-xxx-5623/storage/innobase/include/trx0undo.ic", writer_is_wait_ex = 0, cline = 1094, last_s_line = 191, last_x_line = 171, 
     magic_n = 22643}, 
     
     lock_hash_val = 483641, check_index_page_at_flush = 0, modify_clock = 0, n_hash_helps = 0, n_fields = 1, n_bytes = 0, left_side = 1, n_pointers = 0, curr_n_fields = 0, 
@@ -1608,7 +1608,7 @@ $5 = {
   
   debug_latch = {lock_word = 1048575, waiters = 0, recursive = 0, writer_thread = 0, event = 0x12639f00, wait_ex_event = 0x12639f90, list = {
       prev = 0x7ffe36f78218, next = 0x7ffe36f77f58}, debug_list = {count = 1, start = 0x7ffe04028758, end = 0x7ffe04028758}, level = 3000, pfs_psi = 0x0, count_os_wait = 0, 
-    cfile_name = 0x1071f20 "/home/chenhui/mysql-baidu-5623/storage/innobase/buf/buf0buf.cc", last_s_file_name = 0x1063520 "/home/chenhui/mysql-baidu-5623/storage/innobase/include/trx0undo.ic", 
+    cfile_name = 0x1071f20 "/home/chenhui/mysql-xxx-5623/storage/innobase/buf/buf0buf.cc", last_s_file_name = 0x1063520 "/home/chenhui/mysql-xxx-5623/storage/innobase/include/trx0undo.ic", 
     last_x_file_name = 0x105a1a0 "not yet reserved", writer_is_wait_ex = 0, cline = 1098, last_s_line = 171, last_x_line = 0, magic_n = 22643}}
     
     

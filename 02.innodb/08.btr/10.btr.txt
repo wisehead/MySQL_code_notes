@@ -92,38 +92,38 @@ clone
 
 (gdb) bt
 #0  0x00007fad388408ac in pthread_kill () from /lib64/libpthread.so.0
-#1  0x0000000000651308 in handle_fatal_signal (sig=6) at /home/chenhui/mysql-baidu-5623/sql/signal_handler.cc:230
+#1  0x0000000000651308 in handle_fatal_signal (sig=6) at /home/chenhui/mysql-xxx-5623/sql/signal_handler.cc:230
 #2  <signal handler called>
 #3  0x00007fad374ee625 in raise () from /lib64/libc.so.6
 #4  0x00007fad374efe05 in abort () from /lib64/libc.so.6
-#5  0x0000000000a3eec5 in btr_pcur_store_position (cursor=0x7faaec093900, mtr=<value optimized out>) at /home/chenhui/mysql-baidu-5623/storage/innobase/btr/btr0pcur.cc:133
+#5  0x0000000000a3eec5 in btr_pcur_store_position (cursor=0x7faaec093900, mtr=<value optimized out>) at /home/chenhui/mysql-xxx-5623/storage/innobase/btr/btr0pcur.cc:133
 #6  0x00000000009e8af3 in row_search_for_mysql (buf=0x7faaec092fd0 "\377\256En\005", mode=2, prebuilt=0x7faaec093888, match_mode=<value optimized out>, 
-    direction=<value optimized out>) at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0sel.cc:4953
+    direction=<value optimized out>) at /home/chenhui/mysql-xxx-5623/storage/innobase/row/row0sel.cc:4953
 #7  0x000000000094c798 in ha_innobase::index_read (this=0x7faaec092be0, buf=0x7faaec092fd0 "\377\256En\005", key_ptr=<value optimized out>, key_len=4, 
-    find_flag=<value optimized out>) at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:7587
+    find_flag=<value optimized out>) at /home/chenhui/mysql-xxx-5623/storage/innobase/handler/ha_innodb.cc:7587
 #8  0x0000000000594c8e in ha_index_read_map (this=0x7faaec092be0, start_key=<value optimized out>, end_key=<value optimized out>, eq_range_arg=<value optimized out>, 
-    sorted=<value optimized out>) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:2752
+    sorted=<value optimized out>) at /home/chenhui/mysql-xxx-5623/sql/handler.cc:2752
 #9  handler::read_range_first (this=0x7faaec092be0, start_key=<value optimized out>, end_key=<value optimized out>, eq_range_arg=<value optimized out>, 
-    sorted=<value optimized out>) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:6693
-#10 0x0000000000595208 in multi_range_read_next (this=<value optimized out>, range_info=0x7fab5ae2fec8) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:5864
-#11 DsMrr_impl::dsmrr_next (this=<value optimized out>, range_info=0x7fab5ae2fec8) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:6223
-#12 0x00000000007f1782 in QUICK_RANGE_SELECT::get_next (this=0x7faa7c0a58f0) at /home/chenhui/mysql-baidu-5623/sql/opt_range.cc:10639
-#13 0x0000000000816a8b in rr_quick (info=0x7fab5ae302f0) at /home/chenhui/mysql-baidu-5623/sql/records.cc:367
+    sorted=<value optimized out>) at /home/chenhui/mysql-xxx-5623/sql/handler.cc:6693
+#10 0x0000000000595208 in multi_range_read_next (this=<value optimized out>, range_info=0x7fab5ae2fec8) at /home/chenhui/mysql-xxx-5623/sql/handler.cc:5864
+#11 DsMrr_impl::dsmrr_next (this=<value optimized out>, range_info=0x7fab5ae2fec8) at /home/chenhui/mysql-xxx-5623/sql/handler.cc:6223
+#12 0x00000000007f1782 in QUICK_RANGE_SELECT::get_next (this=0x7faa7c0a58f0) at /home/chenhui/mysql-xxx-5623/sql/opt_range.cc:10639
+#13 0x0000000000816a8b in rr_quick (info=0x7fab5ae302f0) at /home/chenhui/mysql-xxx-5623/sql/records.cc:367
 #14 0x0000000000744782 in mysql_update (thd=0xd246110, table_list=0x7faa7c086ea0, fields=..., values=..., conds=0x7faa7c021b80, order_num=0, order=0x7fab5ae302f0, 
     limit=18446744073709551615, handle_duplicates=DUP_ERROR, ignore=false, found_return=0x7fab5ae310d0, updated_return=0x7fab5ae310c8)
-    at /home/chenhui/mysql-baidu-5623/sql/sql_update.cc:742
-#15 0x00000000006d8b0a in mysql_execute_command (thd=0xd246110) at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:3307
+    at /home/chenhui/mysql-xxx-5623/sql/sql_update.cc:742
+#15 0x00000000006d8b0a in mysql_execute_command (thd=0xd246110) at /home/chenhui/mysql-xxx-5623/sql/sql_parse.cc:3307
 #16 0x00000000006e98e2 in Prepared_statement::execute (this=0x7faa7c085800, expanded_query=<value optimized out>, open_cursor=<value optimized out>)
-    at /home/chenhui/mysql-baidu-5623/sql/sql_prepare.cc:4015
+    at /home/chenhui/mysql-xxx-5623/sql/sql_prepare.cc:4015
 #17 0x00000000006edb5a in Prepared_statement::execute_loop (this=0x7faa7c085800, expanded_query=0x7fab5ae31370, open_cursor=<value optimized out>, packet=<value optimized out>, 
-    packet_end=<value optimized out>) at /home/chenhui/mysql-baidu-5623/sql/sql_prepare.cc:3663
+    packet_end=<value optimized out>) at /home/chenhui/mysql-xxx-5623/sql/sql_prepare.cc:3663
 #18 0x00000000006ee224 in mysqld_stmt_execute (thd=0xd246110, packet_arg=0xd24a1f1 "\003", packet_length=<value optimized out>)
-    at /home/chenhui/mysql-baidu-5623/sql/sql_prepare.cc:2700
+    at /home/chenhui/mysql-xxx-5623/sql/sql_prepare.cc:2700
 #19 0x00000000006dce04 in dispatch_command (command=COM_STMT_EXECUTE, thd=0xd246110, packet=0xd24a1f1 "\003", packet_length=<value optimized out>)
-    at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:1279
-#20 0x00000000006a4cad in do_handle_one_connection (thd_arg=<value optimized out>) at /home/chenhui/mysql-baidu-5623/sql/sql_connect.cc:982
-#21 0x00000000006a4de2 in handle_one_connection (arg=0xd246110) at /home/chenhui/mysql-baidu-5623/sql/sql_connect.cc:898
-#22 0x0000000000b03af7 in pfs_spawn_thread (arg=0xd24e200) at /home/chenhui/mysql-baidu-5623/storage/perfschema/pfs.cc:1860
+    at /home/chenhui/mysql-xxx-5623/sql/sql_parse.cc:1279
+#20 0x00000000006a4cad in do_handle_one_connection (thd_arg=<value optimized out>) at /home/chenhui/mysql-xxx-5623/sql/sql_connect.cc:982
+#21 0x00000000006a4de2 in handle_one_connection (arg=0xd246110) at /home/chenhui/mysql-xxx-5623/sql/sql_connect.cc:898
+#22 0x0000000000b03af7 in pfs_spawn_thread (arg=0xd24e200) at /home/chenhui/mysql-xxx-5623/storage/perfschema/pfs.cc:1860
 #23 0x00007fad3883b9d1 in start_thread () from /lib64/libpthread.so.0
 #24 0x00007fad375a48fd in clone () from /lib64/libc.so.6
 
@@ -132,47 +132,47 @@ clone
 
 (gdb) bt
 #0  0x00007f9dc67258ac in pthread_kill () from /lib64/libpthread.so.0
-#1  0x0000000000652be8 in handle_fatal_signal (sig=6) at /home/chenhui/mysql-baidu-5623/sql/signal_handler.cc:230
+#1  0x0000000000652be8 in handle_fatal_signal (sig=6) at /home/chenhui/mysql-xxx-5623/sql/signal_handler.cc:230
 #2  <signal handler called>
 #3  0x00007f9dc53d3625 in raise () from /lib64/libc.so.6
 #4  0x00007f9dc53d4e05 in abort () from /lib64/libc.so.6
 #5  0x00000000009b707d in rec_get_offsets_func (rec=0x7f9c59b2a821 "eeeeeeeeerrrrrrrrrrtttttttttt          <x", index=0x7f9be8021288, offsets=<value optimized out>, 
-    n_fields=<value optimized out>, heap=<value optimized out>) at /home/chenhui/mysql-baidu-5623/storage/innobase/rem/rem0rec.cc:577
+    n_fields=<value optimized out>, heap=<value optimized out>) at /home/chenhui/mysql-xxx-5623/storage/innobase/rem/rem0rec.cc:577
 #6  0x000000000099957a in page_cur_search_with_match (block=0x7f9c55c82500, index=0x7f9be8021288, tuple=0x7f9b08096538, mode=2, iup_matched_fields=0x7f9c09341418, 
     iup_matched_bytes=0x7f9c09341410, ilow_matched_fields=0x7f9c09341408, ilow_matched_bytes=0x7f9c09341400, cursor=0x7f9b08096238)
-    at /home/chenhui/mysql-baidu-5623/storage/innobase/page/page0cur.cc:437
+    at /home/chenhui/mysql-xxx-5623/storage/innobase/page/page0cur.cc:437
 #7  0x0000000000a3988e in btr_cur_search_to_nth_level (index=0x7f9be8021288, level=0, tuple=0x7f9b08096538, mode=2, latch_mode=1, cursor=0x7f9b08096230, has_search_latch=0, 
-    file=0xce0400 "/home/chenhui/mysql-baidu-5623/storage/innobase/row/row0sel.cc", line=4138, mtr=0x7f9c09341550)
-    at /home/chenhui/mysql-baidu-5623/storage/innobase/btr/btr0cur.cc:743
+    file=0xce0400 "/home/chenhui/mysql-xxx-5623/storage/innobase/row/row0sel.cc", line=4138, mtr=0x7f9c09341550)
+    at /home/chenhui/mysql-xxx-5623/storage/innobase/btr/btr0cur.cc:743
 #8  0x00000000009eacb9 in btr_pcur_open_with_no_init_func (buf=0x7f9b08095900 "\377", mode=2, prebuilt=0x7f9b080961b8, match_mode=<value optimized out>, 
-    direction=<value optimized out>) at /home/chenhui/mysql-baidu-5623/storage/innobase/include/btr0pcur.ic:485
+    direction=<value optimized out>) at /home/chenhui/mysql-xxx-5623/storage/innobase/include/btr0pcur.ic:485
 #9  row_search_for_mysql (buf=0x7f9b08095900 "\377", mode=2, prebuilt=0x7f9b080961b8, match_mode=<value optimized out>, direction=<value optimized out>)
-    at /home/chenhui/mysql-baidu-5623/storage/innobase/row/row0sel.cc:4138
+    at /home/chenhui/mysql-xxx-5623/storage/innobase/row/row0sel.cc:4138
 #10 0x000000000094e078 in ha_innobase::index_read (this=0x7f9b08095510, buf=0x7f9b08095900 "\377", key_ptr=<value optimized out>, key_len=4, find_flag=<value optimized out>)
-    at /home/chenhui/mysql-baidu-5623/storage/innobase/handler/ha_innodb.cc:7587
+    at /home/chenhui/mysql-xxx-5623/storage/innobase/handler/ha_innodb.cc:7587
 #11 0x000000000059656e in ha_index_read_map (this=0x7f9b08095510, start_key=<value optimized out>, end_key=<value optimized out>, eq_range_arg=<value optimized out>, 
-    sorted=<value optimized out>) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:2752
+    sorted=<value optimized out>) at /home/chenhui/mysql-xxx-5623/sql/handler.cc:2752
 #12 handler::read_range_first (this=0x7f9b08095510, start_key=<value optimized out>, end_key=<value optimized out>, eq_range_arg=<value optimized out>, 
-    sorted=<value optimized out>) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:6693
-#13 0x0000000000596ae8 in multi_range_read_next (this=<value optimized out>, range_info=0x7f9c09341ec8) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:5864
-#14 DsMrr_impl::dsmrr_next (this=<value optimized out>, range_info=0x7f9c09341ec8) at /home/chenhui/mysql-baidu-5623/sql/handler.cc:6223
-#15 0x00000000007f3062 in QUICK_RANGE_SELECT::get_next (this=0x7f9b4409f580) at /home/chenhui/mysql-baidu-5623/sql/opt_range.cc:10639
-#16 0x000000000081836b in rr_quick (info=0x7f9c093422f0) at /home/chenhui/mysql-baidu-5623/sql/records.cc:367
+    sorted=<value optimized out>) at /home/chenhui/mysql-xxx-5623/sql/handler.cc:6693
+#13 0x0000000000596ae8 in multi_range_read_next (this=<value optimized out>, range_info=0x7f9c09341ec8) at /home/chenhui/mysql-xxx-5623/sql/handler.cc:5864
+#14 DsMrr_impl::dsmrr_next (this=<value optimized out>, range_info=0x7f9c09341ec8) at /home/chenhui/mysql-xxx-5623/sql/handler.cc:6223
+#15 0x00000000007f3062 in QUICK_RANGE_SELECT::get_next (this=0x7f9b4409f580) at /home/chenhui/mysql-xxx-5623/sql/opt_range.cc:10639
+#16 0x000000000081836b in rr_quick (info=0x7f9c093422f0) at /home/chenhui/mysql-xxx-5623/sql/records.cc:367
 #17 0x0000000000746062 in mysql_update (thd=0xc0eb6a0, table_list=0x7f9b44045320, fields=..., values=..., conds=0x7f9b4400c220, order_num=0, order=0x7f9c093422f0, 
     limit=18446744073709551615, handle_duplicates=DUP_ERROR, ignore=false, found_return=0x7f9c093430d0, updated_return=0x7f9c093430c8)
-    at /home/chenhui/mysql-baidu-5623/sql/sql_update.cc:742
-#18 0x00000000006da3ea in mysql_execute_command (thd=0xc0eb6a0) at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:3307
+    at /home/chenhui/mysql-xxx-5623/sql/sql_update.cc:742
+#18 0x00000000006da3ea in mysql_execute_command (thd=0xc0eb6a0) at /home/chenhui/mysql-xxx-5623/sql/sql_parse.cc:3307
 #19 0x00000000006eb1c2 in Prepared_statement::execute (this=0x7f9b44043c80, expanded_query=<value optimized out>, open_cursor=<value optimized out>)
-    at /home/chenhui/mysql-baidu-5623/sql/sql_prepare.cc:4015
+    at /home/chenhui/mysql-xxx-5623/sql/sql_prepare.cc:4015
 #20 0x00000000006ef43a in Prepared_statement::execute_loop (this=0x7f9b44043c80, expanded_query=0x7f9c09343370, open_cursor=<value optimized out>, packet=<value optimized out>, 
-    packet_end=<value optimized out>) at /home/chenhui/mysql-baidu-5623/sql/sql_prepare.cc:3663
+    packet_end=<value optimized out>) at /home/chenhui/mysql-xxx-5623/sql/sql_prepare.cc:3663
 #21 0x00000000006efb04 in mysqld_stmt_execute (thd=0xc0eb6a0, packet_arg=0xc0ef6f1 "\003", packet_length=<value optimized out>)
-    at /home/chenhui/mysql-baidu-5623/sql/sql_prepare.cc:2700
+    at /home/chenhui/mysql-xxx-5623/sql/sql_prepare.cc:2700
 #22 0x00000000006de6e4 in dispatch_command (command=COM_STMT_EXECUTE, thd=0xc0eb6a0, packet=0xc0ef6f1 "\003", packet_length=<value optimized out>)
-    at /home/chenhui/mysql-baidu-5623/sql/sql_parse.cc:1279
-#23 0x00000000006a658d in do_handle_one_connection (thd_arg=<value optimized out>) at /home/chenhui/mysql-baidu-5623/sql/sql_connect.cc:982
-#24 0x00000000006a66c2 in handle_one_connection (arg=0xc0eb6a0) at /home/chenhui/mysql-baidu-5623/sql/sql_connect.cc:898
-#25 0x0000000000b05337 in pfs_spawn_thread (arg=0xc0f3700) at /home/chenhui/mysql-baidu-5623/storage/perfschema/pfs.cc:1860
+    at /home/chenhui/mysql-xxx-5623/sql/sql_parse.cc:1279
+#23 0x00000000006a658d in do_handle_one_connection (thd_arg=<value optimized out>) at /home/chenhui/mysql-xxx-5623/sql/sql_connect.cc:982
+#24 0x00000000006a66c2 in handle_one_connection (arg=0xc0eb6a0) at /home/chenhui/mysql-xxx-5623/sql/sql_connect.cc:898
+#25 0x0000000000b05337 in pfs_spawn_thread (arg=0xc0f3700) at /home/chenhui/mysql-xxx-5623/storage/perfschema/pfs.cc:1860
 #26 0x00007f9dc67209d1 in start_thread () from /lib64/libpthread.so.0
 #27 0x00007f9dc54898fd in clone () from /lib64/libc.so.6
 
