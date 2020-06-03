@@ -26,4 +26,11 @@ enum buf_page_state {
     BUF_BLOCK_REMOVE_HASH       /*!< hash index should be removed
                     before putting to the free list */
 };    
+
+BUF_BLOCK_NOT_USED：在 free list 中的数据页
+BUF_BLOCK_READY_FOR_USED：从  free list 中移除，准备存放从磁盘读到的数据
+BUF_BLOCK_ZIP_PAGE：从磁盘读上来的是压缩页，或者在 Buffer Pool 中的解压页被驱逐，但保留压缩页
+BUF_BLOCK_ZIP_DIRTY：在 Buffer Pool 中的解压页被驱逐，但保留压缩页且该页是脏页
+BUF_BLOCK_FILE_PAGE：从磁盘读上来的是非压缩页，或者读上来的压缩页被解压
+BUF_BLOCK_REMOVE_HASH：数据页被驱逐，从 page hash 中移除
 ```
