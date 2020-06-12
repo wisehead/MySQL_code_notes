@@ -33,4 +33,56 @@ sub initialize_servers
 
 ```
 
-#2.
+#2.start_servers
+
+```perl
+caller
+--run_testcase
+
+```
+
+#3.mysqltest tool
+
+```perl
+2434   if (defined $ENV{'MYSQL_TEST'}) {                      
+2435     $exe_mysqltest = $ENV{'MYSQL_TEST'};                 
+2436     print "===========================================================\n";
+2437     print "WARNING:The mysqltest binary is fetched from $exe_mysqltest\n";
+2438     print "===========================================================\n";
+2439   } else {                                               
+2440     $exe_mysqltest = mtr_exe_exists("$path_client_bindir/mysqltest");                                                                                                                                                                                      
+2441   }                                                      
+2442 } 
+```
+
+#4.main
+
+```perl
+main
+--command_line_setup
+--collect_test_cases
+--initialize_servers
+--new IO::Socket::INET
+--run_test_server
+----main::run_worker
+------environment_setup
+------setup_vardir
+------run_testcase
+--------started(all_servers()
+--------clean_datadir
+--------start_servers
+--------do_before_run_mysqltest
+--------start_mysqltest
+--mtr_report_test
+
+```
+#important variables
+
+```cpp
+
+```
+
+
+#todo
+
+run_testcase
