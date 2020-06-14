@@ -1,3 +1,5 @@
+![](res/1.png)
+
 #1.MACRO PAGE_HEADER
 
 ```cpp
@@ -41,9 +43,30 @@ typedef byte        page_header_t;
                 a B-tree: defined only on the root page of a
                 B-tree, but not in the root of an ibuf tree */
                 
+                
 ```
 
-#2. PAGE_DIR
+#2. SEG_HEADER
+
+```cpp
+#define PAGE_BTR_SEG_LEAF 36    /* file segment header for the leaf pages in
+                a B-tree: defined only on the root page of a
+                B-tree, but not in the root of an ibuf tree */
+#define PAGE_BTR_IBUF_FREE_LIST PAGE_BTR_SEG_LEAF
+#define PAGE_BTR_IBUF_FREE_LIST_NODE PAGE_BTR_SEG_LEAF
+                /* in the place of PAGE_BTR_SEG_LEAF and _TOP
+                there is a free list base node if the page is
+                the root page of an ibuf tree, and at the same
+                place is the free list node if the page is in
+                a free list */
+#define PAGE_BTR_SEG_TOP (36 + FSEG_HEADER_SIZE)
+                /* file segment header for the non-leaf pages
+                in a B-tree: defined only on the root page of
+                a B-tree, but not in the root of an ibuf
+                tree */
+```
+
+#3. PAGE_DIR
 
 ```cpp
 //注意page dir是逆序的，从后向前。
