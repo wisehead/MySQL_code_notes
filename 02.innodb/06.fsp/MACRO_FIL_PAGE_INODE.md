@@ -84,3 +84,32 @@ Segment Header Page 由调用方妥善保存，比如存放在 trx_rsegf_t 中�
 
 
 ```
+
+#2.Alibaba
+
+### INODE PAGE
+
+数据文件的第3个page的类型为`FIL_PAGE_INODE`，用于管理数据文件中的segement，每个索引占用2个segment，分别用于管理叶子节点和非叶子节点。每个inode页可以存储`FSP_SEG_INODES_PER_PAGE`（默认为85）个记录。
+
+| Macro | bits | Desc |
+| --- | --- | --- |
+| FSEG\_INODE\_PAGE\_NODE | 12 | INODE页的链表节点，记录前后Inode Page的位置，BaseNode记录在头Page的FSP\_SEG\_INODES\_FULL或者FSP\_SEG\_INODES\_FREE字段。 |
+| Inode Entry 0 | 192 | Inode记录 |
+| Inode Entry 1 |   |   |
+| …… |   |   |
+| Inode Entry 84 |   |   |
+
+每个Inode Entry的结构如下表所示：
+
+| Macro | bits | Desc |
+| --- | --- | --- |
+| FSEG\_ID | 8 | 该Inode归属的Segment ID，若值为0表示该slot未被使用 |
+| FSEG\_NOT\_FULL\_N\_USED | 8 | FSEG\_NOT\_FULL链表上被使用的Page数量 |
+| FSEG\_FREE | 16 | 完全没有被使用并分配给该Segment的Extent链表 |
+| FSEG\_NOT\_FULL | 16 | 至少有一个page分配给当前Segment的Extent链表，全部用完时，转移到FSEG\_FULL上，全部释放时，则归还给当前表空间FSP\_FREE链表 |
+| FSEG\_FULL | 16 | 分配给当前segment且Page完全使用完的Extent链表 |
+| FSEG\_MAGIC\_N | 4 | Magic Number |
+| FSEG\_FRAG\_ARR 0 | 4 | 属于该Segment的独立Page。总是先从全局分配独立的Page，当填满32个数组项时，就在每次分配时都分配一个完整的Extent，并在XDES PAGE中将其Segment ID设置为当前值 |
+| …… | …… |   |
+| FSEG\_FRAG\_ARR 31 | 4 | 总共存储32个记录项 |
+
