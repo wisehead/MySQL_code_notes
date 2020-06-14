@@ -41,3 +41,25 @@ XDES Entry 与 Extent 是一一对应
 ```
 
 
+#2.Ali 
+
+除了上述描述信息外，其他部分的数据结构和XDES PAGE（`FIL_PAGE_TYPE_XDES`）都是相同的，使用连续数组的方式，每个XDES PAGE最多存储256个XDES Entry，每个Entry占用40个字节，描述64个Page（即一个Extent）。格式如下：
+
+| Macro | bytes | Desc |
+| --- | --- | --- |
+| XDES\_ID | 8 | 如果该Extent归属某个segment的话，则记录其ID |
+| XDES\_FLST\_NODE | 12(FLST\_NODE\_SIZE) | 维持Extent链表的双向指针节点 |
+| XDES\_STATE | 4 | 该Extent的状态信息，包括：XDES\_FREE，XDES\_FREE\_FRAG，XDES\_FULL\_FRAG，XDES\_FSEG，详解见下文 |
+| XDES\_BITMAP | 16 | 总共16\*8= 128个bit，用2个bit表示Extent中的一个page，一个bit表示该page是否是空闲的(XDES\_FREE\_BIT)，另一个保留位，尚未使用（XDES\_CLEAN\_BIT） |
+
+`XDES_STATE`表示该Extent的四种不同状态：
+
+| Macro | Desc |
+| --- | --- |
+| XDES\_FREE(1) | 存在于FREE链表上 |
+| XDES\_FREE\_FRAG(2) | 存在于FREE\_FRAG链表上 |
+| XDES\_FULL\_FRAG(3) | 存在于FULL\_FRAG链表上 |
+| XDES\_FSEG(4) | 该Extent归属于ID为XDES\_ID记录的值的SEGMENT。 |
+
+通过`XDES_STATE`信息，我们只需要一个`FLIST_NODE`节点就可以维护每个Extent的信息，是处于全局表空间的链表上，还是某个btree segment的链表上。
+
