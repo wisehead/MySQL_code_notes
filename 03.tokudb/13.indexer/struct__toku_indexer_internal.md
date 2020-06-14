@@ -1,5 +1,4 @@
 #1.struct __toku_indexer_internal
-
 ```cpp
 struct __toku_indexer_internal {
     DB_ENV *env;
