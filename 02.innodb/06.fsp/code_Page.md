@@ -99,7 +99,7 @@ fseg_alloc_free_page_low(
 
 **TODO：释放Segment / 回收Page**
 
-#3.内核月报
+#3.内核月报分配数据页
 
 **分配数据页** 随着btree数据的增长，我们需要为btree的segment分配新的page。前面我们已经讲过，segment是一个独立的page管理单元，我们需要将从全局获得的数据空间纳入到segment的管理中。
 
@@ -176,5 +176,20 @@ btr_page_alloc
     *   如果Extent中存在类似xdes page这样的系统管理页，这个Extent被加入到`FSP_FREE_FRAG`链表中而不是`FSP_FREE`链表；
     *   取链表上第一个Extent为当前使用；
 2.  将获得的Extent从`FSP_FREE`移除，并返回对应的xdes entry(`xdes_lst_get_descriptor`)。
+
+#4.回收page
+
+**回收Page** 数据页的回收分为两种，一种是整个Extent的回收，一种是碎片页的回收。在删除索引页或者drop索引时都会发生。
+
+当某个数据页上的数据被删光时，我们需要从其所在segmeng上删除该page（`btr_page_free -->fseg_free_page --> fseg_free_page_low`），回收的流程也比较简单：
+
+1.  首先如果是该segment的frag array中的page，将对应的slot设置为FIL\_NULL, 并返还给表空间(`fsp_free_page`):
+    *   page在xdes entry中的状态置为空闲；
+    *   如果page所在Extent处于`FSP_FULL_FRAG`链表，则转移到`FSP_FREE_FRAG`中；
+    *   如果Extent中的page完全被释放掉了，则释放该Extent(`fsp_free_extent`)，将其转移到FSP\_FREE链表；
+    *   从函数**返回**；
+2.  如果page所处于的Extent当前在该segment的FSEG\_FULL链表上，则转移到`FSEG_NOT_FULL`链表；
+3.  设置Page在xdes entry的bitmap对应的XDES\_FREE\_BIT为true；
+4.  如果此时该Extent上的page全部被释放了，将其从`FSEG_NOT_FULL`链表上移除，并加入到表空间的`FSP_FREE`链表上(而非Segment的`FSEG_FREE`链表)。
 
 
