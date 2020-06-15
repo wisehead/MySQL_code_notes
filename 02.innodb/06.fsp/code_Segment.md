@@ -12,7 +12,7 @@
 【保存INODE Page】将 INODE Page 的引用（Page no + INODE Entry no）保存到 Root Page 内（PAGE_BTR_SEG_LEAF / PAGE_BTR_SEG_TOP）
 ```
 
-#2.Alibaba
+#2.内核月报创建Segment
 
 **创建Segment** 首先每个Segment需要从ibd文件中预留一定的空间(`fsp_reserve_free_extents`)，通常是2个Extent。但如果是新创建的表空间，且当前的文件小于1个Extent时，则只分配2个Page。
 
@@ -33,3 +33,24 @@
 Btree的根节点实际上是在创建non-leaf segment时分配的，root page被分配到该segment的frag array的第一个数组元素中。
 
 Segment分配入口函数： `fseg_create_general`
+
+#3.内核月报释放Segment
+
+**释放Segment** 当我们删除索引或者表时，需要删除btree（`btr_free_if_exists`），先删除除了root节点外的其他部分(`btr_free_but_not_root`)，再删除root节点(`btr_free_root`)
+
+由于数据操作都需要记录redo，为了避免产生非常大的redo log，leaf segment通过反复调用函数`fseg_free_step`来释放其占用的数据页：
+
+1.  首先找到leaf segment对应的Inode entry（`fseg_inode_try_get`）；
+2.  然后依次查找inode entry中的`FSEG_FULL`、或者`FSEG_NOT_FULL`、或者`FSEG_FREE`链表，找到一个Extent，注意着里的链表元组所指向的位置实际上是描述该Extent的Xdes Entry所在的位置。因此可以快速定位到对应的Xdes Page及Page内偏移量(`xdes_lst_get_descriptor`)；
+3.  现在我们可以将这个Extent安全的释放了(`fseg_free_extent`，见后文)；
+4.  当反复调用`fseg_free_step`将所有的Extent都释放后，segment还会最多占用32个碎片页，也需要依次释放掉(`fseg_free_page_low`)
+5.  最后，当该inode所占用的page全部释放时，释放inode entry：
+    *   如果该inode所在的inode page中当前被用满，则由于我们即将释放一个slot，需要从`FSP_SEG_INODES_FULL`转移到`FSP_SEG_INODES_FREE`（更新第一个page）；
+    *   将该inode entry的SEG\_ID清除为0，表示未使用；
+    *   如果该inode page上全部inode entry都释放了，就从`FSP_SEG_INODES_FREE`移除，并删除该page。
+
+non-leaf segment的回收和leaf segment的回收基本类似，但要注意btree的根节点存储在该segment的frag arrary的第一个元组中，该Page暂时不可以释放(`fseg_free_step_not_header`)
+
+btree的root page在完成上述步骤后再释放，此时才能彻底释放non-leaf segment
+
+
