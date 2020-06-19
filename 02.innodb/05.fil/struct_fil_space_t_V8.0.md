@@ -125,3 +125,9 @@ struct fil_space_t {
 #endif /* UNIV_DEBUG */
 };    
 ```
+
+#2 Files
+
+```cpp
+using Files = std::vector<fil_node_t, ut_allocator<fil_node_t>>;
+```
