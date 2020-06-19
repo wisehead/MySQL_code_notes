@@ -175,6 +175,104 @@ size = mach_read_from_4(header + FSP_SIZE);
 
 ##3.11 fsp_alloc_free_page
 
+```cpp
+  space_size = mach_read_from_4(header + FSP_SIZE);
+  if (space_size <= page_no) {
+    /* It must be that we are extending a single-table tablespace
+    whose size is still < 64 pages */
+
+    if (!fsp_try_extend_data_file_with_pages(fspace, page_no, header, mtr)) {
+      /* No disk space left */
+      return (NULL);
+    }
+  }  
+```
+
+##3.12 fsp_reserve_free_extents
+
+```cpp
+try_again:
+  size = mach_read_from_4(space_header + FSP_SIZE);
+#ifndef ENABLED_GAIADB
+  ut_ad(size == space->size_in_header);
+#endif /* ENABLED_GAIADB */
+
+  if (size < FSP_EXTENT_SIZE && n_pages < FSP_EXTENT_SIZE / 2) {
+    /* Use different rules for small single-table tablespaces */
+    *n_reserved = 0;
+    return fsp_reserve_free_pages(space, space_header, size, mtr, n_pages);
+  }
+```
+
+##3.13 fsp_get_available_space_in_free_extents
+
+```cpp
+ulint size_in_header = space->size_in_header;
+  /* Below we play safe when counting free extents above the free limit:
+  some of them will contain extent descriptor pages, and therefore
+  will not be free extents */
+  ut_ad(size_in_header >= space->free_limit);
+  ulint n_free_up = (size_in_header - space->free_limit) / FSP_EXTENT_SIZE;
+
+  page_size_t page_size(space->flags);
+  if (n_free_up > 0) {
+    n_free_up--;
+    n_free_up -= n_free_up / (page_size.physical() / FSP_EXTENT_SIZE);
+  }
+
+  /* We reserve 1 extent + 0.5 % of the space size to undo logs
+  and 1 extent + 0.5 % to cleaning operations; NOTE: this source
+  code is duplicated in the function above! */
+
+  ulint reserve = 2 + ((size_in_header / FSP_EXTENT_SIZE) * 2) / 200;
+  ulint n_free = space->free_len + n_free_up;
+```
+
+##3.14 recv_parse_or_apply_log_rec_body
+
+```cpp
+          case FSP_HEADER_OFFSET + FSP_SPACE_FLAGS:
+          case FSP_HEADER_OFFSET + FSP_SIZE:
+          case FSP_HEADER_OFFSET + FSP_FREE_LIMIT:
+          case FSP_HEADER_OFFSET + FSP_FREE + FLST_LEN:
+
+            space = fil_space_get(space_id);
+
+            ut_a(space != nullptr);
+
+            val = mach_read_from_4(page + offs);
+
+            switch (offs) {
+              case FSP_HEADER_OFFSET + FSP_SPACE_FLAGS:
+                space->flags = val;
+                break;
+
+              case FSP_HEADER_OFFSET + FSP_SIZE:
+
+                space->size_in_header = val;
+
+                if (space->size >= val) {
+                  break;
+                }
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
