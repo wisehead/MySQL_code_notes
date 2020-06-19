@@ -18,16 +18,6 @@ srv_start
 
 
 #3.space->size_in_header
-```cpp
-in fsp_try_extend_data_file()
-...
-  /* We ignore any fragments of a full megabyte when storing the size
-  to the space header */
-
-  space->size_in_header =
-      ut_calc_align_down(space->size, (1024 * 1024) / page_size.physical());
-
-```
 
 ##3.1 innobase_get_tablespace_statistics(ignore)
 
@@ -121,6 +111,10 @@ return (size);
 ```
 
 ##3.9 fsp_try_extend_data_file
+
+```cpp
+fsp_try_extend_data_file
+```
 
 ```cpp
   size = mach_read_from_4(header + FSP_SIZE);
@@ -258,20 +252,246 @@ ulint size_in_header = space->size_in_header;
 
 
 
+#4.space->size
+
+##4.1 Fil_shard::validate
+
+```cpp
+  for (auto elem : m_spaces) {
+    page_no_t size = 0;
+    auto space = elem.second;
+
+    for (const auto &file : space->files) {
+      ut_a(file.is_open || !file.n_pending);
+
+      if (file.is_open) {
+        ++n_open;
+      }
+
+      size += file.size;
+    }
+
+    ut_a(space->size == size);
+  }
+```
+
+##4.2 Fil_shard::create_node
+
+```cpp
+  space->size += size;
+
+  space->files.push_back(file);
+```
+
+##4.3 Fil_shard::get_file_size(backup ignore)
+
+```cpp
+#ifdef UNIV_HOTBACKUP
+  if (space->id == TRX_SYS_SPACE) {
+    file->size = (ulint)(size_bytes / UNIV_PAGE_SIZE);
+    space->size += file->size;
+    os_file_close(file->handle);
+    return (DB_SUCCESS);
+  }
+#endif /* UNIV_HOTBACKUP */
+```
+
+##4.4 Fil_shard::get_file_size
+
+```cpp
+  if (file->size == 0) {
+    ulint extent_size;
+
+    extent_size = page_size.physical() * FSP_EXTENT_SIZE;
+
+#ifndef UNIV_HOTBACKUP
+    /* Truncate the size to a multiple of extent size. */
+    if (size_bytes >= extent_size) {
+      size_bytes = ut_2pow_round(size_bytes, extent_size);
+    }
+#else /* !UNIV_HOTBACKUP */
+
+    /* After apply-incremental, tablespaces are not
+    extended to a whole megabyte. Do not cut off
+    valid data. */
+
+#endif /* !UNIV_HOTBACKUP */
+
+    file->size = static_cast<page_no_t>(size_bytes / page_size.physical());
+
+    space->size += file->size;
+  }
+```
+
+##4.5 Fil_shard::space_free_low
+
+```cpp
+#ifdef ENABLED_GAIADB
+  if (fsp_is_system_temporary(space->id)) {
+#endif /* ENABLED_GAIADB */
+    for (auto &file : space->files) {
+      ut_d(space->size -= file.size);
+
+      os_event_destroy(file.sync_event);
+
+      ut_free(file.name);
+    }
+
+    call_destructor(&space->files);
+    ut_ad(space->size == 0);
+
+#ifdef ENABLED_GAIADB
+  }
+#endif /* ENABLED_GAIADB */
+```
 
 
+##4.6 gaia_fil_space_create
+
+```cpp
+fil_space_t *gaia_fil_space_create(const char *name, space_id_t space_id,
+                              uint32_t flags, fil_type_t purpose, page_no_t size) {
+    fil_space_t* space = fil_space_create(name, space_id, flags, purpose);
+    space->size = size;
+    return space;
+}
+```
+
+##4.7 Fil_shard::space_load
+
+```cpp
+  if (space == nullptr || space->size != 0) {
+    return (space);
+  }
+```
+
+##4.8 fil_space_get_size
+
+```cpp
+page_no_t size = space ? space->size : 0;
+```
+
+##4.9 Fil_shard::space_truncate
+
+```cpp
+space->size = file.size = size_in_pages;
+bool success = os_file_truncate(file.name, file.handle, 0);
+```
+
+##4.10 Fil_shard::gaia_space_extend
+
+gaiaDB的space->size 是用来管理所有gaiadb的size，需要考虑space->size_in_header的关系？？？？
+另外看下，独立表空间size的变化情况。和size_in_header怎么协调？？？
+
+```
+/** Try to extend a gaia tablespace if it is smaller than the specified size.
+@param[in,out]  space       tablespace
+@param[in]  size        desired size in pages
+@return whether the tablespace is at least as big as requested */
+bool Fil_shard::gaia_space_extend(fil_space_t *space, page_no_t size) {
+  /* In read-only mode we allow write to shared temporary tablespace
+  as intrinsic table created by Optimizer reside in this tablespace. */
+  ut_ad(!srv_read_only_mode && !fsp_is_system_temporary(space->id));
+
+  bool slot = false;
+  bool success = true;
+  page_no_t extend_size;
+  int ret = 0;
+
+  slot = mutex_acquire_and_get_space(space->id, space);
+
+  ut_a(space->size > 0);
+
+  extend_size = size - space->size;
+
+  extend_size = MAPPING_SIZE(extend_size);
+
+  ut_ad(0 == space->size % FSP_MAPPING_SIZE);
+  ut_ad(0 == extend_size % FSP_MAPPING_SIZE);
+  ret = srv_psmgr_client->extend_space(space->id, space->size / FSP_MAPPING_SIZE,
+                                       extend_size / FSP_MAPPING_SIZE);
+  ib::info(ER_IB_MSG_1240) << "extend space->id:" << space->id << " space->size:"
+  << space->size / FSP_MAPPING_SIZE << " extend_size:" << extend_size / FSP_MAPPING_SIZE;
+  if (ret < 0) {
+    ib::error(ER_IB_MSG_1240) << "extend space failed:" << ret;
+    success = false;
+  }
+
+  if (slot) {
+    release_open_slot(m_id);
+  }
+
+  if (success) {
+    space->size += extend_size;
+    ut_ad(0 == space->size % FSP_MAPPING_SIZE);
+  }
+
+  mutex_release();
+
+  return (success);
+}
+```
+
+##11.Fil_shard::space_extend（not for gaia）
+//拓展文件操作
+
+```cpp
+    if (size < space->size) {
+      /* Space already big enough */
+      mutex_release();
+
+      if (slot) {
+        release_open_slot(m_id);
+      }
+
+      return (true);
+    }
+  
+  file->size += pages_added;
+  space->size += pages_added;
+  
+  //更新相应的元信息。
+  if (space->id == TRX_SYS_SPACE) {
+    srv_sys_space.set_last_file_size(size_in_pages);
+  } else if (fsp_is_system_temporary(space->id)) {
+    srv_tmp_space.set_last_file_size(size_in_pages);
+  }
+```
 
 
+##12.fsp_try_extend_data_file_with_pages
 
+size_in_header 根据 space->size更新
 
+```
+caller:
+--fseg_alloc_free_page_low
+--fsp_try_extend_data_file
 
+fsp_try_extend_data_file_with_pages
+--fil_space_extend
+----Fil_shard::gaia_space_extend//shard->gaia_space_extend//更新space->size
+----Fil_shard::space_extend
+------posix_fallocate(file->handle.m_file, node_start, len);
+------srv_sys_space.set_last_file_size(size_in_pages)
+```
 
+```cpp
+  page_no_t size = mach_read_from_4(header + FSP_SIZE);
+#ifndef ENABLED_GAIADB
+  ut_ad(size == space->size_in_header);
+#endif /* ENABLED_GAIADB */
 
+  ut_a(page_no >= size);
 
+  bool success = fil_space_extend(space, page_no + 1);
 
+  /* The size may be less than we wanted if we ran out of disk space. */
+  fsp_header_size_update(header, space->size, mtr);
+  space->size_in_header = space->size;
+```
 
-
-
+##13.
 
 
 
