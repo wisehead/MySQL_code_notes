@@ -17,6 +17,7 @@ mysql_execute_command
 
 ```cpp
 mysql_create_table
---
+--open_tables
+----lock_table_names
 
 ```
