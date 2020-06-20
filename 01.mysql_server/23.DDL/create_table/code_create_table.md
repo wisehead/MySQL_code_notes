@@ -61,4 +61,13 @@ create_table_impl
 --------ha_lock_engine
 ----------plugin_lock
 ------------intern_plugin_lock
+----ha_check_if_supported_system_table
+--set_table_default_charset
+----load_db_opt_by_name
+------load_db_opt
+--------get_dbopt
+--get_new_handler
+----innobase_create_handler
+----handler::init
+--mysql_prepare_create_table
 ```
