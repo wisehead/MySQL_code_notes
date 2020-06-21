@@ -72,4 +72,5 @@ create_table_impl
 --mysql_prepare_create_table
 ----check_column_name
 ----prepare_create_field
+----check_string_char_length
 ```
