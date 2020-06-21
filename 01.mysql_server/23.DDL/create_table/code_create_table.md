@@ -78,4 +78,6 @@ create_table_impl
 --rea_create_table//create frm
 ----mysql_create_frm
 ------create_frm
+--------inline_mysql_file_create
+----------my_create
 ```
