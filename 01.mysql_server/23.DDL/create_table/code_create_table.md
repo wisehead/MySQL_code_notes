@@ -110,4 +110,11 @@ ha_create_table
 ------mysql_file_read(file, forminfo,288,MYF(MY_NABP))
 ------handler::set_ha_share_ref
 ------make_field
+----get_table_category
+--get_table_share_v1
+----find_or_create_table_share
+--open_table_from_share
+----get_new_handler
+--handler::ha_create
+----ha_innobase::create
 ```
