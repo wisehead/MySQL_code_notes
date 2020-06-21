@@ -78,6 +78,8 @@ create_table_impl
 --rea_create_table//create frm
 ----mysql_create_frm
 ----handler::ha_create_handler_files
+------handler::create_handler_files
+----ha_create_table
 ```
 
 
@@ -94,4 +96,18 @@ mysql_create_frm
 ----make_field
 ----Field::init
 --inline_mysql_file_sync
+```
+
+#7.ha_create_table
+
+```cpp
+ha_create_table
+--init_tmp_table_share
+--open_table_def
+----inline_mysql_file_open
+----mysql_file_read
+----open_binary_frm
+------mysql_file_read(file, forminfo,288,MYF(MY_NABP))
+------handler::set_ha_share_ref
+------make_field
 ```
