@@ -118,3 +118,33 @@ ha_create_table
 --handler::ha_create
 ----ha_innobase::create
 ```
+
+#8.ha_innobase::create
+
+```cpp
+ha_innobase::create
+--create_options_are_invalid
+--innobase_table_flags
+--innobase_index_name_is_reserved
+--check_trx_exists
+----thd_to_trx
+------thd_ha_data
+----innobase_trx_init
+--innobase_trx_allocate
+----trx_allocate_for_mysql
+------trx_allocate_for_background
+--------trx_create_low
+----------PoolManager<Pool<trx_t, TrxFactory, TrxPoolLock>, TrxPoolManagerLock>::get
+------------Pool<trx_t, TrxFactory, TrxPoolLock>::get
+------UT_LIST_ADD_FIRST(mysql_trx_list, trx_sys->mysql_trx_list, trx);
+----innobase_trx_init
+--create_table_def
+
+```
+
+#9. create_table_def
+
+```cpp
+create_table_def
+--create_table_check_doc_id_col
+```
