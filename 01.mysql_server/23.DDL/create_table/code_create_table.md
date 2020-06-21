@@ -77,7 +77,21 @@ create_table_impl
 --ha_table_exists_in_engine
 --rea_create_table//create frm
 ----mysql_create_frm
-------create_frm
---------inline_mysql_file_create
-----------my_create
+----handler::ha_create_handler_files
+```
+
+
+#6. mysql_create_frm
+
+```cpp
+mysql_create_frm
+--create_frm
+----inline_mysql_file_create
+------my_create
+--make_new_entry
+----inline_mysql_file_chsize
+--make_empty_rec	
+----make_field
+----Field::init
+--inline_mysql_file_sync
 ```
