@@ -70,4 +70,6 @@ create_table_impl
 ----innobase_create_handler
 ----handler::init
 --mysql_prepare_create_table
+----check_column_name
+----prepare_create_field
 ```
