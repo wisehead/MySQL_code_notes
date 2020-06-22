@@ -51,4 +51,10 @@ que_run_threads
 ------------fsp_fill_free_list
 ----------dict_create_sys_tables_tuple
 ----------ins_node_set_new_row
+------------ins_node_create_entry_list
+--------------row_build_index_entry
+----------------row_build_index_entry_low
+------------------dtuple_set_n_fields_cmp
+------------row_ins_alloc_sys_fields
+--------------dict_table_get_sys_col
 ```
