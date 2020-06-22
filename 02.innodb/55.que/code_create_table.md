@@ -44,4 +44,10 @@ que_run_threads
 ------------dict_hdr_get
 ----------dict_hdr_get_new_id//for space
 ----------fil_create_new_single_table_tablespace
+----------fsp_header_init
+------------fsp_init_file_page
+--------------fsp_init_file_page_low
+--------------mlog_write_initial_log_record(MLOG_INIT_FILE_PAGE)
+------------fsp_fill_free_list
+----------dict_create_sys_tables_tuple
 ```
