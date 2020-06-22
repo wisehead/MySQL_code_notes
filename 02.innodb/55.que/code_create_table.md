@@ -22,12 +22,17 @@ row_create_table_for_mysql
 ----que_thr_init_command
 ------que_thr_move_to_run_state
 --que_run_threads
-----que_run_threads_low
-------que_thr_step
---------que_thr_node_step
-------que_thr_step
---------dict_create_table_step
-----------dict_build_table_def_step
+--dict_create_add_tablespace_to_dictionary
+----que_eval_sql(info,
+                 "PROCEDURE P () IS\n"
+                 "BEGIN\n"
+                 "INSERT INTO SYS_TABLESPACES VALUES"
+                 "(:space, :name, :flags);\n"
+                 "INSERT INTO SYS_DATAFILES VALUES"
+                 "(:space, :path);\n"
+                 "END;\n",
+                 FALSE, trx);
+--que_graph_free
 ```
 
 #2. que_run_threads(for create table)
