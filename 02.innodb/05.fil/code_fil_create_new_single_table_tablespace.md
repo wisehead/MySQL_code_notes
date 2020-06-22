@@ -15,10 +15,11 @@ fil_create_new_single_table_tablespace
 --os_file_flush
 --fil_space_create
 --fil_node_create
-```
-
-#2.fil_node_create
-
-```cpp
-
+----UT_LIST_ADD_LAST(chain, space->chain, node);
+--fil_op_write_log
+----mlog_open
+----mlog_write_initial_log_record_for_file_op
+----mlog_close
+----mlog_catenate_string
+------dyn_push_string
 ```
