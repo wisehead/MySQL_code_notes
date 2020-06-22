@@ -147,4 +147,15 @@ ha_innobase::create
 ```cpp
 create_table_def
 --create_table_check_doc_id_col
+----dict_mem_table_create
+--dict_mem_table_add_col
+----dict_add_col_name
+--row_create_table_for_mysql
+```
+
+#10. row_create_table_for_mysql
+
+```cpp
+row_create_table_for_mysql
+--trx_start_if_not_started_xa_low
 ```
