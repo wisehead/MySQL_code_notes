@@ -50,4 +50,5 @@ que_run_threads
 --------------mlog_write_initial_log_record(MLOG_INIT_FILE_PAGE)
 ------------fsp_fill_free_list
 ----------dict_create_sys_tables_tuple
+----------ins_node_set_new_row
 ```
