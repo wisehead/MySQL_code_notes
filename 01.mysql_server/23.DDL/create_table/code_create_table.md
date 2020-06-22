@@ -174,4 +174,12 @@ row_create_table_for_mysql
 ----que_thr_create
 ------UT_LIST_ADD_LAST(thrs, parent->thrs, thr);
 --que_fork_start_command
+----que_thr_init_command
+------que_thr_move_to_run_state
+--que_run_threads
+----que_run_threads_low
+------que_thr_step
+--------que_thr_node_step
+------que_thr_step
+--------dict_create_table_step
 ```
