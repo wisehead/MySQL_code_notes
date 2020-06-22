@@ -169,4 +169,8 @@ row_create_table_for_mysql
 --trx_set_dict_operation
 --tab_create_graph_create
 ----ins_node_create
+--pars_complete_graph_for_exec
+----que_fork_create
+----que_thr_create
+------UT_LIST_ADD_LAST(thrs, parent->thrs, thr);
 ```
