@@ -173,4 +173,5 @@ row_create_table_for_mysql
 ----que_fork_create
 ----que_thr_create
 ------UT_LIST_ADD_LAST(thrs, parent->thrs, thr);
+--que_fork_start_command
 ```
