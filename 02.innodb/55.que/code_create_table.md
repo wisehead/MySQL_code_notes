@@ -61,4 +61,7 @@ que_run_threads
 ------row_ins_step
 ----que_thr_step
 ------dict_create_table_step
+--------dict_build_col_def_step
+----que_thr_step
+------row_ins_step//SYS_COLUMNS
 ```
