@@ -40,6 +40,8 @@ que_run_threads
 ----que_thr_step
 ------dict_create_table_step
 --------dict_build_table_def_step
-----------dict_hdr_get_new_id
+----------dict_hdr_get_new_id//for table id
 ------------dict_hdr_get
+----------dict_hdr_get_new_id//for space
+----------fil_create_new_single_table_tablespace
 ```
