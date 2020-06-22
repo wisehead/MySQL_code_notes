@@ -38,7 +38,7 @@ que_run_threads
 ----que_thr_step
 ------que_thr_node_step
 ----que_thr_step
-------dict_create_table_step
+------dict_create_table_step//node->state == TABLE_BUILD_TABLE_DEF
 --------dict_build_table_def_step
 ----------dict_hdr_get_new_id//for table id
 ------------dict_hdr_get
@@ -58,10 +58,23 @@ que_run_threads
 ------------row_ins_alloc_sys_fields
 --------------dict_table_get_sys_col
 ----que_thr_step
-------row_ins_step
+------row_ins_step//SYS_TABLES
 ----que_thr_step
-------dict_create_table_step
+------dict_create_table_step//node->state == TABLE_BUILD_COL_DEF
 --------dict_build_col_def_step
 ----que_thr_step
 ------row_ins_step//SYS_COLUMNS
+----que_thr_step
+------dict_create_table_step//node->state == TABLE_BUILD_COL_DEF
+--------dict_build_col_def_step
+----que_thr_step
+------row_ins_step//SYS_COLUMNS
+----que_thr_step
+------dict_create_table_step//node->state == TABLE_COMMIT_WORK
+--------dict_table_add_to_cache
+----------dict_table_add_system_columns
+----que_thr_step//#define QUE_NODE_THR
+------que_thr_node_step
+--------thr->state = QUE_THR_COMPLETED;
+
 ```
