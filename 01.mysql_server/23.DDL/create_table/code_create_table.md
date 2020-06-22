@@ -139,7 +139,7 @@ ha_innobase::create
 ------UT_LIST_ADD_FIRST(mysql_trx_list, trx_sys->mysql_trx_list, trx);
 ----innobase_trx_init
 --create_table_def
-
+--create_index
 ```
 
 #9. create_table_def
@@ -178,4 +178,25 @@ row_create_table_for_mysql
 ------que_thr_move_to_run_state
 --que_run_threads
 ----que_run_threads_low
+```
+
+#11. create_index
+
+```cpp
+create_index
+--dict_mem_index_create
+----dict_mem_fill_index_struct
+--dict_mem_index_add_field
+--row_create_index_for_mysql
+```
+
+#12.row_create_index_for_mysql
+
+```cpp
+row_create_index_for_mysql
+--dict_table_open_on_name
+----dict_table_check_if_in_cache_low
+--dict_move_to_mru
+--trx_set_dict_operation
+--ind_create_graph_create
 ```
