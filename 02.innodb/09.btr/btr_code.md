@@ -46,6 +46,7 @@ btr_pcur_store_position
 ```cpp
 caller:
 --btr_pcur_open_on_user_rec_func
+--dict_create_index_tree_step
 
 btr_pcur_open_low
 --btr_pcur_init
