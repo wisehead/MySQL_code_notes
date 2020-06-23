@@ -199,4 +199,54 @@ row_create_index_for_mysql
 --dict_move_to_mru
 --trx_set_dict_operation
 --ind_create_graph_create
+----trx_commit_node_create
+--pars_complete_graph_for_exec
+----que_fork_create
+----que_thr_create
+--que_fork_start_command
+--que_run_threads
+----que_run_threads_low
+------que_thr_step//QUE_NODE_THR == 9
+--------que_thr_node_step
+------que_thr_step//QUE_NODE_CREATE_INDEX == 15
+--------dict_create_index_step
+------que_thr_step//QUE_NODE_INSERT == 2
+--------row_ins_step
+------que_thr_step// QUE_NODE_CREATE_INDEX == 15
+--------dict_create_index_step//node->state == INDEX_BUILD_FIELD_DEF
+----------dict_build_field_def_step
+------que_thr_step//QUE_NODE_INSERT == 2
+--------row_ins_step
+------que_thr_step// QUE_NODE_CREATE_INDEX == 15
+--------dict_create_index_step//node->state == INDEX_BUILD_FIELD_DEF
+----------node->state = INDEX_ADD_TO_CACHE;
+----------dict_index_add_to_cache
+----------node->state = INDEX_CREATE_INDEX_TREE
+----------dict_create_index_tree_step
+```
+
+#13. dict_create_index_step
+
+```cpp
+dict_create_index_step
+--dict_build_index_def_step
+----dict_hdr_get_new_id//for index
+----dict_create_sys_indexes_tuple
+----ins_node_set_new_row
+```
+
+#14.dict_build_field_def_step
+
+```cpp
+dict_build_field_def_step
+--dict_create_sys_fields_tuple
+--ins_node_set_new_row
+```
+
+#15.dict_create_index_tree_step
+
+```cpp
+dict_create_index_tree_step
+--dict_create_search_tuple
+--btr_pcur_open_low
 ```
