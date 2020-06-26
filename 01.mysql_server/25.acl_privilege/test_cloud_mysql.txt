@@ -1,0 +1,148 @@
+1.
+CREATE USER 'rds'@'localhost' IDENTIFIED BY '1234';
+grant all privileges on *.* to rds@'localhost' identified by '1234';
+grant all privileges on *.* to 'root'@'localhost' identified by ‘root’;
+flush privileges;
+
+2.禁止命令
+
+--1.start slave;
+--2.stop slave;
+ERROR 1890 (HY000): This operation is not allowed.
+
+
+--3.set global innodb_thread_concurrency=0;
+ERROR 1890 (HY000): This operation is not allowed.
+
+--4.INSTALL PLUGIN INNODB SONAME 'ha_innodb.so';
+ERROR 1890 (HY000): This operation is not allowed.
+
+--5.UNINSTALL PLUGIN INNODB;
+ERROR 1890 (HY000): This operation is not allowed.
+
+--6.mysqladmin -urds -p shutdown
+Enter password:
+mysqladmin: shutdown failed; error: 'This operation is not allowed.'
+
+--7.mysqladmin -urds -p1234 debug
+Warning: Using a password on the command line interface can be insecure.
+mysqladmin: debug failed; error: 'This operation is not allowed.'
+
+--8.mysql> change master to master_host='127.0.0.1',master_port=10299,master_user='mysqlsync',master_password='mysqlsync', MASTER_AUTO_POSITION=1;
+ERROR 1890 (HY000): This operation is not allowed.
+
+--9.purge binary logs to 'mysql-bin.000003';
+ERROR 1890 (HY000): This operation is not allowed.
+
+--10.mysql> purge binary logs before '2018-02-01 12:00:00';
+ERROR 1890 (HY000): This operation is not allowed.
+
+--11.CREATE SERVER s
+    -> FOREIGN DATA WRAPPER mysql
+    -> OPTIONS (USER 'Remote', HOST '198.51.100.106', DATABASE 'test');
+ERROR 1890 (HY000): This operation is not allowed.
+
+--12.SET PASSWORD FOR 'root'@'localhost' = PASSWORD('root');
+ERROR 1890 (HY000): This operation is not allowed.
+
+--13.mysql> kill 9;
+ERROR 1095 (HY000): You are not owner of thread 9
+
+--14.set global read_only=1;
+
+mysql> show global variables like "%read_only%";
++------------------+-------+
+| Variable_name    | Value |
++------------------+-------+
+| innodb_read_only | OFF   |
+| read_only        | ON    |
+| tx_read_only     | OFF   |
++------------------+-------+
+3 rows in set (0.00 sec)
+
+mysql> insert t1 values(2);
+ERROR 1290 (HY000): The MySQL server is running with the --read-only option so it cannot execute this statement
+
+
+--15.无视最大连接限制(acl_authenticate)
+
+mysql> set global max_connections=2;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql -urds -p1234
+Warning: Using a password on the command line interface can be insecure.
+ERROR 1040 (08004): Too many connections
+
+--16.Grant and revoke.
+CREATE USER 'test'@'localhost' IDENTIFIED BY '1234';
+grant all privileges on *.* to test@'localhost' identified by '1234';
+flush privileges;
+
+
+mysql> revoke all privileges on *.* from test@'localhost';
+ERROR 1045 (28000): Access denied for user 'rds'@'localhost' (using password: YES)
+
+mysql> revoke insert,select,update,delete on *.* from test@'localhost';
+ERROR 1045 (28000): Access denied for user 'rds'@'localhost' (using password: YES)
+
+
+--17.use mysql
+mysql> drop table slow_log;
+ERROR 1888 (HY000): Modify mysql.* tables with DML statement denied, please use other none DML commands instead.
+
+--18.mysql> ALTER TABLE slow_log ADD COLUMN col1 INT FIRST;
+ERROR 1888 (HY000): Modify mysql.* tables with DML statement denied, please use other none DML commands instead.
+
+--19.mysql> insert time_zone values(1,100);
+ERROR 1888 (HY000): Modify mysql.* tables with DML statement denied, please use other none DML commands instead.
+
+--20.mysql> update time_zone set Use_leap_seconds = 100;
+ERROR 1888 (HY000): Modify mysql.* tables with DML statement denied, please use other none DML commands instead.
+
+--21.mysql> delete from time_zone;
+ERROR 1888 (HY000): Modify mysql.* tables with DML statement denied, please use other none DML commands instead.
+
+--22.mysql> insert time_zone select * from time_zone;
+ERROR 1888 (HY000): Modify mysql.* tables with DML statement denied, please use other none DML commands instead.
+
+--23.mysql> truncate time_zone;
+ERROR 1888 (HY000): Modify mysql.* tables with DML statement denied, please use other none DML commands instead.
+
+--24.mysql> LOAD DATA LOCAL INFILE '/import/data.txt' INTO TABLE time_zone;
+ERROR 1888 (HY000): Modify mysql.* tables with DML statement denied, please use other none DML commands instead.
+
+--25.mysql> drop database mysql;
+ERROR 1888 (HY000): Modify mysql.* tables with DML statement denied, please use other none DML commands instead.
+
+--26.mysql> alter database mysql charset=gbk collate=gbk_chinese_ci;
+ERROR 1888 (HY000): Modify mysql.* tables with DML statement denied, please use other none DML commands instead.
+
+--27.mysql> replace into time_zone select * from time_zone;
+ERROR 1888 (HY000): Modify mysql.* tables with DML statement denied, please use other none DML commands instead.
+
+--28.mysql> DELETE FROM a1,a2 USING time_zone AS a1 INNER JOIN time_zone_name AS a2 WHERE a1.id=a2.id;
+ERROR 1888 (HY000): Modify mysql.* tables with DML statement denied, please use other none DML commands instead.
+
+--29.mysql> UPDATE time_zone, time_zone_name
+    -> SET time_zone.Use_leap_seconds = time_zone.Use_leap_seconds+2,
+    ->     time_zone_name.Time_zone_id = time_zone_name.Time_zone_id-2
+    -> WHERE
+    ->     time_zone.id = time_zone_name.id;
+ERROR 1888 (HY000): Modify mysql.* tables with DML statement denied, please use other none DML commands instead.
+
+
+    
+
+3.todo
+
+mysql> reset slave;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> reset master;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> ALTER SERVER s OPTIONS (USER 'sally');
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> DROP SERVER s;
+Query OK, 0 rows affected (0.00 sec)

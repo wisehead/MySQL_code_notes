@@ -17,7 +17,7 @@
 
 #1.2 contents
 
-```
+```cpp
 scripts/mysql_system_users.sql:GRANT SYSTEM_VARIABLES_ADMIN ON *.* TO 'mysql.session'@localhost;
 scripts/mysql_system_tables_fix.sql:-- Add the privilege SYSTEM_VARIABLES_ADMIN for every user who has the privilege SUPER
 scripts/mysql_system_tables_fix.sql:-- provided that there isn't a user who already has the privilige SYSTEM_VARIABLES_ADMIN.
