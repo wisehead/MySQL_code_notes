@@ -80,4 +80,31 @@ fseg_create_general
 ----------fsp_init_file_page
 ------------fsp_init_file_page_low
 ------------mlog_write_initial_log_record(MLOG_INIT_FILE_PAGE)
+------buf_block_dbg_add_level
+------mlog_write_ulint(page + FIL_PAGE_TYPE, FIL_PAGE_INODE,..)
+------fsp_seg_inode_page_get_nth_inode
+------flst_add_last
+```
+
+#5. FSP_SEG_INODES_FREE
+
+```cpp
+#define FSP_SEG_INODES_FREE (32 + 4 * FLST_BASE_NODE_SIZE)
+                    /* list of pages containing segment
+                    headers, where not all the segment
+                    header slots are reserved */
+```
+
+#6. FSEG_INODE_PAGE_NODE
+
+```cpp
+#define FSEG_INODE_PAGE_NODE    FSEG_PAGE_DATA
+                    /* the list node for linking
+                    segment inode pages */
+
+/** On a page of any file segment, data may be put starting from this
+offset */
+#define FSEG_PAGE_DATA      FIL_PAGE_DATA
+
+#define FIL_PAGE_DATA       38  /*!< start of the data on the page */                    
 ```
