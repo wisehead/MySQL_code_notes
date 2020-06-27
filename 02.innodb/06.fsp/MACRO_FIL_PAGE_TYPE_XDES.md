@@ -1,4 +1,4 @@
-#1.MACRO FIL_PAGE_TYPE_XDES
+#1.FIL\_PAGE\_TYPE\_XDES
 
 
 ```cpp
@@ -63,3 +63,44 @@ XDES Entry 与 Extent 是一一对应
 
 通过`XDES_STATE`信息，我们只需要一个`FLIST_NODE`节点就可以维护每个Extent的信息，是处于全局表空间的链表上，还是某个btree segment的链表上。
 
+#3. XDES\_ARR\_OFFSET
+
+```cpp
+/** Offset of the descriptor array on a descriptor page */
+#define XDES_ARR_OFFSET     (FSP_HEADER_OFFSET + FSP_HEADER_SIZE)
+
+/** Offset of the space header within a file page */
+#define FSP_HEADER_OFFSET   FIL_PAGE_DATA
+
+#define FIL_PAGE_DATA       38  /*!< start of the data on the page */
+
+/* File space header size */
+#define FSP_HEADER_SIZE     (32 + 5 * FLST_BASE_NODE_SIZE)
+
+/* The physical size of a list base node in bytes */
+#define FLST_BASE_NODE_SIZE (4 + 2 * FIL_ADDR_SIZE)
+
+#define FIL_ADDR_SIZE   6   /* address size is 6 bytes */
+
+```
+
+#4. XDES_SIZE
+
+```cpp
+/** File extent data structure size in bytes. */
+#define XDES_SIZE                           \
+    (XDES_BITMAP                            \
+    + UT_BITS_IN_BYTES(FSP_EXTENT_SIZE * XDES_BITS_PER_PAGE))
+
+#define XDES_BITMAP     (FLST_NODE_SIZE + 12)
+                    /* Descriptor bitmap of the pages
+                    in the extent */
+
+/* The physical size of a list node in bytes */
+#define FLST_NODE_SIZE      (2 * FIL_ADDR_SIZE)
+
+#define FIL_ADDR_SIZE   6   /* address size is 6 bytes */
+
+#define XDES_BITS_PER_PAGE  2   /* How many bits are there per page */
+
+```
