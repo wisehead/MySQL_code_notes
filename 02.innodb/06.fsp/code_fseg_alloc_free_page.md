@@ -10,7 +10,7 @@
 
   
 
-![](notes_TableSpace/assets/1591436359-3ab2b10a432db770d82d32a0c94442a5.png)
+![](notes_TableSpace_BD/assets/1591436359-3ab2b10a432db770d82d32a0c94442a5.png)
 
 有一个问题，在这个过程中前置条件是一个索引中需要新分配一个Page（给待分裂的节点），那么如果这个索引如何知道它保存了哪些Extent？
 
@@ -95,7 +95,7 @@ fseg_alloc_free_page_low(
       
     
 
- ![](notes_TableSpace/assets/1591436359-9bb8f6134b16e0b00498066a4ec9a035.png) 
+ ![](notes_TableSpace_BD/assets/1591436359-9bb8f6134b16e0b00498066a4ec9a035.png) 
 
 **TODO：释放Segment / 回收Page**
 
@@ -193,3 +193,13 @@ btr_page_alloc
 4.  如果此时该Extent上的page全部被释放了，将其从`FSEG_NOT_FULL`链表上移除，并加入到表空间的`FSP_FREE`链表上(而非Segment的`FSEG_FREE`链表)。
 
 
+#5. fseg\_alloc\_free\_page\_low
+
+```cpp
+fseg_alloc_free_page_low
+--fseg_n_reserved_pages_low
+--xdes_get_descriptor_with_space_hdr
+--fsp_alloc_free_page
+--fseg_find_free_frag_page_slot
+--fseg_set_nth_frag_page_no
+```
