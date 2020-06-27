@@ -76,6 +76,10 @@ fseg_create_general
 --flst_init(inode + FSEG_FULL, mtr);
 --fseg_set_nth_frag_page_no
 --fseg_alloc_free_page_low
+--mlog_write_ulint(header + FSEG_HDR_OFFSET,
+--mlog_write_ulint(header + FSEG_HDR_PAGE_NO,
+--mlog_write_ulint(header + FSEG_HDR_SPACE
+--fil_space_release_free_extents
 ```
 
 #5. FSP_SEG_INODES_FREE
