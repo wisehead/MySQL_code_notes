@@ -54,3 +54,24 @@ non-leaf segment的回收和leaf segment的回收基本类似，但要注意btre
 btree的root page在完成上述步骤后再释放，此时才能彻底释放non-leaf segment
 
 
+#4. fseg_create_general
+
+```cpp
+fseg_create_general
+--fsp_reserve_free_extents
+----fsp_reserve_free_pages
+------xdes_get_descriptor_with_space_hdr
+--------xdes_calc_descriptor_page
+--fsp_alloc_seg_inode
+----fsp_alloc_seg_inode_page
+------fsp_alloc_free_page
+--------xdes_get_descriptor_with_space_hdr
+--------xdes_find_bit
+--------xdes_get_offset
+--------fsp_alloc_from_free_frag
+----------xdes_set_bit
+----------frag_n_used = mtr_read_ulint(header + FSP_FRAG_N_USED, ..)
+----------frag_n_used++;
+----------xdes_is_full
+--------fsp_page_create
+```
