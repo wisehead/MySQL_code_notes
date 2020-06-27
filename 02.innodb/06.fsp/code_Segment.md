@@ -74,4 +74,10 @@ fseg_create_general
 ----------frag_n_used++;
 ----------xdes_is_full
 --------fsp_page_create
+----------buf_page_create
+----------buf_block_buf_fix_inc_func
+----------mtr_memo_push
+----------fsp_init_file_page
+------------fsp_init_file_page_low
+------------mlog_write_initial_log_record(MLOG_INIT_FILE_PAGE)
 ```
