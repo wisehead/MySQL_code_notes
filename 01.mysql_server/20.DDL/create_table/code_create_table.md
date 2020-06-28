@@ -117,6 +117,8 @@ ha_create_table
 ----get_new_handler
 --handler::ha_create
 ----ha_innobase::create
+--closefrm
+--free_table_share
 ```
 
 #8.ha_innobase::create
@@ -140,6 +142,19 @@ ha_innobase::create
 ----innobase_trx_init
 --create_table_def
 --create_index
+--innobase_get_stmt
+--row_table_add_foreign_constraints
+----dict_create_foreign_constraints
+------dict_create_foreign_constraints_low
+--innobase_commit_low
+--log_buffer_flush_to_disk
+--innobase_copy_frm_flags_from_create_info
+--dict_stats_update
+----dict_stats_save
+------dict_stats_exec_sql
+--------que_eval_sql
+--dict_table_close
+--trx_free_for_mysql
 ```
 
 #9. create_table_def
