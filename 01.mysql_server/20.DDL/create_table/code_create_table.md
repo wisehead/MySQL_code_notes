@@ -223,6 +223,13 @@ row_create_index_for_mysql
 ----------dict_index_add_to_cache
 ----------node->state = INDEX_CREATE_INDEX_TREE
 ----------dict_create_index_tree_step
+----------node->state = INDEX_COMMIT_WORK;
+----------node->state = INDEX_CREATE_INDEX_TREE;
+------que_thr_step//QUE_NODE_THR == 9
+--------que_thr_node_step
+----------thr->state = QUE_THR_COMPLETED;
+--que_graph_free
+--dict_table_close
 ```
 
 #13. dict_create_index_step
@@ -257,4 +264,7 @@ dict_create_index_tree_step
 ----------page_rec_get_next_low
 ------------rec_get_next_offs
 --btr_create
+--btr_pcur_close
 ```
+
+#16.
