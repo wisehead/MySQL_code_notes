@@ -8,7 +8,7 @@ page_create
 ----fil_page_set_type(page, FIL_PAGE_INDEX);
 ```
 
-#2. page_create_low
+#2. page\_create\_low
 
 ```cpp
 page_create_low
@@ -28,4 +28,7 @@ page_create_low
 ----rec_offs_set_n_alloc
 ----rec_offs_set_n_fields
 ----rec_init_offsets
+--rec_get_end
+----rec_offs_data_size(offsets)//最后一个列记录rec长度。offset[1]记录field数目。
+
 ```
