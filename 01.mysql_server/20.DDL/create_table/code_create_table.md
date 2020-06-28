@@ -11,6 +11,8 @@ mysql_execute_command
 ----check_grant
 --append_file_to_dir
 --mysql_create_table
+--trans_commit_stmt(thd);
+--close_thread_tables
 ```
 
 #2.mysql_create_table
@@ -19,6 +21,7 @@ mysql_execute_command
 mysql_create_table
 --open_tables
 --mysql_create_table_no_lock
+--write_bin_log
 ```
 
 #3. open_tables
