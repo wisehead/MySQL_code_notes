@@ -76,11 +76,37 @@ main
 --mtr_report_test
 
 ```
-#important variables
+
+#5.start_servers
 
 ```cpp
+run_testcase
+--start_servers
+----mysql_install_db
+```
+
+#6.clean_datadir
 
 ```
+run_testcase
+--clean_datadir
+```
+
+#7. run_testcase
+
+```cpp
+main
+--run_test_server
+----main::run_worker
+------run_testcase
+--------started(all_servers()
+--------clean_datadir
+--------start_servers
+--------do_before_run_mysqltest
+--------start_mysqltest
+```
+
+#8. mysql_install_db
 
 
 #todo
