@@ -13,7 +13,17 @@ main
 ----------IO::Pipe::new
 ----------My::SafeProcess::Base::_safe_fork
 ----registe_service
-
+----gaia_log_service_start
+------My::SafeProcess::new
+----gaia_page_server_start
+------My::SafeProcess->new
+----default_mysqld
+------My::ConfigFactory->new_config
+------$config->group
+----mysql_install_db
+------My::SafeProcess::run
+--------My::SafeProcess::new
+----------My::SafeProcess::Base::create_process
 ```
 
 #2.start_servers
