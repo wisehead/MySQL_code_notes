@@ -31,7 +31,51 @@ main
 ```cpp
 run_testcase
 --start_servers
+----get_bootstrap_opts//获取opt启动参数
+----//if datadir exist
+----My::SafeProcess::shutdown(0, $mysqld->{'ps_proc'});
+----My::SafeProcess::shutdown(0, $mysqld->{'ls_proc'});
+----My::SafeProcess::shutdown(0, $mysqld->{'psm_proc'});
+----rmtree("$group/ls_data");
+----rmtree("$group/ps_data");
+----rmtree("$group/psm_data");
+----rmtree($datadir);
+----//初始化datadir，拷贝gaiadb_data，不需要自己初始化。
+----My::SafeProcess::shutdown(0, $mysqld->{'ps_proc'})
+----My::SafeProcess::shutdown(0, $mysqld->{'ls_proc'});
+----My::SafeProcess::shutdown(0, $mysqld->{'psm_proc'});
+----rmtree("$group/ls_data");
+----rmtree("$group/ps_data");
+----rmtree("$group/psm_data");
+----copytree("$path/gaia_data/ls_data", "$group/ls_data")
+----copytree("$path/gaia_data/ps_data", "$group/ps_data")
+----copytree("$path/gaia_data/psm_data", "$group/psm_data")
+----gaia_manager_start
+----gaia_log_service_start
+----gaia_page_server_start
+----rmtree($datadir);
+----copytree($install_db, $datadir)
+----//if ($mysqld->{need_reinitialization}) or opt
+----My::SafeProcess::shutdown(0, $mysqld->{'ps_proc'});
+----My::SafeProcess::shutdown(0, $mysqld->{'ls_proc'});
+----My::SafeProcess::shutdown(0, $mysqld->{'psm_proc'});
+----rmtree("$group/ls_data");
+----rmtree("$group/ps_data");
+----rmtree("$group/psm_data");
+----rmtree($datadir);
+----mkpath("$group/psm_data");
+----mkpath("$group/ls_data");
+----mkpath("$group/ps_data");
+----mkpath("$group/ps_data/data");
+----mkpath("$group/ps_data/tmp");
+----gaia_manager_start
+----gaia_log_service_start
+----gaia_page_server_start
 ----mysql_install_db
+----unlink("$opt_vardir/tmp/bootstrap.sql")
+----mkpath($tmpdir)
+----mark_log($mysqld->value('#log-error'), $tinfo)
+----mysqld_start
 ```
 
 
