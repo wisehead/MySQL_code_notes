@@ -1,4 +1,37 @@
-#1.initialize_servers
+#1.main
+
+```perl
+main
+--command_line_setup
+----collect_mysqld_features
+----main::set_vardir
+----executable_setup
+--create_unique_id_dir
+--mtr_cases::collect_test_cases
+--initialize_servers
+--new IO::Socket::INET
+--read_plugin_defs
+----find_plugin
+--My::SafeProcess::Base::_safe_fork
+--run_test_server//main thread word server
+----IO::Select::add	
+----run_testcase_check_skip_test
+----$next->write_test($sock, 'TESTCASE');
+--run_worker
+----environment_setup
+----setup_vardir
+------mkpath("$opt_vardir/log");
+------mkpath("$opt_vardir/run");
+------mkpath("$opt_vardir/tmp");
+------copytree("$glob_mysql_test_dir/std_data", "$opt_vardir/std_data", "0022");
+----print $server "START\n";//进入状态机
+----run_testcase
+----$test->write_test($server, 'TESTRESULT')
+--mtr_report_test
+
+```
+
+#2.initialize_servers
 
 ```perl
 main
@@ -26,7 +59,22 @@ main
 ----------My::SafeProcess::Base::create_process
 ```
 
-#2.start_servers
+#3. run_testcase
+
+```cpp
+----run_testcase
+------find_bootstrap_opts//for opt files
+------servers_need_reinitialization
+------servers_need_restart
+------started(all_servers()
+------clean_datadir
+------My::ConfigFactory::new_config
+------start_servers
+------do_before_run_mysqltest
+------start_mysqltest
+```
+
+#4.start_servers
 
 ```cpp
 run_testcase
@@ -76,8 +124,24 @@ run_testcase
 ----mkpath($tmpdir)
 ----mark_log($mysqld->value('#log-error'), $tinfo)
 ----mysqld_start
+------My::SafeProcess->new//mysqld
+----sleep_until_pid_file_created
 ```
 
+#5.clean_datadir
+
+```
+run_testcase
+--clean_datadir
+----My::SafeProcess::shutdown(0, $mysqld->{'ps_proc'});
+----My::SafeProcess::shutdown(0, $mysqld->{'ls_proc'});
+----My::SafeProcess::shutdown(0, $mysqld->{'psm_proc'});
+----rmtree("$group/ls_data");
+----rmtree("$group/ps_data");
+----rmtree("$group/psm_data");
+----rmtree($mysqld_dir);
+----clean_dir("$opt_vardir/tmp");
+```
 
 #3.mysqltest tool
 
@@ -93,76 +157,12 @@ run_testcase
 2442 } 
 ```
 
-#4.main
-
-```perl
-main
---command_line_setup
-----collect_mysqld_features
-----main::set_vardir
-----executable_setup
---create_unique_id_dir
---mtr_cases::collect_test_cases
---initialize_servers
---new IO::Socket::INET
---read_plugin_defs
-----find_plugin
---My::SafeProcess::Base::_safe_fork
---run_test_server//main thread word server
-----IO::Select::add	
-----run_testcase_check_skip_test
-----$next->write_test($sock, 'TESTCASE');
---run_worker
-----environment_setup
-----setup_vardir
-------mkpath("$opt_vardir/log");
-------mkpath("$opt_vardir/run");
-------mkpath("$opt_vardir/tmp");
-------copytree("$glob_mysql_test_dir/std_data", "$opt_vardir/std_data", "0022");
-----print $server "START\n";//进入状态机
-----run_testcase
-------find_bootstrap_opts//for opt files
-------servers_need_reinitialization
-------servers_need_restart
-------started(all_servers()
-------clean_datadir
-------My::ConfigFactory::new_config
-------start_servers
-------do_before_run_mysqltest
-------start_mysqltest
---mtr_report_test
-
-```
 
 
-#6.clean_datadir
 
-```
-run_testcase
---clean_datadir
-----My::SafeProcess::shutdown(0, $mysqld->{'ps_proc'});
-----My::SafeProcess::shutdown(0, $mysqld->{'ls_proc'});
-----My::SafeProcess::shutdown(0, $mysqld->{'psm_proc'});
-----rmtree("$group/ls_data");
-----rmtree("$group/ps_data");
-----rmtree("$group/psm_data");
-----rmtree($mysqld_dir);
-----clean_dir("$opt_vardir/tmp");
-```
 
-#7. run_testcase
 
-```cpp
-main
---run_test_server
-----main::run_worker
-------run_testcase
---------started(all_servers()
---------clean_datadir
---------start_servers
---------do_before_run_mysqltest
---------start_mysqltest
-```
+
 
 #8. mysql_install_db
 
