@@ -18,5 +18,5 @@ struct btr_defragment_item_t
     btr_defragment_item_t(btr_pcur_t* pcur, os_event_t event,
             dict_index_t* index, ulint space);
     ~btr_defragment_item_t();
-1. };
+};
 ```
