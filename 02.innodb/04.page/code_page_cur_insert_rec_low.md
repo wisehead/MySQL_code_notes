@@ -29,6 +29,13 @@ page_cur_insert_rec_low
 ------rec_init_offsets
 --------rec_init_offsets_comp_ordinary
 ----------rec_init_null_and_len_comp
+----rec_offs_extra_size
+----mlog_open_and_write_index
+------mlog_open
+------mlog_write_initial_log_record_fast
+--------mlog_write_initial_log_record_low
+----------mtr_t::set_rec_body_offset
+----------mtr_t::set_len_ptr
 ```
 
 
@@ -41,6 +48,7 @@ offset[1] 长度
 offsets[2] = (ulint)rec;
 offsets[3] = (ulint)index;
 offset[4] = REC_N_NEW_EXTRA_BYTES | REC_OFFS_COMPACT;标记位
+*rec_offs_base(offsets) = (rec - (lens + 1)) | REC_OFFS_COMPACT | any_ext;
 offset[5] = 8;//infimum/supremum
 ```
 
@@ -49,7 +57,15 @@ offset[5] = 8;//infimum/supremum
 ```cpp
 
 这个只是普通的row record.
-变长字段长度列表|Null 字段标志位|info_bits(4bit)|n_owned(4bit)|order(13bit)|rec type(3bit)|next record offset|主键（用户指定或者缺省6） | Trx_id（6Byte） | ROLL_PTR（7B） | FIELD1 | FIELD2|.......|FIELDN|
+变长字段长度列表|Null 字段标志位|info_bits(4bit)|n_owned(4bit)|order(13bit)|rec type(3bit)|next record offset|主键（用户指定或者缺省6） | Trx_id（6Byte） | ROLL_PTR（7B） | FIELD1 | FIELD2|.......|FIELDN| 
 
 REC_N_NEW_EXTRA_BYTES = 5B，NEW
+```
+
+#4 gaiaDB redo log
+
+```cpp
+COM_INSERT
+type（1B） | space(1~5)|page_no（1~5）| Body_len | field_num(2B)| index_field(2B)| len1 | len2 | ..... | lenN | page_offset(cursor_rec)（2B）| 2 * (rec_size - i) + 1 （1~5）| info byte(1B) |  extra_size（1~5） | mismatch_size（1~5）|
+
 ```
