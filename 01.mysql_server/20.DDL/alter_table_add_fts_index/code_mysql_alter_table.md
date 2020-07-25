@@ -11,6 +11,7 @@ mysql_alter_table
 ----lock_table_names
 ------get_and_lock_tablespace_names
 --------dd::fill_table_and_parts_tablespace_names
+--------lock_tablespace_names
 --mysql_inplace_alter_table
 ----handler::ha_prepare_inplace_alter_table
 ------ha_innobase::prepare_inplace_alter_table

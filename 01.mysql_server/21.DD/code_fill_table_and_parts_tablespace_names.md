@@ -9,5 +9,6 @@ fill_table_and_parts_tablespace_names
 --------m_registry_committed.get(key, &element);
 --------Shared_dictionary_cache::get
 ----dd::cache::Dictionary_client::acquire<dd::Item_name_key, dd::Abstract_table>
-
+--get_and_store_tablespace_name
+----dd::get_tablespace_name<dd::Index>
 ```
