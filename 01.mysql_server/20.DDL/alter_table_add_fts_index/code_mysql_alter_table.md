@@ -12,6 +12,14 @@ mysql_alter_table
 ------get_and_lock_tablespace_names
 --------dd::fill_table_and_parts_tablespace_names
 --------lock_tablespace_names
+----open_and_process_table
+------open_table
+--------get_table_def_key
+--------open_table_get_mdl_lock
+----------MDL_context::acquire_lock
+--------Table_cache::get_table
+--------TABLE::init
+------check_and_update_table_version
 --mysql_inplace_alter_table
 ----handler::ha_prepare_inplace_alter_table
 ------ha_innobase::prepare_inplace_alter_table
