@@ -7,6 +7,8 @@ mysql_execute_command
 ----mysql_alter_table
 
 mysql_alter_table
+--open_tables
+----lock_table_names
 --mysql_inplace_alter_table
 ----handler::ha_prepare_inplace_alter_table
 ------ha_innobase::prepare_inplace_alter_table

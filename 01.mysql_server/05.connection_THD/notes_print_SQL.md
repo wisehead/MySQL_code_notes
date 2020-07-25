@@ -7,3 +7,10 @@ p thd->m_query_string
 $16 = {str = 0x7f3cf02dae78 "alter table \345\220\215\345\255\227 add fulltext index con5 (c2) with parser ngram", length = 65}
 
 ```
+
+
+#1.print SQL command
+
+```cpp
+thd->lex->sql_command
+```
