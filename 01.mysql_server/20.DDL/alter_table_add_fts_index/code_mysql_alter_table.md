@@ -20,6 +20,9 @@ mysql_alter_table
 --------Table_cache::get_table
 --------TABLE::init
 ------check_and_update_table_version
+--mysql_prepare_alter_table
+----prepare_fields_and_keys
+
 --mysql_inplace_alter_table
 ----handler::ha_prepare_inplace_alter_table
 ------ha_innobase::prepare_inplace_alter_table
