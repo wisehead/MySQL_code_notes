@@ -22,8 +22,9 @@ mysql_alter_table
 ------check_and_update_table_version
 --mysql_prepare_alter_table
 ----prepare_fields_and_keys
-------restore_record
-
+----ha_innobase::update_create_info
+--MDL_EXCLUSIVE Lock
+--create_table_impl
 
 --mysql_inplace_alter_table
 ----handler::ha_prepare_inplace_alter_table
