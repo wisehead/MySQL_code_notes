@@ -62,6 +62,15 @@ mysql_alter_table
 ----innobase_support_instant
 //!!!!!!!!!!!!!!!!!!!!!!!!
 --mysql_inplace_alter_table
+----thd->mdl_context.upgrade_shared_lock(table->mdl_ticket, MDL_EXCLUSIVE
+----tdc_remove_table//将原表(名字表)从tdc中删除
+------create_table_def_key
+------table_def_cache->find
+------remove_table(it);
+----lock_tables
+------mysql_lock_tables
+
+
 ----handler::ha_prepare_inplace_alter_table
 ------ha_innobase::prepare_inplace_alter_table
 --------ha_innobase::prepare_inplace_alter_table_impl<dd::Table>
