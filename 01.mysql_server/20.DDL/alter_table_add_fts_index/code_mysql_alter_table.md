@@ -45,7 +45,16 @@ mysql_alter_table
 ------------plugin_find_internal
 --------fill_tablespace_from_dd
 ------fill_indexes_from_dd
-
+--------fill_index_from_dd
+--------fill_index_elements_from_dd
+----------fill_index_element_from_dd
+------fill_columns_from_dd
+------prepare_share
+--------get_new_handler
+----------innobase_create_handler
+--------setup_key_part_field
+--------destroy(handler_file)
+------get_table_category
 
 --mysql_inplace_alter_table
 ----handler::ha_prepare_inplace_alter_table
