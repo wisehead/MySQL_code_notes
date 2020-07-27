@@ -55,7 +55,12 @@ mysql_alter_table
 --------setup_key_part_field
 --------destroy(handler_file)
 ------get_table_category
-
+----open_table_from_share
+------handler::change_table_ptr
+--update_altered_table
+--ha_innobase::check_if_supported_inplace_alter
+----innobase_support_instant
+//!!!!!!!!!!!!!!!!!!!!!!!!
 --mysql_inplace_alter_table
 ----handler::ha_prepare_inplace_alter_table
 ------ha_innobase::prepare_inplace_alter_table
