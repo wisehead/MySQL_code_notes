@@ -25,6 +25,15 @@ mysql_alter_table
 ----ha_innobase::update_create_info
 --MDL_EXCLUSIVE Lock
 --create_table_impl
+----check_engine
+----get_new_handler
+------innobase_create_handler
+----check_if_table_exists
+------ha_table_exists_in_engine
+--------plugin_foreach
+----mysql_prepare_create_table
+----rea_create_base_table
+--fill_alter_inplace_info
 
 --mysql_inplace_alter_table
 ----handler::ha_prepare_inplace_alter_table
