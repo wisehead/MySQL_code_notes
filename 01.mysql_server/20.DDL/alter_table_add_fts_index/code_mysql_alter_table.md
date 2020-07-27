@@ -34,6 +34,18 @@ mysql_alter_table
 ----mysql_prepare_create_table
 ----rea_create_base_table
 --fill_alter_inplace_info
+--open_table_uncached
+----create_table_def_key_tmp
+------create_table_def_key
+----init_tmp_table_share
+----open_table_def
+------fill_share_from_dd
+--------ha_resolve_by_name_raw
+----------plugin_lock_by_name
+------------plugin_find_internal
+--------fill_tablespace_from_dd
+------fill_indexes_from_dd
+
 
 --mysql_inplace_alter_table
 ----handler::ha_prepare_inplace_alter_table
