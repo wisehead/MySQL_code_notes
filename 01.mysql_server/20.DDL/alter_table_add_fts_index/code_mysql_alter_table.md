@@ -89,8 +89,37 @@ mysql_alter_table
 --------------dict_build_index_def
 --------------dict_index_add_to_cache_w_vcol
 ------------fts_create_index_tables
-
-
+------------fts_freeze_aux_tables
+--------------dict_table_prevent_eviction
+----------------dict_table_move_from_lru_to_non_lru
+------------dd_prepare_inplace_alter_table<dd::Table>
+------------fts_create_index_dd_tables
+--------------fts_create_one_index_dd_tables
+----------------dd_create_fts_index_table
+------------------dd_write_table<dd::Table>
+--------------------dd_write_index<dd::Index>
+------------fts_detach_aux_tables
+//"hi/fts_", '0' <repeats 13 times>, "499_being_deleted"
+//"hi/fts_", '0' <repeats 13 times>, "499_being_deleted_cache"
+//"hi/fts_", '0' <repeats 13 times>, "499_config"
+//"hi/fts_", '0' <repeats 13 times>, "499_deleted"
+//"hi/fts_", '0' <repeats 13 times>, "499_", '0' <repeats 13 times>, "119_index_1
+//"hi/fts_", '0' <repeats 13 times>, "499_", '0' <repeats 13 times>, "119_index_2
+//"hi/fts_", '0' <repeats 13 times>, "499_", '0' <repeats 13 times>, "119_index_3
+//"hi/fts_", '0' <repeats 13 times>, "499_", '0' <repeats 13 times>, "119_index_4
+//"hi/fts_", '0' <repeats 13 times>, "499_", '0' <repeats 13 times>, "119_index_5
+//"hi/fts_", '0' <repeats 13 times>, "499_", '0' <repeats 13 times>, "119_index_6
+//"hi/fts_", '0' <repeats 13 times>, "499_", '0' <repeats 13 times>, "126_index_1
+//"hi/fts_", '0' <repeats 13 times>, "499_", '0' <repeats 13 times>, "126_index_2
+//"hi/fts_", '0' <repeats 13 times>, "499_", '0' <repeats 13 times>, "126_index_3
+//"hi/fts_", '0' <repeats 13 times>, "499_", '0' <repeats 13 times>, "126_index_4
+//"hi/fts_", '0' <repeats 13 times>, "499_", '0' <repeats 13 times>, "12d_index_1
+//"hi/fts_", '0' <repeats 13 times>, "499_", '0' <repeats 13 times>, "12d_index_2
+//"hi/fts_", '0' <repeats 13 times>, "499_", '0' <repeats 13 times>, "12d_index_3
+//"hi/fts_", '0' <repeats 13 times>, "499_", '0' <repeats 13 times>, "12d_index_4
+//"hi/fts_", '0' <repeats 13 times>, "499_", '0' <repeats 13 times>, "12d_index_5
+//"hi/fts_", '0' <repeats 13 times>, "499_", '0' <repeats 13 times>, "12d_index_6
+----table->mdl_ticket->downgrade_lock(MDL_SHARED_NO_WRITE);//之前是X
 ----handler::ha_inplace_alter_table
 ------ha_innobase::inplace_alter_table
 --------ha_innobase::inplace_alter_table_impl<dd::Table>
