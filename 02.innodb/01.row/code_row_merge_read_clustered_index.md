@@ -13,6 +13,10 @@ row_merge_read_clustered_index
 ------fts_parallel_tokenization_thread
 --------row_merge_fts_get_next_doc_item
 --------row_merge_fts_doc_tokenize
+----------row_merge_fts_doc_tokenize_by_parser
+------------ngram_parser_parse
+--------------ngram_parse
+----------------row_merge_fts_doc_add_word_for_parser
 
 --fts_sync_table
 ----fts_sync
