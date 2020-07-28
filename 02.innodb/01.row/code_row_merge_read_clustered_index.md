@@ -17,6 +17,15 @@ row_merge_read_clustered_index
 ------------ngram_parser_parse
 --------------ngram_parse
 ----------------row_merge_fts_doc_add_word_for_parser
+----------fts_check_token
+----------innobase_fts_casedn_str
+----------fts_check_token
+----------fts_select_index
+--------row_merge_buf_sort
+----------row_merge_tuple_sort
+------------UT_SORT_FUNCTION_BODY
+--------row_merge_buf_write
+----------
 
 --fts_sync_table
 ----fts_sync
