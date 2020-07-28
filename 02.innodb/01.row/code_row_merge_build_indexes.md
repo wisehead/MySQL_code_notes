@@ -18,9 +18,12 @@ row_merge_build_indexes
 --trx_set_flush_observer
 --row_merge_create_fts_sort_index//word, Doc ID, and word's position
 --row_fts_psort_info_init
---row_fts_psort_info_init
 ----row_merge_buf_create
 ------row_merge_buf_create_low
+----row_merge_file_create
+------row_merge_file_create_low
+--innobase_rec_reset
+----Field::set_default
 
 --row_merge_read_clustered_index
 ----fts_sync_table
