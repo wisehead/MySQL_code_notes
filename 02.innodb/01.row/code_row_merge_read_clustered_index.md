@@ -6,6 +6,14 @@ caller:
 
 
 row_merge_read_clustered_index
+--row_merge_buf_create
+----row_merge_buf_create_low
+--row_fts_start_psort
+----os_thread_create(fts_parallel_tokenization_thread)
+------fts_parallel_tokenization_thread
+--------row_merge_fts_get_next_doc_item
+--------row_merge_fts_doc_tokenize
+
 --fts_sync_table
 ----fts_sync
 ------fts_sync_index
