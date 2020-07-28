@@ -79,10 +79,15 @@ mysql_alter_table
 ----------prepare_inplace_alter_table_dict<dd::Table>
 ------------innobase_create_key_defs<dd::Table>
 --------------innobase_create_index_def<dd::Table>
-
-
-
-------------trx_start_if_not_started_xa
+----------------innobase_create_index_field_def
+------------row_merge_lock_table
+--------------lock_table_for_trx
+------------row_mysql_lock_data_dictionary_func
+------------online_retry_drop_dict_indexes
+------------row_merge_create_index
+--------------dict_mem_index_create
+--------------dict_build_index_def
+--------------dict_index_add_to_cache_w_vcol
 ------------fts_create_index_tables
 
 
