@@ -25,8 +25,12 @@ row_merge_read_clustered_index
 ----------row_merge_tuple_sort
 ------------UT_SORT_FUNCTION_BODY
 --------row_merge_buf_write
-----------
-
+----------row_merge_buf_encode
+------------rec_convert_dtuple_to_temp
+--------------rec_convert_dtuple_to_rec_comp
+--btr_pcur_open_at_index_side//btr_pcur_t::open_at_side
+----btr_cur_open_at_index_side_func
+------mtr_s_lock(dict_index_get_lock(index), mtr);
 --fts_sync_table
 ----fts_sync
 ------fts_sync_index
