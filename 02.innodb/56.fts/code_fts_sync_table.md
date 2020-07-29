@@ -31,8 +31,25 @@ fts_sync_table
 fts_eval_sql
 --que_run_threads
 ----que_run_threads_low
-------que_thr_step
---------que_thr_node_step//QUE_NODE_THR
+------que_thr_step//QUE_NODE_THR
+--------que_thr_node_step
+------que_thr_step//QUE_NODE_PROC
+--------proc_step
+------que_thr_step//QUE_NODE_OPEN
+--------open_step
+----------sel_node_reset_cursor
+------que_thr_step//QUE_NODE_WHILE
+--------while_step
+----------eval_exp
+------------eval_func
+------que_thr_step//QUE_NODE_FETCH
+--------fetch_step
+------que_thr_step//QUE_NODE_SELECT
+--------row_sel_step
+----------trx_start_if_not_started_xa
+----------plan_reset_cursor
+----------lock_table
+----------row_sel
 
 --------row_ins_step
 ----------row_ins
