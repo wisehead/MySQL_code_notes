@@ -31,6 +31,22 @@ row_merge_read_clustered_index
 --btr_pcur_open_at_index_side//btr_pcur_t::open_at_side
 ----btr_cur_open_at_index_side_func
 ------mtr_s_lock(dict_index_get_lock(index), mtr);
+--page_cur_move_to_next
+--page_cur_get_rec
+--rec_get_offsets_func
+----rec_init_offsets
+------rec_init_offsets_comp_ordinary
+--row_build_w_add_vcol
+----row_build_low
+------dtuple_create_with_vcol
+------dict_table_copy_types
+--------dict_table_copy_v_types//virtual columns
+--dtuple_set_info_bits
+--row_merge_buf_add
+--btr_page_get_next
+--row_merge_buf_free
+--row_fts_free_pll_merge_buf
+--btr_pcur_close
 --fts_sync_table
 ----fts_sync
 ------fts_sync_index
