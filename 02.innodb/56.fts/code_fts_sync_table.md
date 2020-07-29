@@ -21,21 +21,26 @@ fts_sync_table
 ----------pars_info_bind_literal(info, "ilist")
 ----------fts_parse_sql(fts_table, info,
                            "BEGIN\nINSERT INTO $index_table_name VALUES(:token, :first_doc_id,:last_doc_id, :doc_count, :ilist);")
-------------
-
 ----------fts_eval_sql
 ------------que_run_threads
---------------que_run_threads_low
-----------------que_thr_step
-------------------row_ins_step
---------------------row_ins
-----------------------row_ins_index_entry_step
-------------------------row_ins_index_entry
---------------------------row_ins_clust_index_entry
-----------------------------row_ins_clust_index_entry_low
-------------------------------btr_cur_optimistic_insert
---------------------------------page_cur_tuple_insert
-----------------------------------page_cur_insert_rec_l
+```
 
+#2.
 
+```cpp
+fts_eval_sql
+--que_run_threads
+----que_run_threads_low
+------que_thr_step
+--------que_thr_node_step//QUE_NODE_THR
+
+--------row_ins_step
+----------row_ins
+------------row_ins_index_entry_step
+--------------row_ins_index_entry
+----------------row_ins_clust_index_entry
+------------------row_ins_clust_index_entry_low
+--------------------btr_cur_optimistic_insert
+----------------------page_cur_tuple_insert
+------------------------page_cur_insert_rec_l
 ```
