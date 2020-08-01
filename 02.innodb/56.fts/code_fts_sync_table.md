@@ -50,6 +50,7 @@ fts_eval_sql
 ----------plan_reset_cursor
 ----------lock_table
 ----------row_sel
+------------row_sel_open_pcur
 
 --------row_ins_step
 ----------row_ins
