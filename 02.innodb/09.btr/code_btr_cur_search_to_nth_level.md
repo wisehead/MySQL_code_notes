@@ -9,5 +9,10 @@ btr_cur_search_to_nth_level
 --dict_index_get_page(index)
 --tree_savepoints[n_blocks] = mtr_set_savepoint(mtr)
 --buf_page_get_gen//index root
---page_cur_search_with_match
+--page_cur_search_with_match//从根节点一直到叶子节点
+--mtr_block_x_latch_at_savepoint
+--btr_node_ptr_get_child_page_no
+--btr_cur_latch_leaves//left_page, right page, and current leaf page
+--btr_search_info_update
+----btr_search_info_update_slow
 ```
