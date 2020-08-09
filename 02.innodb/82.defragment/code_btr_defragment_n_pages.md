@@ -16,6 +16,5 @@ btr_defragment_n_pages
 ----btr_defragment_calc_n_recs_for_size
 ----page_rec_get_nth
 ----page_copy_rec_list_start
-------
 ```
 

@@ -8,4 +8,6 @@ btr_defragment_thread
 ----cmp_dtuple_rec
 ------cmp_dtuple_rec_with_match_low
 --btr_defragment_n_pages
+--page_cur_position
+--btr_pcur_store_position
 ```
