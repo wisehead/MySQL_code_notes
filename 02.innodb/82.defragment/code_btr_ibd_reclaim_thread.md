@@ -4,6 +4,8 @@
 btr_ibd_reclaim_thread
 --btr_reclaim_add_defragment_item
 ----btr_gen_defragment_item_for_db
+------dict_table_get_low("SYS_TABLES")
+------sys_index = UT_LIST_GET_FIRST(sys_tables->indexes)
 ------dtuple_create
 ------dfield_set_data
 ------dict_index_copy_types
