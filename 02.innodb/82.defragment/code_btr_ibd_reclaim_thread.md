@@ -16,5 +16,22 @@ btr_ibd_reclaim_thread
 --btr_reclaim_get_item
 --btr_open_table_index
 ----dict_table_open_on_name
+----dict_table_get_first_index
+----dict_table_get_next_index
+----dict_table_close
+--btr_get_all_index_sx_latch
+----btr_root_get
+------buf_block_get_frame(btr_root_block_get(index, RW_SX_LATCH,mtr));
+--space = dict_index_get_space(clust_index);
+--btr_get_fsp_header
+--btr_get_reclaim_page_no
+--btr_load_n_pages
+----btr_block_get_func
+--btr_index_can_be_reclaimed
+----btr_get_fseg_header
+------btr_root_get
+--------btr_root_block_get
+----------btr_block_get
+----fseg_has_enough_free_space
 
 ```
