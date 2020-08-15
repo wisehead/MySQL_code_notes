@@ -5,6 +5,7 @@ caller:
 --ha_innobase::open
 
 dict_table_open_on_name
+--dict_table_check_if_in_cache_low
 --dict_load_table
 ----mtr_start(&mtr);
 ----dict_table_get_low
