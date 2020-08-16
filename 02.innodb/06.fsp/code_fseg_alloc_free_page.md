@@ -199,6 +199,7 @@ btr_page_alloc
 fseg_alloc_free_page_low
 --fseg_n_reserved_pages_low
 --xdes_get_descriptor_with_space_hdr
+----fil_space_get
 --fsp_alloc_free_page
 --fseg_find_free_frag_page_slot
 --fseg_set_nth_frag_page_no
