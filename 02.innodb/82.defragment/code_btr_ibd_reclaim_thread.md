@@ -33,5 +33,26 @@ btr_ibd_reclaim_thread
 --------btr_root_block_get
 ----------btr_block_get
 ----fseg_has_enough_free_space
+--get_cpu_stat
+--btr_reclaim_n_pages
+----xdes_get_descriptor
+------xdes_get_descriptor_with_space_hdr
+```
 
+#2. btr_reclaim_n_pages
+
+```cpp
+btr_reclaim_n_pages
+--//if (descr == NULL)
+--//else if (page_type == FIL_PAGE_TYPE_ALLOCATED)
+--//else if (page_type == FIL_PAGE_INDEX)
+--btr_get_first_free_page_no
+----fseg_smallest_free_page_no
+------fseg_inode_get
+--------inode_addr.page = mach_read_from_4(header + FSEG_HDR_PAGE_NO);
+--------inode_addr.boffset = mach_read_from_2(header + FSEG_HDR_OFFSET);
+--------fut_get_ptr
+------flst_get_first(seg_inode + FSEG_NOT_FULL, mtr2);
+------xdes_lst_get_descriptor
+--------fut_get_ptr
 ```
