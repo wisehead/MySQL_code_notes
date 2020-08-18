@@ -85,6 +85,7 @@ XDES Entry 与 Extent 是一一对应
 ```
 
 #4. XDES_SIZE
+//每个XDES entry的大小 40字节
 
 ```cpp
 /** File extent data structure size in bytes. */
