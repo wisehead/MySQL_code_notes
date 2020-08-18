@@ -67,5 +67,4 @@ btr_reclaim_n_pages
 ------mach_write_to_8(PAGE_HEADER + PAGE_MAX_TRX_ID + page, max_trx_id);
 ----btr_page_set_index_id(page, page_zip, index->id, mtr);
 --btr_attach_half_pages
-----btr_page_get_father_block
 ```

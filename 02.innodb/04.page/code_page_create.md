@@ -30,5 +30,4 @@ page_create_low
 ----rec_init_offsets
 --rec_get_end
 ----rec_offs_data_size(offsets)//最后一个列记录rec长度。offset[1]记录field数目。
-
 ```
