@@ -61,4 +61,11 @@ btr_reclaim_n_pages
 --------flst_read_addr(node + FLST_NEXT, mtr)
 --btr_page_alloc
 --btr_page_create
+----page_create
+------page_create_low
+------mach_write_to_2(PAGE_HEADER + PAGE_LEVEL + page, level);
+------mach_write_to_8(PAGE_HEADER + PAGE_MAX_TRX_ID + page, max_trx_id);
+----btr_page_set_index_id(page, page_zip, index->id, mtr);
+--btr_attach_half_pages
+----btr_page_get_father_block
 ```
