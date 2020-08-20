@@ -69,4 +69,11 @@ btr_reclaim_n_pages
 --btr_attach_half_pages
 --page_copy_rec_list_end
 --lock_move_rec_list_end
+----lock_rec_get_first_on_page
+------buf_block_get_lock_hash_val
+------HASH_GET_FIRST( lock_sys->rec_hash, hash)
+----page_cur_position
+----page_cur_set_before_first
+----page_cur_move_to_next
+----rec_get_heap_no_new
 ```
