@@ -20,5 +20,12 @@ page_copy_rec_list_end
 --------rec_get_next_offs
 ----------mach_read_from_2(rec - REC_NEXT)
 ----rec_set_next_offs_new
-
+--lock_move_rec_list_end
+--btr_search_move_or_delete_hash_entries
+----btr_search_drop_page_hash_index
+------ha_remove_all_nodes_to_page
+--------ha_chain_get_first(table, fold);
+--------ha_delete_hash_node
+----------HASH_DELETE_AND_COMPACT(ha_node_t, next, table, del_node);
+--------ha_chain_get_next(node);
 ```

@@ -68,5 +68,5 @@ btr_reclaim_n_pages
 ----btr_page_set_index_id(page, page_zip, index->id, mtr);
 --btr_attach_half_pages
 --page_copy_rec_list_end
---lock_move_rec_list_end
+----lock_move_rec_list_end
 ```
