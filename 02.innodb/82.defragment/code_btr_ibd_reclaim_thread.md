@@ -78,4 +78,9 @@ btr_reclaim_n_pages
 ----rec_get_heap_no_new
 ----lock_rec_get_nth_bit
 ----lock_rec_reset_nth_bit
+----lock_reset_lock_and_trx_wait
+----rec_get_heap_no_new
+----lock_rec_add_to_queue
+------//if LOCK_WAIT
+------lock_rec_create
 ```
