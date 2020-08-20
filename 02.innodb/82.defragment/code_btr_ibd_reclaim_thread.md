@@ -80,4 +80,10 @@ btr_reclaim_n_pages
 ------rec_set_heap_no_new
 ------rec_offs_size
 ------page_cur_insert_rec_write_log
+--------mlog_open_and_write_index
+------page_rec_get_next
+--------page_rec_get_next_low
+----------rec_get_next_offs
+------------mach_read_from_2(rec - REC_NEXT)
+------rec_set_next_offs_new
 ```
