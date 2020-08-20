@@ -76,4 +76,6 @@ btr_reclaim_n_pages
 ----page_cur_set_before_first
 ----page_cur_move_to_next
 ----rec_get_heap_no_new
+----lock_rec_get_nth_bit
+----lock_rec_reset_nth_bit
 ```
