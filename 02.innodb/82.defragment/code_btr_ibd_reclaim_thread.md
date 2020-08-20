@@ -69,4 +69,26 @@ btr_reclaim_n_pages
 --btr_attach_half_pages
 --page_copy_rec_list_end
 ----lock_move_rec_list_end
+--btr_search_move_or_delete_hash_entries
+--lock_update_merge_left
+----lock_rec_inherit_to_gap
+------lock_rec_get_first
+----lock_rec_reset_and_release_wait
+----lock_rec_move
+------lock_rec_get_first
+--------lock_rec_get_first_on_page
+----lock_rec_free_all_from_discard_page
+------lock_rec_get_first_on_page_addr
+--btr_search_drop_page_hash_index
+--btr_level_list_remove_func
+--btr_node_ptr_delete
+----btr_page_get_father
+----btr_cur_pessimistic_delete
+```
+
+#3. btr_cur_pessimistic_delete
+
+```cpp
+btr_cur_pessimistic_delete
+--btr_search_update_hash_on_delete
 ```
