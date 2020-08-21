@@ -36,10 +36,7 @@ btr_ibd_reclaim_thread
 --get_cpu_stat
 --btr_reclaim_n_pages
 --log_make_latest_checkpoint
-----log_make_latest_checkpoint
-------log_get_lsn
---------log_translate_sn_to_lsn
-----------return (sn / LOG_BLOCK_DATA_SIZE * OS_FILE_LOG_BLOCK_SIZE +sn % LOG_BLOCK_DATA_SIZE + LOG_BLOCK_HDR_SIZE);
+--btr_try_to_truncate_ibd
 ```
 
 
