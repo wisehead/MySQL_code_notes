@@ -38,6 +38,8 @@ btr_ibd_reclaim_thread
 --log_make_latest_checkpoint
 ----log_make_latest_checkpoint
 ------log_get_lsn
+--------log_translate_sn_to_lsn
+----------return (sn / LOG_BLOCK_DATA_SIZE * OS_FILE_LOG_BLOCK_SIZE +sn % LOG_BLOCK_DATA_SIZE + LOG_BLOCK_HDR_SIZE);
 ```
 
 
