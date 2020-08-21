@@ -44,6 +44,13 @@ btr_ibd_reclaim_thread
 ----fil_set_being_extended
 ------fil_mutex_enter_and_prepare_for_io
 --------fil_space_get_by_id
+------fil_space_get_by_id
+------UT_LIST_GET_LAST(space->chain)
+------fil_node_prepare_for_io
+--------fil_space_belongs_in_lru
+--------UT_LIST_REMOVE(LRU, system->LRU, node);
+--------node->n_pending++
+----btr_check_freed
 ```
 
 
