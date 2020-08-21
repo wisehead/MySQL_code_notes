@@ -37,6 +37,13 @@ btr_ibd_reclaim_thread
 --btr_reclaim_n_pages
 --log_make_latest_checkpoint
 --btr_try_to_truncate_ibd
+----btr_get_fsp_header(space, zip_size, &mtr_w);
+----total_page = mach_read_from_4(header + FSP_SIZE);
+----xdes_get_extent_first_page
+------page_get_page_no(page_align(descr))+ ((page_offset(descr) - XDES_ARR_OFFSET) / XDES_SIZE)* FSP_EXTENT_SIZE);
+----fil_set_being_extended
+------fil_mutex_enter_and_prepare_for_io
+--------fil_space_get_by_id
 ```
 
 
