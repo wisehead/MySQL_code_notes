@@ -35,6 +35,9 @@ btr_ibd_reclaim_thread
 ----fseg_has_enough_free_space
 --get_cpu_stat
 --btr_reclaim_n_pages
+--log_make_latest_checkpoint
+----log_make_latest_checkpoint
+------log_get_lsn
 ```
 
 
