@@ -15,6 +15,3 @@ log_advance_ready_for_write_lsn
 ------next = position + distance;
 
 ```
-
-
-#2.log_writer_wait_on_checkpoint
