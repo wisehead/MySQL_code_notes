@@ -1,4 +1,4 @@
-#1.buf_block_t
+#1.buf\_block_t
 
 ```cpp
 /** The buffer control block structure */

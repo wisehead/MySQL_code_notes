@@ -1,4 +1,4 @@
-#1.buf_page_t
+#1.buf\_page_t
 
 ```cpp
 struct buf_page_t{
