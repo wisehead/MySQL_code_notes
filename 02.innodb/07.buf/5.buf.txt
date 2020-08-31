@@ -1357,30 +1357,6 @@ buf_LRU_block_remove_hashed
 --------buf_LRU_block_free_non_file_page
 
 
-50.buf_LRU_block_free_non_file_page
-
-51.buf_LRU_get_free_only
-
-buf_LRU_get_free_block
---buf_LRU_get_free_only
---buf_LRU_scan_and_free_block
-----buf_LRU_free_from_unzip_LRU_list
-------buf_LRU_free_page(&block->page, false);//关联page保留，只删除frame
---------buf_LRU_block_remove_hashed//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-----------buf_LRU_remove_block
-----------buf_page_hash_get_low
-----------buf_buddy_free
-------------buf_buddy_free_low
---------buf_flush_relocate_on_flush_list
---------btr_search_drop_page_hash_index
---------buf_LRU_block_free_hashed_page
-----------buf_LRU_block_free_non_file_page
-
-----buf_LRU_free_from_common_LRU_list
---buf_flush_single_page_from_LRU
-
-
-
 
 
 48.buf_pool->watch
