@@ -20,3 +20,13 @@ pc_flush_slot
 --if (page_cleaner->n_slots_requested == 0 && page_cleaner->n_slots_flushing == 0) {os_event_set(page_cleaner->is_finished);}
 
 ```
+
+#2.caller
+
+##2.1 buf_flush_page_cleaner_thread
+```cpp
+buf_flush_page_cleaner_thread
+--pc_flush_slot
+```
+
+##2.2 buf_flush_page_coordinator_thread
