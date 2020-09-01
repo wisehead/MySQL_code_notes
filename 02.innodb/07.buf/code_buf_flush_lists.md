@@ -36,5 +36,7 @@ buf_flush_lists(PCT_IO(srv_idle_flush_pct), LSN_MAX, &n_flushed);
 ##2.2 buf_flush_sync_all_buf_pools
 
 ```cpp
-success = buf_flush_lists(ULINT_MAX, LSN_MAX, &n_pages);
+buf_dblwr_create
+--buf_flush_sync_all_buf_pools
+----success = buf_flush_lists(ULINT_MAX, LSN_MAX, &n_pages);
 ```

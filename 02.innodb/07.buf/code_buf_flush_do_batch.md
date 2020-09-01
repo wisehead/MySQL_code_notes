@@ -35,8 +35,11 @@ buf_flush_do_batch
 ##2.1 buf_pool_withdraw_blocks
 
 ```cpp
-buf_flush_do_batch(buf_pool, BUF_FLUSH_LRU, scan_depth, 0, &n_flushed);
-buf_flush_wait_batch_end(buf_pool, BUF_FLUSH_LRU);
+buf_resize_thread
+--buf_pool_resize
+----buf_pool_withdraw_blocks
+------buf_flush_do_batch(buf_pool, BUF_FLUSH_LRU, scan_depth, 0, &n_flushed);
+------buf_flush_wait_batch_end(buf_pool, BUF_FLUSH_LRU);
 ```
 
 ##2.2 buf_flush_lists
