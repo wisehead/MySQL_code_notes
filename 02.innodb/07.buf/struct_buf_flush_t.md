@@ -1,4 +1,4 @@
-#1.struct buf_flush_t
+#1.struct buf\_flush_t
 
 ```cpp
 /** Flags for flush types */
@@ -13,53 +13,53 @@ enum buf_flush_t {
 ```
 
 
-#2.BUF_FLUSH_LIST
+#2.BUF\_FLUSH_LIST
 
-##2.1 buf_do_flush_list_batch
+##2.1 buf\_do\_flush\_list_batch
 
 ```cpp
 buf_do_flush_list_batch
 --uf_flush_page_and_try_neighbors(bpage, BUF_FLUSH_LIST, min_n, &count);
 ```
 
-##2.2 buf_flush_lists
+##2.2 buf\_flush_lists
 
 ```cpp
 buf_flush_lists
 --buf_flush_do_batch(buf_pool, BUF_FLUSH_LIST, min_n, lsn_limit,&page_count))
 ```
 
-##2.3 pc_flush_slot
+##2.3 pc\_flush_slot
 
 ```cpp
 pc_flush_slot
 --buf_flush_do_batch(buf_pool, BUF_FLUSH_LIST, slot->n_pages_requested,page_cleaner->lsn_limit, &slot->n_flushed_list);
 ```
 
-##2.4 buf_flush_page_coordinator_thread
+##2.4 buf\_flush\_page\_coordinator_thread
 
 ```cpp
 buf_flush_page_coordinator_thread
 --buf_flush_wait_batch_end(NULL, BUF_FLUSH_LIST);
 ```
 
-##2.5 buf_flush_sync_all_buf_pools
+##2.5 buf\_flush\_sync\_all\_buf_pools
 
 ```cpp
 buf_flush_sync_all_buf_pools
 --buf_flush_wait_batch_end(NULL, BUF_FLUSH_LIST);
 ```
 
-##2.6 recv_apply_hashed_log_recs
+##2.6 recv\_apply\_hashed\_log_recs
 
 ```cpp
 recv_apply_hashed_log_recs
 --recv_sys->flush_type = BUF_FLUSH_LIST;
 ```
 
-#3.BUF_FLUSH_LRU
+#3.BUF\_FLUSH\_LRU
 
-##3.1 buf_pool_withdraw_blocks
+##3.1 buf\_pool\_withdraw\_blocks
 
 ```cpp
 buf_pool_withdraw_blocks
@@ -67,13 +67,13 @@ buf_pool_withdraw_blocks
 --buf_flush_wait_batch_end(buf_pool, BUF_FLUSH_LRU);
 ```
 
-##3.2 buf_page_init_low
+##3.2 buf\_page\_init\_low
 
 ```cpp
 buf_page_init_low
 --bpage->flush_type = BUF_FLUSH_LRU;
 ```
-##3.3 buf_flush_LRU_list_batch
+##3.3 buf\_flush\_LRU\_list_batch
 
 ```cpp
 buf_flush_LRU_list_batch
@@ -81,7 +81,7 @@ buf_flush_LRU_list_batch
 --buf_flush_page_and_try_neighbors(bpage, BUF_FLUSH_LRU, max, &count);
 ```
 
-##3.4 buf_flush_LRU_list
+##3.4 buf\_flush\_LRU_list
 
 ```cpp
 buf_flush_LRU_list
