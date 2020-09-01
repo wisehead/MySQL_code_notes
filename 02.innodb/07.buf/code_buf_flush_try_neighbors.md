@@ -13,6 +13,19 @@ buf_flush_try_neighbors
 ------------hash_calc_hash
 ------------ut_2pow_remainder(hash_calc_hash(fold, table), table->n_sync_obj)
 ----------hash_get_nth_lock
+--------rw_lock_s_lock
+----------rw_lock_s_lock_func
+------------rw_lock_s_lock_low
+--------------rw_lock_lock_word_decr
+----------------lock->lock_word -= amount;
+--------hash_lock_s_confirm
+--------buf_page_hash_get_low
+----------HASH_SEARCH
+----block_mutex = buf_page_get_mutex(bpage);
+----mutex_enter(block_mutex);
+----rw_lock_s_unlock(hash_lock);
+----buf_flush_ready_for_flush
+----mutex_exit(block_mutex);
 ```
 
 #2.caller 
