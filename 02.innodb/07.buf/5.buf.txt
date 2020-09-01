@@ -650,31 +650,6 @@ buf_read_page
                                            UT_LIST_INSERT_AFTER(LRU, buf_pool->LRU,prev_b, b);//or buf_LRU_add_block_low
                                            buf_LRU_block_free_hashed_page
 ------------------buf_LRU_block_free_hashed_page//page放到free list
-                                           
-22.buf page state
-
-enum buf_page_state {
-	BUF_BLOCK_POOL_WATCH,		/*!< a sentinel for the buffer pool
-					watch, element of buf_pool->watch[] */
-	BUF_BLOCK_ZIP_PAGE,		/*!< contains a clean
-					compressed page */
-	BUF_BLOCK_ZIP_DIRTY,		/*!< contains a compressed
-					page that is in the
-					buf_pool->flush_list */
-
-	BUF_BLOCK_NOT_USED,		/*!< is in the free list;
-					must be after the BUF_BLOCK_ZIP_
-					constants for compressed-only pages
-					@see buf_block_state_valid() */
-	BUF_BLOCK_READY_FOR_USE,	/*!< when buf_LRU_get_free_block
-					returns a block, it is in this state */
-	BUF_BLOCK_FILE_PAGE,		/*!< contains a buffered file page *///unzip page,但是frame可能是zip???
-	BUF_BLOCK_MEMORY,		/*!< contains some main memory
-					object */
-	BUF_BLOCK_REMOVE_HASH		/*!< hash index should be removed
-					before putting to the free list */
-};                                           
-                                           
 
 
 23.buf_flush_or_remove_page
@@ -1627,29 +1602,6 @@ buf_LRU_free_page
 读接口
 buf_page_get_gen
 --UT_LIST_REMOVE(list, buf_pool->zip_clean,&block->page);
-
-
-64.enum buf_page_state {
-	BUF_BLOCK_POOL_WATCH,		/*!< a sentinel for the buffer pool
-					watch, element of buf_pool->watch[] */
-	BUF_BLOCK_ZIP_PAGE,		/*!< contains a clean
-					compressed page */
-	BUF_BLOCK_ZIP_DIRTY,		/*!< contains a compressed
-					page that is in the
-					buf_pool->flush_list */
-
-	BUF_BLOCK_NOT_USED,		/*!< is in the free list;
-					must be after the BUF_BLOCK_ZIP_
-					constants for compressed-only pages
-					@see buf_block_state_valid() */
-	BUF_BLOCK_READY_FOR_USE,	/*!< when buf_LRU_get_free_block
-					returns a block, it is in this state */
-	BUF_BLOCK_FILE_PAGE,		/*!< contains a buffered file page *///unzip page,但是frame可能是zip???
-	BUF_BLOCK_MEMORY,		/*!< contains some main memory
-					object */
-	BUF_BLOCK_REMOVE_HASH		/*!< hash index should be removed
-					before putting to the free list */
-};
 
 
 65. buf_buddy_block_free
