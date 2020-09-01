@@ -23,6 +23,12 @@ buf_flush_try_neighbors
 #2.caller 
 
 ```cpp
+--buf_flush_LRU_list_batch
+----buf_flush_page_and_try_neighbors
+
+--buf_do_flush_list_batch
+----buf_flush_page_and_try_neighbors
+
 buf_flush_page_and_try_neighbors
 --buf_flush_ready_for_flush
 --buf_flush_try_neighbors
