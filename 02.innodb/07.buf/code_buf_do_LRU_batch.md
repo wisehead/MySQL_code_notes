@@ -14,6 +14,7 @@ buf_do_LRU_batch
 ----return (unzip_avg <= io_avg * BUF_LRU_IO_TO_UNZIP_FACTOR);
 --buf_free_from_unzip_LRU_list_batch
 ----buf_LRU_free_page
+--buf_flush_LRU_list_batch
 ```
 
 #2.caller
