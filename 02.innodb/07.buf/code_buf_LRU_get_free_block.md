@@ -19,3 +19,14 @@ buf_LRU_get_free_block
 ----buf_LRU_free_page
 
 ```
+
+
+#2.caller
+
+```cpp
+--buf_buddy_alloc_low
+--buf_block_alloc
+--Buf_fetch<T>::zip_page_handler
+--buf_page_init_for_read
+--buf_page_create
+```
