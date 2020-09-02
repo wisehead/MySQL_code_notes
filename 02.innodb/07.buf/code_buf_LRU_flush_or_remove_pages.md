@@ -45,3 +45,15 @@ buf_LRU_flush_or_remove_pages
 --------buf_flush_page(buf_pool, bpage, BUF_FLUSH_SINGLE_PAGE, false)
 ----------os_aio_simulated_wake_handler_threads
 ```
+
+#2.caller
+
+```cpp
+--FlushObserver::flush
+--fil_close_tablespace
+--Fil_shard::space_delete
+--Fil_shard::space_truncate
+--mark_all_page_dirty_in_tablespace
+--fsp_alter_encrypt_tablespace
+--row_quiesce_table_start
+```
