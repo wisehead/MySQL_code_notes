@@ -22,4 +22,14 @@ buf_LRU_flush_or_remove_pages
 --//case BUF_REMOVE_FLUSH_NO_WRITE:
 --//case BUF_REMOVE_FLUSH_WRITE:
 --buf_LRU_remove_pages
+--//case BUF_REMOVE_ALL_NO_WRITE:
+----buf_LRU_remove_all_pages(buf_pool, id);
+------btr_search_drop_page_hash_when_freed
+------buf_flush_remove
+------buf_LRU_block_remove_hashed(bpage, true, false)
+------buf_LRU_block_free_hashed_page
+--//case BUF_REMOVE_FLUSH_NO_WRITE:
+----buf_flush_dirty_pages(buf_pool, id, observer, false, NULL, strict);
+--//case BUF_REMOVE_FLUSH_WRITE:
+----buf_flush_dirty_pages
 ```
