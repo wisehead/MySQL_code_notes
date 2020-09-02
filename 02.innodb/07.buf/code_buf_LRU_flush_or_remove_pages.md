@@ -39,5 +39,9 @@ buf_LRU_flush_or_remove_pages
 ------------os_thread_yield
 ------------buf_page_unset_sticky(bpage);
 --//case BUF_REMOVE_FLUSH_WRITE:
-----buf_flush_dirty_pages
+----buf_flush_dirty_pages(buf_pool, id, observer, true, trx, strict);
+------buf_flush_or_remove_pages//true
+--------buf_flush_ready_for_flush(bpage, BUF_FLUSH_SINGLE_PAGE)
+--------buf_flush_page(buf_pool, bpage, BUF_FLUSH_SINGLE_PAGE, false)
+----------os_aio_simulated_wake_handler_threads
 ```
