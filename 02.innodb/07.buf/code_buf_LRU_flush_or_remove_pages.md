@@ -30,6 +30,14 @@ buf_LRU_flush_or_remove_pages
 ------buf_LRU_block_free_hashed_page
 --//case BUF_REMOVE_FLUSH_NO_WRITE:
 ----buf_flush_dirty_pages(buf_pool, id, observer, false, NULL, strict);
+------buf_flush_or_remove_pages//false
+--------buf_flush_or_remove_page//false
+----------buf_flush_remove
+--------buf_flush_try_yield
+----------buf_flush_yield
+------------buf_page_set_sticky(bpage);
+------------os_thread_yield
+------------buf_page_unset_sticky(bpage);
 --//case BUF_REMOVE_FLUSH_WRITE:
 ----buf_flush_dirty_pages
 ```
