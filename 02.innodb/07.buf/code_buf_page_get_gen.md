@@ -1,5 +1,19 @@
 #1.buf_page_get_gen
 
+一个典型的读流程是（buf_page_get_gen）：
+
+* 在 Buffer Pool 中分配一个空闲 buf_block_t 来代表即将被载入的数据页
+* 在 page hash 中查看是否有这个数据页，若没有，到 Step-3；否则退出
+* 初始化 buf_block_t（e.g 类型是 BUF_BLOCK_FILE_PAGE）
+* 设置 buf_block_t→ io_fix = BUF_IO_READ
+* 将 buf_block_t 加入到 page_hash 和 LRU_list 中
+* 使用同步模式将文件中数据页读到 Buffer Pool 指定区域，并将 buf_block_t→ frame 指向该页
+* 设置 buf_block_t→ io_fix = BUF_IO_NONE
+
+当其他线程也想请求相同数据页时，首先如果看到 page hash中已经有对应的 buf_block_t（Step-2），说明数据页 已经 或 正被载入 Buffer Pool。若 buf_block_t→io_fix 是 BUF_IO_READ，说明有 pending IO。则该线程需等待 IO 完成（buf_wait_for_read）。即通过 buf_block_t→ io_fix 保证多个线程的互斥
+
+
+
 ```cpp
 // 从 Buffer Pool 或磁盘上获得一个 Page。Page fetch mode：
 //   1-NORMAL：若不在 BP 中则从磁盘文件载入到 BP 中
