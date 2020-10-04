@@ -193,14 +193,3 @@ btr_page_alloc
 4.  如果此时该Extent上的page全部被释放了，将其从`FSEG_NOT_FULL`链表上移除，并加入到表空间的`FSP_FREE`链表上(而非Segment的`FSEG_FREE`链表)。
 
 
-#5. fseg\_alloc\_free\_page\_low
-
-```cpp
-fseg_alloc_free_page_low
---fseg_n_reserved_pages_low
---xdes_get_descriptor_with_space_hdr
-----fil_space_get
---fsp_alloc_free_page
---fseg_find_free_frag_page_slot
---fseg_set_nth_frag_page_no
-```
