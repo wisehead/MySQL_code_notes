@@ -1,82 +1,27 @@
----
-title: InnoDB redo log格式-物理log-yanzongshuai的专栏-51CTO博客
-category: default
-tags: 
-  - blog.51cto.com
-created_at: 2020-05-25 19:22:58
-original_url: https://blog.51cto.com/yanzongshuai/2095349
----
 
-原创
-
-# InnoDB redo log格式-物理log
-
-[![](assets/1590405778-a8d45dccac2b17cf14c316051588baa7.jpg)](https://blog.51cto.com/yanzongshuai)
-
-[yzs的专栏](https://blog.51cto.com/yanzongshuai) 关注 0人评论 [1787人阅读](javascript:) [2018-04-07 13:04:57](javascript:)
-
-在页面上修改N个字节，可以看做物理log。包括以下几种类型：MLOG\_WRITE\_STRING、MLOG\_8BYTES、MLOG\_2BYTES、MLOG\_1BYTES、MLOG\_4BYTES。各种页链表指针修改以及文件头、段页内容的修改都是以这几种方式记录日志。具体格式如下：
-
-1、MLOG\_2BYTES、MLOG\_1BYTES、MLOG\_4BYTES：  
-![InnoDB redo log格式-物理log](assets/1590405778-a0a12ce390426615fa1e2e084b97b1b8.png)  
-2、MLOG\_8BYTES  
-![InnoDB redo log格式-物理log](assets/1590405778-482dc65f3a0ece9b06752d2f4c57d63d.png)  
-3、MLOG\_WRITE\_STRING  
-![InnoDB redo log格式-物理log](assets/1590405778-6cc2e2fadc5de94246345bbad6bc0928.png)  
-4、变长字节算法mach\_write\_compressed：
-
-```ruby
-if (n < 0x80UL) {  
-    mach_write_to_1(b, n);  
-    return(1);  
-} else if (n < 0x4000UL) {  
-    mach_write_to_2(b, n | 0x8000UL);  
-    return(2);  
-} else if (n < 0x200000UL) {  
-    mach_write_to_3(b, n | 0xC00000UL);  
-    return(3);  
-} else if (n < 0x10000000UL) {  
-    mach_write_to_4(b, n | 0xE0000000UL);  
-    return(4);  
-} else {  
-    mach_write_to_1(b, 0xF0UL);  
-    mach_write_to_4(b + 1, n);  
-    return(5);  
-}  
-```
-
-5、mlog\_write\_ulint、mlog\_write\_ull、mlog\_log\_string分别是写入1、2、4；8字节；字符串的日志写入函数。
-
-©著作权归作者所有：来自51CTO博客作者yzs的专栏的原创作品，如需转载，请注明出处，否则将追究法律责任
-
-[InnoDB](https://blog.51cto.com/search/result?q=InnoDB) [redo](https://blog.51cto.com/search/result?q=redo) [log](https://blog.51cto.com/search/result?q=log) [MySQL源码研究](https://blog.51cto.com/yanzongshuai/category1.html)
-
-1
-
-分享
-
-收藏
-
-[上一篇：InnoDB数据字典--字典表加...](https://blog.51cto.com/yanzongshuai/2095186 "InnoDB数据字典--字典表加载") [下一篇：InnoDB MVCC实现原理及...](https://blog.51cto.com/yanzongshuai/2103632 "InnoDB MVCC实现原理及源码解析")
-
- [![](assets/1590405778-a8d45dccac2b17cf14c316051588baa7.jpg)](https://blog.51cto.com/yanzongshuai) 
-
-[yzs的专栏](https://blog.51cto.com/yanzongshuai)
-
-### 88篇文章，39W+人气，24粉丝
-
-#### 专注于MySQL、PostgreSQL
-
-关注
-
----------------------------------------------------
+### 插入记录
 
 
-原网址: [访问](https://blog.51cto.com/yanzongshuai/2095349)
+用户插入的数据行，在内存中的 structure 叫 tuple，在物理上（数据页上）的结构叫 record。record 在数据页物理空间上是乱序存储，通过 record 头部组织成单向链表。这里有两个概念需要说明：
 
-创建于: 2020-05-25 19:22:58
+*   cursor record：即（3，C），是待插入记录的前一个记录
+*   tnsert record：即（5，E），待插入记录
 
-目录: default
+![](assets/1601799759-4abddb75d83bcf589de4c8b6e227817f.png)
 
-标签: `blog.51cto.com`
+这里再说明一下 INSERT redo 日志的格式。如下图：
+
+*   original offset：在上文已说明，是指 record 真实数据的起始偏移
+*   extra info：用意是**对记录压缩**，即在 cursor record 的基础上，对 insert record 进行压缩，大致是如果 cursor record 和 insert record 头 N 个字节相同，则只写入 insert record 从第 N+1 字节（mismatch）到末尾的记录
+    
+
+![](assets/1601799759-b7c1eaa72cd7f920741ba5df432bc745.png)
+
+假设插入记录时（5，E），尤其注意其中的 rec\_offset 指的是（3，C）的偏移。这样在 Crash Recovery 时回放到 INSERT redo，即会找到（3，C），将「original rec boay」，即（5，E）作为Record插入到（3，C）之后，InnoDB redo 日志是「物理逻辑」日志，**Physiological**（_**physical-to-a-page logical-within-a-page**，详见 Jim Gray《Transaction Processing》10.3.6小节_ ），可以看到，如果执行两次 INSERT redo，会导致在数据页中有两个（5，E）记录：
+
+*   （3，C）→ （5，E）→ （5，E）  
+    
+
+ **InnoDB Redo日志****不具有幂等性**
+
 
