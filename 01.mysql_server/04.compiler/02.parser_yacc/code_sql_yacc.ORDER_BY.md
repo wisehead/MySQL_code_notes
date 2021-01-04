@@ -250,6 +250,105 @@ create_view_select:
 #6.select_paren
 
 ```cpp
+/* Need select_init2 for subselects. */
+select_init:
+          SELECT_SYM select_init2
+        | '(' select_paren ')' union_opt
+        ;
+```
+
+#7.select_init
+
+```cpp
+/*
+  Select : retrieve data from table
+*/
+
+
+select:
+          select_init
+          {
+            LEX *lex= Lex;
+            lex->sql_command= SQLCOM_SELECT;
+          }
+        ;
+union_list:
+          UNION_SYM union_option
+          {
+            if (add_select_to_union_list(Lex, (bool)$2, TRUE))
+              MYSQL_YYABORT;
+          }
+          select_init
+          {
+            /*
+              Remove from the name resolution context stack the context of the
+              last select in the union.
+            */
+            Lex->pop_context();
+          }
+        ;        
+```
+
+#8.select
+
+```cpp
+/* Verb clauses, except begin */
+statement:
+          activate_risky_command
+        | alter
+        | analyze
+        | binlog_base64_event
+        | call
+        | change
+        | check
+        | checksum
+        | commit
+        | create
+        | deactivate_risky_command
+        | deallocate
+        | delete
+        | describe
+        | do
+        | drop
+        | execute
+        | flush
+        | get_diagnostics
+        | grant
+        | handler
+        | help
+        | insert
+        | install
+        | kill
+        | load
+        | lock
+        | optimize
+        | keycache
+        | partition_entry
+        | preload
+        | prepare
+        | purge
+        | release
+        | rename
+        | repair
+        | replace
+        | reset
+        | resignal_stmt
+        | revoke
+        | rollback
+        | savepoint
+        | select
+        | set
+        | signal_stmt
+        | show
+        | slave
+        | start
+        | truncate
+        | uninstall
+        | unlock
+        | update
+        | use
+        | xa
+        ;
 ```
 
 #select_init2
