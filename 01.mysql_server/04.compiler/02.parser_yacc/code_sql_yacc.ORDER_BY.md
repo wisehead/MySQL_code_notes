@@ -351,6 +351,537 @@ statement:
         ;
 ```
 
-#select_init2
-#create_view_select
-#. select_from
+#9.select_init2
+
+```cpp
+/* Need select_init2 for subselects. */
+select_init:
+          SELECT_SYM select_init2
+        | '(' select_paren ')' union_opt
+        ;
+```
+
+#10.create_view_select
+#11. select_from
+```cpp
+opt_select_from:
+          opt_limit_clause {}
+        | select_from select_lock_type
+        ;
+
+/*
+ End of partition parser part
+*/
+```
+
+#12. opt_select_from
+
+```cpp
+
+create_select:
+          SELECT_SYM
+          {
+            LEX *lex=Lex;
+            if (lex->sql_command == SQLCOM_INSERT)
+              lex->sql_command= SQLCOM_INSERT_SELECT;
+            else if (lex->sql_command == SQLCOM_REPLACE)
+              lex->sql_command= SQLCOM_REPLACE_SELECT;
+            /*
+              The following work only with the local list, the global list
+              is created correctly in this case
+            */
+            lex->current_select->table_list.save_and_clear(&lex->save_list);
+            mysql_init_select(lex);
+            lex->current_select->parsing_place= SELECT_LIST;
+          }
+          select_options select_item_list
+          {
+            Select->parsing_place= NO_MATTER;
+          }
+          opt_select_from
+          {
+            /*
+              The following work only with the local list, the global list
+              is created correctly in this case
+            */
+            Lex->current_select->table_list.push_front(&Lex->save_list);
+          }
+        ;
+        
+/* The equivalent of select_part2 for nested queries. */
+select_part2_derived:
+          {
+            LEX *lex= Lex;
+            SELECT_LEX *sel= lex->current_select;
+            if (sel->linkage != UNION_TYPE)
+              mysql_init_select(lex);
+            lex->current_select->parsing_place= SELECT_LIST;
+          }
+          opt_query_expression_options select_item_list
+          {
+            Select->parsing_place= NO_MATTER;
+          }
+          opt_select_from select_lock_type
+        ;      
+
+select_derived2:
+          {
+            LEX *lex= Lex;
+            lex->derived_tables|= DERIVED_SUBQUERY;
+            if (!lex->expr_allows_subselect ||
+                lex->sql_command == (int)SQLCOM_PURGE)
+            {
+              my_parse_error(ER(ER_SYNTAX_ERROR));
+              MYSQL_YYABORT;
+            }
+            if (lex->current_select->linkage == GLOBAL_OPTIONS_TYPE ||
+                mysql_new_select(lex, 1))
+              MYSQL_YYABORT;
+            mysql_init_select(lex);
+            lex->current_select->linkage= DERIVED_TABLE_TYPE;
+            lex->current_select->parsing_place= SELECT_LIST;
+          }
+          select_options select_item_list
+          {
+            Select->parsing_place= NO_MATTER;
+          }
+          opt_select_from
+        ;
+                          
+```
+
+#13. create_select
+```cpp
+create2a:
+          create_field_list ')' opt_create_table_options
+          opt_create_partitioning
+          create3 {}
+        |  opt_create_partitioning
+           create_select ')'
+           { Select->set_braces(1);}
+           union_opt {}
+        ;
+
+create3:
+          /* empty */ {}
+        | opt_duplicate opt_as create_select
+          { Select->set_braces(0);}
+          union_clause {}
+        | opt_duplicate opt_as '(' create_select ')'
+          { Select->set_braces(1);}
+          union_opt {}
+        ;
+insert_values:
+          VALUES values_list {}
+        | VALUE_SYM values_list {}
+        | create_select
+          { Select->set_braces(0);}
+          union_clause {}
+        | '(' create_select ')'
+          { Select->set_braces(1);}
+          union_opt {}
+        ;        
+```
+
+#14.create2a
+```cpp
+create2:
+          '(' create2a {}
+        | opt_create_table_options
+          opt_create_partitioning
+          create3 {}
+        | LIKE table_ident
+          {
+            THD *thd= YYTHD;
+            TABLE_LIST *src_table;
+            LEX *lex= thd->lex;
+
+            lex->create_info.options|= HA_LEX_CREATE_TABLE_LIKE;
+            src_table= lex->select_lex.add_table_to_list(thd, $2, NULL, 0,
+                                                         TL_READ,
+                                                         MDL_SHARED_READ);
+            if (! src_table)
+              MYSQL_YYABORT;
+            /* CREATE TABLE ... LIKE is not allowed for views. */
+            src_table->required_type= FRMTYPE_TABLE;
+          }
+        | '(' LIKE table_ident ')'
+          {
+            THD *thd= YYTHD;
+            TABLE_LIST *src_table;
+            LEX *lex= thd->lex;
+
+            lex->create_info.options|= HA_LEX_CREATE_TABLE_LIKE;
+            src_table= lex->select_lex.add_table_to_list(thd, $3, NULL, 0,
+                                                         TL_READ,
+                                                         MDL_SHARED_READ);
+            if (! src_table)
+              MYSQL_YYABORT;
+            /* CREATE TABLE ... LIKE is not allowed for views. */
+            src_table->required_type= FRMTYPE_TABLE;
+          }
+        ;
+        
+/* create a table */
+
+create:
+          CREATE opt_table_options TABLE_SYM opt_if_not_exists table_ident
+          {
+            THD *thd= YYTHD;
+            LEX *lex= thd->lex;
+            lex->sql_command= SQLCOM_CREATE_TABLE;
+            if (!lex->select_lex.add_table_to_list(thd, $5, NULL,
+                                                   TL_OPTION_UPDATING,
+                                                   TL_WRITE, MDL_SHARED))
+              MYSQL_YYABORT;
+            /*
+              Instruct open_table() to acquire SHARED lock to check the
+              existance of table. If the table does not exist then
+              it will be upgraded EXCLUSIVE MDL lock. If table exist
+              then open_table() will return with an error or warning.
+            */
+            lex->query_tables->open_strategy= TABLE_LIST::OPEN_FOR_CREATE;
+            lex->alter_info.reset();
+            lex->col_list.empty();
+            lex->change=NullS;
+            memset(&lex->create_info, 0, sizeof(lex->create_info));
+            lex->create_info.options=$2 | $4;
+            lex->create_info.default_table_charset= NULL;
+            lex->name.str= 0;
+            lex->name.length= 0;
+            lex->create_last_non_select_table= lex->last_table();
+          }
+          create2
+          {
+            THD *thd= YYTHD;
+            LEX *lex= thd->lex;
+            lex->current_select= &lex->select_lex;
+            if ((lex->create_info.used_fields & HA_CREATE_USED_ENGINE) &&
+                !lex->create_info.db_type)
+            {
+              lex->create_info.db_type=
+                lex->create_info.options & HA_LEX_CREATE_TMP_TABLE ?
+                ha_default_temp_handlerton(thd) : ha_default_handlerton(thd);
+              push_warning_printf(YYTHD, Sql_condition::WARN_LEVEL_WARN,
+                                  ER_WARN_USING_OTHER_HANDLER,
+                                  ER(ER_WARN_USING_OTHER_HANDLER),
+                                  ha_resolve_storage_engine_name(lex->create_info.db_type),
+                                  $5->table.str);
+            }
+            create_table_set_open_action_and_adjust_tables(lex);
+          }
+        | CREATE opt_unique INDEX_SYM ident key_alg ON table_ident        
+```
+
+#15.create3
+
+```cpp
+create2:
+          '(' create2a {}
+        | opt_create_table_options
+          opt_create_partitioning
+          create3 {}
+        | LIKE table_ident
+          {
+            THD *thd= YYTHD;
+            TABLE_LIST *src_table;
+            LEX *lex= thd->lex;
+
+            lex->create_info.options|= HA_LEX_CREATE_TABLE_LIKE;
+            src_table= lex->select_lex.add_table_to_list(thd, $2, NULL, 0,
+                                                         TL_READ,
+                                                         MDL_SHARED_READ);
+            if (! src_table)
+              MYSQL_YYABORT;
+            /* CREATE TABLE ... LIKE is not allowed for views. */
+            src_table->required_type= FRMTYPE_TABLE;
+          }
+        | '(' LIKE table_ident ')'
+          {
+            THD *thd= YYTHD;
+            TABLE_LIST *src_table;
+            LEX *lex= thd->lex;
+
+            lex->create_info.options|= HA_LEX_CREATE_TABLE_LIKE;
+            src_table= lex->select_lex.add_table_to_list(thd, $3, NULL, 0,
+                                                         TL_READ,
+                                                         MDL_SHARED_READ);
+            if (! src_table)
+              MYSQL_YYABORT;
+            /* CREATE TABLE ... LIKE is not allowed for views. */
+            src_table->required_type= FRMTYPE_TABLE;
+          }
+        ;
+
+create2a:
+          create_field_list ')' opt_create_table_options
+          opt_create_partitioning
+          create3 {}
+        |  opt_create_partitioning
+           create_select ')'
+           { Select->set_braces(1);}
+           union_opt {}
+        ;
+```
+
+#16.insert_values
+```cpp
+insert_field_spec:
+          insert_values {}
+        | '(' ')' insert_values {}
+        | '(' fields ')' insert_values {}
+        | SET
+          {
+            LEX *lex=Lex;
+            if (!(lex->insert_list = new List_item) ||
+                lex->many_values.push_back(lex->insert_list))
+              MYSQL_YYABORT;
+          }
+          ident_eq_list
+        ;
+
+/*
+** Insert : add new data to table
+*/
+
+insert:
+          INSERT
+          {
+            LEX *lex= Lex;
+            lex->sql_command= SQLCOM_INSERT;
+            lex->duplicates= DUP_ERROR;
+            mysql_init_select(lex);
+          }
+          insert_lock_option
+          opt_ignore insert2
+          {
+            Select->set_lock_for_tables($3);
+            Lex->current_select= &Lex->select_lex;
+          }
+          insert_field_spec opt_insert_update
+          {}
+        ;
+
+replace:
+          REPLACE
+          {
+            LEX *lex=Lex;
+            lex->sql_command = SQLCOM_REPLACE;
+            lex->duplicates= DUP_REPLACE;
+            mysql_init_select(lex);
+          }
+          replace_lock_option insert2
+          {
+            Select->set_lock_for_tables($3);
+            Lex->current_select= &Lex->select_lex;
+          }
+          insert_field_spec
+          {}
+        ;        
+```
+
+#17.select_part2_derived
+
+```cpp
+/* The equivalent of select_paren for nested queries. */
+select_paren_derived:
+          SELECT_SYM select_part2_derived
+          {
+            if (setup_select_in_parentheses(Lex))
+              MYSQL_YYABORT;
+          }
+        | '(' select_paren_derived ')'
+        ;
+
+/* The equivalent of select_init2 for nested queries. */
+select_init2_derived:
+          select_part2_derived
+          {
+            LEX *lex= Lex;
+            SELECT_LEX * sel= lex->current_select;
+            if (lex->current_select->set_braces(0))
+            {
+              my_parse_error(ER(ER_SYNTAX_ERROR));
+              MYSQL_YYABORT;
+            }
+            if (sel->linkage == UNION_TYPE &&
+                sel->master_unit()->first_select()->braces)
+            {
+              my_parse_error(ER(ER_SYNTAX_ERROR));
+              MYSQL_YYABORT;
+            }
+          }
+        ;        
+```
+
+#18.select_paren_derived
+```cpp
+query_specification:
+          SELECT_SYM select_init2_derived
+          {
+            $$= Lex->current_select->master_unit()->first_select();
+          }
+        | '(' select_paren_derived ')'
+          {
+            $$= Lex->current_select->master_unit()->first_select();
+          }
+        ;
+```
+
+#19. query_specification
+
+```cpp
+/*
+  This rule accepts just about anything. The reason is that we have
+  empty-producing rules in the beginning of rules, in this case
+  subselect_start. This forces bison to take a decision which rules to
+  reduce by long before it has seen any tokens. This approach ties us
+  to a very limited class of parseable languages, and unfortunately
+  SQL is not one of them. The chosen 'solution' was this rule, which
+  produces just about anything, even complete bogus statements, for
+  instance ( table UNION SELECT 1 ).
+
+  Fortunately, we know that the semantic value returned by
+  select_derived is NULL if it contained a derived table, and a pointer to
+  the base table's TABLE_LIST if it was a base table. So in the rule
+  regarding union's, we throw a parse error manually and pretend it
+  was bison that did it.
+
+  Also worth noting is that this rule concerns query expressions in
+  the from clause only. Top level select statements and other types of
+  subqueries have their own union rules.
+ */
+select_derived_union:
+          select_derived opt_union_order_or_limit
+          {
+            if ($1 && $2)
+            {
+              my_parse_error(ER(ER_SYNTAX_ERROR));
+              MYSQL_YYABORT;
+            }
+          }
+        | select_derived_union
+          UNION_SYM
+          union_option
+          {
+            if (add_select_to_union_list(Lex, (bool)$3, FALSE))
+              MYSQL_YYABORT;
+          }
+          query_specification
+          {
+            /*
+              Remove from the name resolution context stack the context of the
+              last select in the union.
+             */
+            Lex->pop_context();
+          }
+          opt_union_order_or_limit
+          {
+            if ($1 != NULL)
+            {
+              my_parse_error(ER(ER_SYNTAX_ERROR));
+              MYSQL_YYABORT;
+            }
+          }
+        ;
+query_expression_body:
+          query_specification opt_union_order_or_limit
+        | query_expression_body
+          UNION_SYM union_option
+          {
+            if (add_select_to_union_list(Lex, (bool)$3, FALSE))
+              MYSQL_YYABORT;
+          }
+          query_specification
+          opt_union_order_or_limit
+          {
+            Lex->pop_context();
+            $$= $1;
+          }
+        ;        
+```
+#20.select_derived_union
+```cpp
+/*
+   This is a flattening of the rules <table factor> and <table primary>
+   in the SQL:2003 standard, since we don't have <sample clause>
+
+   I.e.
+   <table factor> ::= <table primary> [ <sample clause> ]
+*/
+/* Warning - may return NULL in case of incomplete SELECT */
+table_factor:
+          /*
+            Represents a flattening of the following rules from the SQL:2003
+            standard. This sub-rule corresponds to the sub-rule
+            <table primary> ::= ... | <derived table> [ AS ] <correlation name>
+
+            The following rules have been flattened into query_expression_body
+            (since we have no <with clause>).
+
+            <derived table> ::= <table subquery>
+            <table subquery> ::= <subquery>
+            <subquery> ::= <left paren> <query expression> <right paren>
+            <query expression> ::= [ <with clause> ] <query expression body>
+
+            For the time being we use the non-standard rule
+            select_derived_union which is a compromise between the standard
+            and our parser. Possibly this rule could be replaced by our
+            query_expression_body.
+          */
+        | '(' get_select_lex select_derived_union ')' opt_table_alias
+          {
+            /* Use $2 instead of Lex->current_select as derived table will
+               alter value of Lex->current_select. */
+            if (!($3 || $5) && $2->embedding &&
+                !$2->embedding->nested_join->join_list.elements)
+            {
+              /* we have a derived table ($3 == NULL) but no alias,
+                 Since we are nested in further parentheses so we
+                 can pass NULL to the outer level parentheses
+                 Permits parsing of "((((select ...))) as xyz)" */
+              $$= 0;
+            }
+            else if (!$3)
+            {
+              /* Handle case of derived table, alias may be NULL if there
+                 are no outer parentheses, add_table_to_list() will throw
+                 error in this case */
+              LEX *lex=Lex;
+              SELECT_LEX *sel= lex->current_select;
+              SELECT_LEX_UNIT *unit= sel->master_unit();
+              lex->current_select= sel= unit->outer_select();
+              Table_ident *ti= new Table_ident(unit);
+              if (ti == NULL)
+                MYSQL_YYABORT;
+              if (!($$= sel->add_table_to_list(lex->thd,
+                                               ti, $5, 0,
+                                               TL_READ, MDL_SHARED_READ)))
+
+                MYSQL_YYABORT;
+              sel->add_joined_table($$);
+              lex->pop_context();
+              lex->nest_level--;
+            }
+            else if ($5 != NULL)
+            {
+              /*
+                Tables with or without joins within parentheses cannot
+                have aliases, and we ruled out derived tables above.
+              */
+              my_parse_error(ER(ER_SYNTAX_ERROR));
+              MYSQL_YYABORT;
+            }
+            else
+            {
+              /* nested join: FROM (t1 JOIN t2 ...),
+                 nest_level is the same as in the outer query */
+              $$= $3;
+            }
+          }
+        ;
+```
+#21. table_factor
+#query_expression_body
+#select_init2_derived
+#select_derived2
