@@ -1114,8 +1114,217 @@ single_multi:
         ;                    
 ```
 
-#select_derived
-#join_table
-#query_expression_body
-#select_init2_derived
-#select_derived2
+#26.select_derived
+```cpp
+/*
+  This rule accepts just about anything. The reason is that we have
+  empty-producing rules in the beginning of rules, in this case
+  subselect_start. This forces bison to take a decision which rules to
+  reduce by long before it has seen any tokens. This approach ties us
+  to a very limited class of parseable languages, and unfortunately
+  SQL is not one of them. The chosen 'solution' was this rule, which
+  produces just about anything, even complete bogus statements, for
+  instance ( table UNION SELECT 1 ).
+
+  Fortunately, we know that the semantic value returned by
+  select_derived is NULL if it contained a derived table, and a pointer to
+  the base table's TABLE_LIST if it was a base table. So in the rule
+  regarding union's, we throw a parse error manually and pretend it
+  was bison that did it.
+
+  Also worth noting is that this rule concerns query expressions in
+  the from clause only. Top level select statements and other types of
+  subqueries have their own union rules.
+ */
+select_derived_union:
+          select_derived opt_union_order_or_limit
+          {
+            if ($1 && $2)
+            {
+              my_parse_error(ER(ER_SYNTAX_ERROR));
+              MYSQL_YYABORT;
+            }
+          }
+```
+#27.join_table
+```cpp
+/* Equivalent to <table reference> in the SQL:2003 standard. */
+/* Warning - may return NULL in case of incomplete SELECT */
+table_ref:
+          table_factor { $$=$1; }
+        | join_table
+          {
+            LEX *lex= Lex;
+            if (!($$= lex->current_select->nest_last_join(lex->thd)))
+              MYSQL_YYABORT;
+          }
+        ;
+        
+```
+#28.query_expression_body
+```cpp
+/* Corresponds to <query expression> in the SQL:2003 standard. */
+subselect:
+          subselect_start query_expression_body subselect_end
+          {
+            $$= $2;
+          }
+        ;
+```
+
+#29.subselect
+```cpp
+bool_pri:
+          bool_pri IS NULL_SYM %prec IS
+          {
+            $$= new (YYTHD->mem_root) Item_func_isnull($1);
+            if ($$ == NULL)
+              MYSQL_YYABORT;
+          }
+        | bool_pri IS not NULL_SYM %prec IS
+          {
+            $$= new (YYTHD->mem_root) Item_func_isnotnull($1);
+            if ($$ == NULL)
+              MYSQL_YYABORT;
+          }
+        | bool_pri EQUAL_SYM predicate %prec EQUAL_SYM
+          {
+            $$= new (YYTHD->mem_root) Item_func_equal($1,$3);
+            if ($$ == NULL)
+              MYSQL_YYABORT;
+          }
+        | bool_pri comp_op predicate %prec EQ
+          {
+            $$= (*$2)(0)->create($1,$3);
+            if ($$ == NULL)
+              MYSQL_YYABORT;
+          }
+        | bool_pri comp_op all_or_any '(' subselect ')' %prec EQ
+          {
+            $$= all_any_subquery_creator($1, $2, $3, $5);
+            if ($$ == NULL)
+              MYSQL_YYABORT;
+          }
+        | predicate
+        ;
+
+predicate:
+          bit_expr IN_SYM '(' subselect ')'
+          {
+            $$= new (YYTHD->mem_root) Item_in_subselect($1, $4);
+            if ($$ == NULL)
+              MYSQL_YYABORT;
+          }
+        | bit_expr not IN_SYM '(' subselect ')'
+          {
+            THD *thd= YYTHD;
+            Item *item= new (thd->mem_root) Item_in_subselect($1, $5);
+            if (item == NULL)
+              MYSQL_YYABORT;
+            $$= negate_expression(thd, item);
+            if ($$ == NULL)
+              MYSQL_YYABORT;
+          }
+simple_expr:
+        | '(' subselect ')'
+          {
+            $$= new (YYTHD->mem_root) Item_singlerow_subselect($2);
+            if ($$ == NULL)
+              MYSQL_YYABORT;
+          }                  
+```
+
+#30.select_init2_derived
+```cpp
+query_specification:
+          SELECT_SYM select_init2_derived
+          {
+            $$= Lex->current_select->master_unit()->first_select();
+          }
+        | '(' select_paren_derived ')'
+          {
+            $$= Lex->current_select->master_unit()->first_select();
+          }
+        ;
+
+
+```
+
+#31.select_derived2
+```cpp
+/*
+   This is a flattening of the rules <table factor> and <table primary>
+   in the SQL:2003 standard, since we don't have <sample clause>
+
+   I.e.
+   <table factor> ::= <table primary> [ <sample clause> ]
+*/
+/* Warning - may return NULL in case of incomplete SELECT */
+table_factor:
+          {
+            SELECT_LEX *sel= Select;
+            sel->table_join_options= 0;
+          }
+          table_ident opt_use_partition opt_table_alias opt_key_definition
+          {
+            if (!($$= Select->add_table_to_list(YYTHD, $2, $4,
+                                                Select->get_table_join_options(),
+                                                YYPS->m_lock_type,
+                                                YYPS->m_mdl_type,
+                                                Select->pop_index_hints(),
+                                                $3)))
+              MYSQL_YYABORT;
+            Select->add_joined_table($$);
+          }
+        | select_derived_init get_select_lex select_derived2
+```
+
+#32.bool_pri
+```cpp
+/* all possible expressions */
+expr:
+        | bool_pri IS TRUE_SYM %prec IS
+          {
+            $$= new (YYTHD->mem_root) Item_func_istrue($1);
+            if ($$ == NULL)
+              MYSQL_YYABORT;
+          }
+        | bool_pri IS not TRUE_SYM %prec IS
+          {
+            $$= new (YYTHD->mem_root) Item_func_isnottrue($1);
+            if ($$ == NULL)
+              MYSQL_YYABORT;
+          }
+        | bool_pri IS FALSE_SYM %prec IS
+          {
+            $$= new (YYTHD->mem_root) Item_func_isfalse($1);
+            if ($$ == NULL)
+              MYSQL_YYABORT;
+          }
+        | bool_pri IS not FALSE_SYM %prec IS
+          {
+            $$= new (YYTHD->mem_root) Item_func_isnotfalse($1);
+            if ($$ == NULL)
+              MYSQL_YYABORT;
+          }
+        | bool_pri IS UNKNOWN_SYM %prec IS
+          {
+            $$= new (YYTHD->mem_root) Item_func_isnull($1);
+            if ($$ == NULL)
+              MYSQL_YYABORT;
+          }
+        | bool_pri IS not UNKNOWN_SYM %prec IS
+          {
+            $$= new (YYTHD->mem_root) Item_func_isnotnull($1);
+            if ($$ == NULL)
+              MYSQL_YYABORT;
+          }
+        | bool_pri
+        ;
+
+        
+```
+
+
+#predicate
+#simple_expr
