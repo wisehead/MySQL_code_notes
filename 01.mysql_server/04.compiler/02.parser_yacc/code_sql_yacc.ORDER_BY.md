@@ -882,6 +882,240 @@ table_factor:
         ;
 ```
 #21. table_factor
+```cpp
+/* Equivalent to <table reference> in the SQL:2003 standard. */
+/* Warning - may return NULL in case of incomplete SELECT */
+table_ref:
+          table_factor { $$=$1; }
+        | join_table
+          {
+            LEX *lex= Lex;
+            if (!($$= lex->current_select->nest_last_join(lex->thd)))
+              MYSQL_YYABORT;
+          }
+        ;
+        
+/*
+  Notice that JOIN is a left-associative operation, and it must be parsed
+  as such, that is, the parser must process first the left join operand
+  then the right one. Such order of processing ensures that the parser
+  produces correct join trees which is essential for semantic analysis
+  and subsequent optimization phases.
+*/
+join_table:
+          /* INNER JOIN variants */
+          /*
+            Use %prec to evaluate production 'table_ref' before 'normal_join'
+            so that [INNER | CROSS] JOIN is properly nested as other
+            left-associative joins.
+          */
+          table_ref normal_join table_ref %prec TABLE_REF_PRIORITY
+          { MYSQL_YYABORT_UNLESS($1 && ($$=$3)); }
+        | table_ref STRAIGHT_JOIN table_factor
+          { MYSQL_YYABORT_UNLESS($1 && ($$=$3)); $3->straight=1; }
+        | table_ref normal_join table_ref
+          ON
+          {
+            MYSQL_YYABORT_UNLESS($1 && $3);
+            /* Change the current name resolution context to a local context. */
+            if (push_new_name_resolution_context(YYTHD, $1, $3))
+              MYSQL_YYABORT;
+            Select->parsing_place= IN_ON;
+          }
+          expr
+          {
+            add_join_on($3,$6);
+            Lex->pop_context();
+            Select->parsing_place= NO_MATTER;
+          }
+        | table_ref STRAIGHT_JOIN table_factor
+          ON
+          {
+            MYSQL_YYABORT_UNLESS($1 && $3);
+            /* Change the current name resolution context to a local context. */
+            if (push_new_name_resolution_context(YYTHD, $1, $3))
+              MYSQL_YYABORT;
+            Select->parsing_place= IN_ON;
+          }
+          expr
+          {
+            $3->straight=1;
+            add_join_on($3,$6);
+            Lex->pop_context();
+            Select->parsing_place= NO_MATTER;
+          }
+        | table_ref normal_join table_ref
+          USING
+          {
+            MYSQL_YYABORT_UNLESS($1 && $3);
+          }
+          '(' using_list ')'
+          { add_join_natural($1,$3,$7,Select); $$=$3; }
+        | table_ref NATURAL JOIN_SYM table_factor
+          {
+            MYSQL_YYABORT_UNLESS($1 && ($$=$4));
+            add_join_natural($1,$4,NULL,Select);
+          }
+
+          /* LEFT JOIN variants */        
+```
+#22. table_ref
+```cpp
+/*
+  The ODBC escape syntax for Outer Join is: '{' OJ join_table '}'
+  The parser does not define OJ as a token, any ident is accepted
+  instead in $2 (ident). Also, all productions from table_ref can
+  be escaped, not only join_table. Both syntax extensions are safe
+  and are ignored.
+*/
+esc_table_ref:
+        table_ref { $$=$1; }
+      | '{' ident table_ref '}' { $$=$3; }
+      ;
+/*
+  Notice that JOIN is a left-associative operation, and it must be parsed
+  as such, that is, the parser must process first the left join operand
+  then the right one. Such order of processing ensures that the parser
+  produces correct join trees which is essential for semantic analysis
+  and subsequent optimization phases.
+*/
+join_table:
+          /* INNER JOIN variants */
+          /*
+            Use %prec to evaluate production 'table_ref' before 'normal_join'
+            so that [INNER | CROSS] JOIN is properly nested as other
+            left-associative joins.
+          */
+          table_ref normal_join table_ref %prec TABLE_REF_PRIORITY
+          { MYSQL_YYABORT_UNLESS($1 && ($$=$3)); }
+        | table_ref STRAIGHT_JOIN table_factor
+          { MYSQL_YYABORT_UNLESS($1 && ($$=$3)); $3->straight=1; }
+        | table_ref normal_join table_ref
+          ON
+          {
+            MYSQL_YYABORT_UNLESS($1 && $3);
+            /* Change the current name resolution context to a local context. */
+            if (push_new_name_resolution_context(YYTHD, $1, $3))
+              MYSQL_YYABORT;
+            Select->parsing_place= IN_ON;
+          }
+          expr
+          {
+            add_join_on($3,$6);
+            Lex->pop_context();
+            Select->parsing_place= NO_MATTER;
+          }
+        | table_ref STRAIGHT_JOIN table_factor
+          ON      
+```
+#23.esc_table_ref
+```cpp
+/* Equivalent to <table reference list> in the SQL:2003 standard. */
+/* Warning - may return NULL in case of incomplete SELECT */
+derived_table_list:
+          esc_table_ref { $$=$1; }
+        | derived_table_list ',' esc_table_ref
+          {
+            MYSQL_YYABORT_UNLESS($1 && ($$=$3));
+          }
+        ;
+```
+#24. derived_table_list
+
+```cpp
+join_table_list:
+          derived_table_list { MYSQL_YYABORT_UNLESS($$=$1); }
+        ;
+/* handle contents of parentheses in join expression */
+select_derived:
+          get_select_lex
+          {
+            LEX *lex= Lex;
+            if ($1->init_nested_join(lex->thd))
+              MYSQL_YYABORT;
+          }
+          derived_table_list
+          {
+            LEX *lex= Lex;
+            /* for normal joins, $3 != NULL and end_nested_join() != NULL,
+               for derived tables, both must equal NULL */
+
+            if (!($$= $1->end_nested_join(lex->thd)) && $3)
+              MYSQL_YYABORT;
+            if (!$3 && $$)
+            {
+              my_parse_error(ER(ER_SYNTAX_ERROR));
+              MYSQL_YYABORT;
+            }
+          }
+        ;        
+```
+
+#25.join_table_list
+```cpp
+select_from:
+          FROM join_table_list where_clause group_clause having_clause
+          opt_order_clause opt_limit_clause procedure_analyse_clause
+          {
+            Select->context.table_list=
+              Select->context.first_name_resolution_table=
+                Select->table_list.first;
+          }
+
+/* Update rows in a table */
+
+update:
+          UPDATE_SYM
+          {
+            LEX *lex= Lex;
+            mysql_init_select(lex);
+            lex->sql_command= SQLCOM_UPDATE;
+            lex->duplicates= DUP_ERROR;
+          }
+          opt_low_priority opt_ignore join_table_list
+          SET update_list
+          
+single_multi:
+          FROM table_ident opt_use_partition
+          {
+            if (!Select->add_table_to_list(YYTHD, $2, NULL, TL_OPTION_UPDATING,
+                                           YYPS->m_lock_type,
+                                           YYPS->m_mdl_type,
+                                           NULL,
+                                           $3))
+              MYSQL_YYABORT;
+            YYPS->m_lock_type= TL_READ_DEFAULT;
+            YYPS->m_mdl_type= MDL_SHARED_READ;
+          }
+          where_clause opt_order_clause
+          delete_limit_clause {}
+        | table_wild_list
+          {
+            mysql_init_multi_delete(Lex);
+            YYPS->m_lock_type= TL_READ_DEFAULT;
+            YYPS->m_mdl_type= MDL_SHARED_READ;
+          }
+          FROM join_table_list where_clause
+          {
+            if (multi_delete_set_locks_and_link_aux_tables(Lex))
+              MYSQL_YYABORT;
+          }
+        | FROM table_alias_ref_list
+          {
+            mysql_init_multi_delete(Lex);
+            YYPS->m_lock_type= TL_READ_DEFAULT;
+            YYPS->m_mdl_type= MDL_SHARED_READ;
+          }
+          USING join_table_list where_clause
+          {
+            if (multi_delete_set_locks_and_link_aux_tables(Lex))
+              MYSQL_YYABORT;
+          }
+        ;                    
+```
+
+#select_derived
+#join_table
 #query_expression_body
 #select_init2_derived
 #select_derived2
