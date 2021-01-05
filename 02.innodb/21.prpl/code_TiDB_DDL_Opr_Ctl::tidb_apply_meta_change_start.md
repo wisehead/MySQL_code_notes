@@ -1,10 +1,10 @@
-#1.TiDB_rpl_sys::log_scan_handler
+#1.TiDB_DDL_Opr_Ctl::tidb_apply_meta_change_start
 
 ```cpp
+caller:
+--TiDB_rpl_sys::log_scan_handler()
 
-TiDB_rpl_sys::log_scan_handler
---tidb_server_create_thd//thread pool
---TiDB_DDL_Opr_Ctl::tidb_apply_meta_change_start//Apply meta data change start.
+TiDB_DDL_Opr_Ctl::tidb_apply_meta_change_start//Apply meta data change start.
 --UT_LIST_GET_FIRST(ddl_start_list)
 --tidb_apply_meta_change
 ----build_table_filename
