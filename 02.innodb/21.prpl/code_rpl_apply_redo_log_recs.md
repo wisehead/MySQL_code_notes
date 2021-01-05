@@ -1,6 +1,10 @@
 #1.rpl_apply_redo_log_recs
 
 ```cpp
+caller:
+buf_page_io_complete
+
+
 rpl_apply_redo_log_recs
 --block->rpl_log_applied = true;//todo this flag
 --rpl_addr_t* rpl_addr = block->rpl_addr;//todo: this address, seems like a queue.

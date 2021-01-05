@@ -2,6 +2,7 @@
 
 ```cpp
 tidb_redo_log_scan_thread
+--my_thread_init
 --mysql_admin_tool_set_priority
 --os_event_wait(rpl_sys->m_scan_start_event);//wait for what
 --start_lsn = log_translate_sn_to_lsn(rpl_sys->get_rbuf()->get_sn());
