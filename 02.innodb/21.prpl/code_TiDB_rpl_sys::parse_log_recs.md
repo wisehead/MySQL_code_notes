@@ -38,6 +38,30 @@ tidb_rpl_sys::parse_log_recs
 ----if (is_mtr_end)
 ------set_applied_lsn(mtr_end_lsn);
 ------buf_shm_set_applied_lsn(mtr_end_lsn);
+------if (m_lock_acquire_index != NULL)
+--------/* Release index lock and load index ssn for rtree index. */
+--------dict_table_close(index->table, TRUE, FALSE);
+----end_lsn = header->_lsn + header->_lsn_len;
+----m_recovered_lsn = end_lsn;
+----m_recovered_offset += end_ptr - buf_ptr;
+----buf_len = m_len - m_recovered_offset;
+----buf_ptr = m_buf + m_recovered_offset;
+----update_rpl_lag(end_lsn);
+------m_sync_info.update_info(lsn);
+----release_locks(thd, end_lsn);//TiDB_rpl_sys::release_locks
+------ncdb_apply_meta_clear
+--------ddl_table_set.clear();
+------ncdb_release_all_mdls
+--------thd->mdl_context.release_explicit_locks()
+------m_recv_ddl_lsn = 0;
 --//end while
+--/* Update some lsn in log_sys */
+    log_sys->flushed_to_disk_lsn = m_recovered_lsn;
+    log_sys->sn = log_translate_lsn_to_sn(m_recovered_lsn);
+    log_sys->lsn = m_recovered_lsn;
+    log_sys->write_lsn = m_recovered_lsn;
+    log_sys->next_checkpoint_lsn = m_recovered_lsn;
+    log_sys->last_checkpoint_lsn = m_recovered_lsn;
+
 
 ```
