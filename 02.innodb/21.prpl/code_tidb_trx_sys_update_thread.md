@@ -43,7 +43,6 @@ tidb_trx_sys_update_thread
 ------------ids_set->erase(ids_set->begin(), ids_set->lower_bound(trx_id));
 ------------trx_ids->assign(ids_set->begin(), ids_set->end());
 --------trx_sys->mvcc->update_latest_read_view();//MVCC::update_latest_read_view
-----------
 ------trx_sys->mvcc->close_unref_read_view();
 ------trx_read_view_mutex_exit
 ------mutex_exit(&trx_sys->flush_mutex)
