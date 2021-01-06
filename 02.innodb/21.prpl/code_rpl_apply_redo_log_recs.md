@@ -2,7 +2,7 @@
 
 ```cpp
 caller:
-buf_page_io_complete
+--buf_page_io_complete
 
 
 rpl_apply_redo_log_recs
