@@ -1,6 +1,10 @@
 #1.MVCC::update_latest_read_view
 
 ```cpp
+caller:
+--ncdb_rpl_init_slave
+--trx_slave_flush_ids
+
 MVCC::update_latest_read_view
 --MVCC::get_view
 ----view = UT_LIST_GET_FIRST(m_free);
