@@ -9,4 +9,6 @@ enum enum_session_tracker
   SESSION_GTIDS_TRACKER,                         /* Tracks GTIDs */
   TRANSACTION_INFO_TRACKER                       /* Transaction state */
 };
+
+#define SESSION_TRACKER_END TRANSACTION_INFO_TRACKER
 ```
