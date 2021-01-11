@@ -78,6 +78,15 @@ caller:
 #3.Transaction_state_tracker::add_trx_state
 
 ```cpp
+caller:
+- track_table_access
+- Transaction_state_tracker::add_trx_state_from_thd
+- Locked_tables_list::init_locked_tables
+- check_lock_and_start_stmt
+- my_eof
+- trans_begin
+
+
 
 --Transaction_state_tracker::add_trx_state
 ```
