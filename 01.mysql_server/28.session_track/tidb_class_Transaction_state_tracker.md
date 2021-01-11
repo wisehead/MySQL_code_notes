@@ -58,3 +58,19 @@ private:
 };
 ```
 
+#2.end_trx
+
+```cpp
+caller:
+- trans_commit
+- trans_commit_implicit
+- trans_rollback
+- trans_rollback_implicit
+- trans_xa_commit
+- trans_xa_rollback
+
+
+
+--trans_track_end_trx
+----Transaction_state_tracker::end_trx
+```
