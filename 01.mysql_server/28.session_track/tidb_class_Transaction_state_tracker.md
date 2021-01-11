@@ -88,10 +88,11 @@ caller:
 
 
 
---Transaction_state_tracker::add_trx_state
+Transaction_state_tracker::add_trx_state
+--update_change_flags
 ```
 
-#4.enum enum_tx_state
+#4.enum enum\_tx\_state
 
 ```cpp
 /**
@@ -118,4 +119,20 @@ enum enum_tx_state {
   TX_LOCKED_TABLES= 512   ///< LOCK TABLES is active
 };
 
+```
+
+#5.track_table_access
+
+```cpp
+caller:
+handler_lock_table
+--mysql_lock_tables
+
+
+track_table_access
+--tst = thd->session_tracker.get_tracker(TRANSACTION_INFO_TRACKER);
+--while (count--)
+----Transaction_state_tracker::calc_trx_state
+----tst->add_trx_state(thd, s);
+--//end while
 ```
