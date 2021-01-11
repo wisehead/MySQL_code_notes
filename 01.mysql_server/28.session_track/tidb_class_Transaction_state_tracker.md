@@ -74,3 +74,39 @@ caller:
 --trans_track_end_trx
 ----Transaction_state_tracker::end_trx
 ```
+
+#3.Transaction_state_tracker::add_trx_state
+
+```cpp
+
+--Transaction_state_tracker::add_trx_state
+```
+
+#4.enum enum_tx_state
+
+```cpp
+/**
+  Transaction_state_tracker
+  ----------------------
+  This is a tracker class that enables & manages the tracking of
+  current transaction info for a particular connection.
+*/
+
+/**
+  Transaction state (no transaction, transaction active, work attached, etc.)
+*/
+enum enum_tx_state {
+  TX_EMPTY        =   0,  ///< "none of the below"
+  TX_EXPLICIT     =   1,  ///< an explicit transaction is active
+  TX_IMPLICIT     =   2,  ///< an implicit transaction is active
+  TX_READ_TRX     =   4,  ///<     transactional reads  were done
+  TX_READ_UNSAFE  =   8,  ///< non-transaction   reads  were done
+  TX_WRITE_TRX    =  16,  ///<     transactional writes were done
+  TX_WRITE_UNSAFE =  32,  ///< non-transactional writes were done
+  TX_STMT_UNSAFE  =  64,  ///< "unsafe" (non-deterministic like UUID()) stmts
+  TX_RESULT_SET   = 128,  ///< result-set was sent
+  TX_WITH_SNAPSHOT= 256,  ///< WITH CONSISTENT SNAPSHOT was used
+  TX_LOCKED_TABLES= 512   ///< LOCK TABLES is active
+};
+
+```
