@@ -204,3 +204,15 @@ worker_main
 ----continue_unfinished_task
 ------continue_execute_cmd_unfinished_task
 ```
+
+#8.check_lock_and_start_stmt
+
+```cpp
+caller:
+- open_ltable
+- lock_tables
+
+
+check_lock_and_start_stmt
+--ha_innobase::start_stmt
+```
