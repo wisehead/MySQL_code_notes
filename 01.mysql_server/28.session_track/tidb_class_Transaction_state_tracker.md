@@ -216,3 +216,16 @@ caller:
 check_lock_and_start_stmt
 --ha_innobase::start_stmt
 ```
+
+#9.Transaction_state_tracker::clear_trx_state
+
+```cpp
+caller:
+- unlock_locked_tables
+
+
+
+Transaction_state_tracker::clear_trx_state
+--tx_curr_state &= ~clear;
+--update_change_flags(thd);
+```
