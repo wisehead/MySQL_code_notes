@@ -136,3 +136,71 @@ track_table_access
 ----tst->add_trx_state(thd, s);
 --//end while
 ```
+
+#6.Transaction_state_tracker::add_trx_state_from_thd
+
+```cpp
+caller:
+- sp_head::execute_procedure
+- sp_lex_instr::reset_lex_and_exec_core
+- continue_execute_cmd_unfinished_task
+- mysql_execute_command
+
+
+Transaction_state_tracker::add_trx_state_from_thd
+--if (thd->lex->is_stmt_unsafe())
+----get_stmt_unsafe_flags
+------binlog_stmt_flags & BINLOG_STMT_UNSAFE_ALL_FLAGS
+----add_trx_state(thd, TX_STMT_UNSAFE);
+```
+
+#7.continue_execute_cmd_unfinished_task
+
+```cpp
+/**
+  We should continue unfinished task like sync commit.
+  in sync commit, after innodb commit, the common return stack is like:
+
+    mysql_execute_command
+      ->mysql_parse
+        ->dispatch_command
+          ->do_command
+            ->threadpool_process_request
+              ->handle_event
+
+  in async commit, we continue relevant task in continue_XXX_unfinished_task
+  for ordinary commit, the async commit stack is:
+
+    continue_execute_cmd_unfinished_task
+      ->continue_parse_unfinished_task
+        ->continue_dispatch_cmd_unfinished_task
+          ->continue_threadpool_unfinished_task
+
+  for prepared statement commit(SQLCOM_EXECUTE or COM_STMT_EXECUTE), the sync commit stack is like:
+
+    mysql_execute_command
+      ->Prepared_statement::execute
+        ->Prepared_statement::execute_loop
+          // for SQLCOM_EXECUTE          // for COM_STMT_EXECUTE
+          ->mysql_sql_stmt_execute       ->mysqld_stmt_execute
+            ->mysql_execute_command        ->dispatch_command
+              ->mysql_parse                  ->do_command
+                ->dispatch_command             ->threadpool_process_request
+                  ->do_command                   ->handle_event
+                    ->threadpool_process_request
+                      ->handle_event
+
+   the async commit stack is:
+
+    continue_execute_cmd_unfinished_task
+      ->continue_unfinished_pst_cmd
+        ->continue_parse_unfinished_task  // SQLCOM_EXECUTE
+          ->continue_dispatch_cmd_unfinished_task
+            ->continue_threadpool_unfinished_task
+ */
+ 
+worker_main 
+--handle_event
+----continue_unfinished_task
+------continue_execute_cmd_unfinished_task
+```
