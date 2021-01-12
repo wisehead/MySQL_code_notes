@@ -16,3 +16,24 @@ trx_commit(mtr)
     |- trx_sys_update_mysql_binlog_offset(mtr)
     |- ...
 ```
+
+#2.trx_commit_low
+
+```cpp
+trx_commit_low
+--trx_write_commit_log
+----log_ptr = mlog_write_initial_log_record_low(MLOG_TRX_COMMIT, 0, 0,log_ptr, mtr);
+----mach_write_to_8(log_ptr, trx_id);
+----mlog_close(mtr, log_ptr);
+--mtr_t::commit
+----mtr_t::Command::execute
+------mtr_t::Command::prepare_write
+------mtr_t::Command::finish_write
+--------log_buffer_reserve
+--------finish_write_header
+--------for_each_block
+----------mtr_parallel_write_log_t
+------------log_buffer_write
+------------log_buffer_write_completed
+--------------Link_buf<unsigned long>::add_link
+```
