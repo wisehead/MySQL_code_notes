@@ -1,0 +1,480 @@
+
+<!DOCTYPE html>
+<html class=svg js>
+  <!-- OriginalSrc: https://dev.mysql.com/doc/refman/8.0/en/session-state-tracking.html -->
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>MySQL :: MySQL 8.0 Reference Manual :: 5.1.18 Server Tracking of Client Session State Changes</title>
+    
+<link rel="stylesheet" media="all" href="assets/1610421308-a4cafc9cf1e3c6151d2249e9cc320f36.css" referrerpolicy="no-referrer">
+<link rel="stylesheet" media="all" href="assets/1610421308-2a679ee838c39dc2e3af9a5d9ca0e0bd.css" referrerpolicy="no-referrer">
+<link rel="stylesheet" media="print" href="assets/1610421308-5944f656817f5623e6cb3f0b644f4b0b.css" referrerpolicy="no-referrer">
+<style type="text/css">
+@keyframes caretBlink {
+    from { opacity: 1.0; }
+    to { opacity: 0.0; }
+}
+
+@keyframes rotateSpinner {
+    from {
+        transform:rotate(0deg);
+    }
+    to {
+        transform:rotate(360deg);
+    }
+}
+
+#text-tool-caret {
+    animation-name: caretBlink;  
+    animation-iteration-count: infinite;  
+    animation-timing-function: cubic-bezier(1.0,0,0,1.0);
+    animation-duration: 1s; 
+}
+
+#en-markup-loading-spinner {
+    position: absolute;
+    top: calc(50% - 16px);
+    left: calc(50% - 16px);
+    width: 32px;
+    height: 32px;
+}
+
+#en-markup-loading-spinner img {
+    position: relative;
+    top: 0px;
+    left: 0px;
+    animation-name: rotateSpinner;
+    animation-duration: 0.6s;
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+}
+</style>
+<style type="text/css">
+.skitchToastBoxContainer {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    top: 30px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    pointer-events: none;
+}
+
+.skitchToastBox {
+    width: 200px;
+    height: 16px;
+    padding: 12px;
+    background-color: rgba(47, 55, 61, 0.95);
+    border-radius: 4px;
+    color: white;
+    cursor: default;
+    font-size: 10pt;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.32);
+    font-family: 'Soleil', Helvetica, Arial, sans-serif;
+    border: 2px rgba(255, 255, 255, 0.38) solid;
+}
+
+.lang-zh-cn .skitchToastBox {
+    font-family: '微软雅黑', 'Microsoft YaHei', SimSun,
+        '&#x30E1;&#x30A4;&#x30EA;&#x30AA;', Meiryo, 'MS PGothic', 'Soleil',
+        Helvetica, Arial, sans-serif;
+}
+
+.lang-ja-jp .skitchToastBox {
+    font-family: '&#x30E1;&#x30A4;&#x30EA;&#x30AA;', Meiryo, 'MS PGothic',
+        '微软雅黑', 'Microsoft YaHei', SimSun, 'Soleil', Helvetica, Arial,
+        sans-serif;
+}
+
+.skitchToast {
+    padding-left: 20px;
+    padding-right: 20px;
+    display: inline-block;
+    height: 10px;
+    color: #f1f5f8;
+    text-align: center;
+}
+
+.skitchVisible {
+    
+}
+</style>
+<style type="text/css">
+
+@font-face {
+	font-family: 'Soleil';
+	src: url("");
+	font-weight: normal;
+	font-style: normal;
+}
+</style>
+<style type="text/css">
+
+#en-markup-disabled {
+    position: fixed;
+    z-index: 9999;
+    width: 100%;
+    height: 100%;
+    top: 0px;
+    left: 0px;
+    cursor: default;
+    -webkit-user-select: none;
+}
+
+#en-markup-alert-container {
+    position: absolute;
+    z-index: 9999;
+    width: 450px;
+    left: calc(50% - 225px);
+    top: calc(50% - 85px);
+    background-color: white;
+    box-shadow: 0 2px 7px 1px rgba(0,0,0,0.35);
+    -webkit-user-select: none;
+}
+
+#en-markup-alert-container .cell-1 {
+    position: relative;
+    height: 110px;
+    width: 105px;
+    float: left;
+    text-align: center;
+    background-image: url("");
+    background-position: 65% 50%;
+    background-repeat: no-repeat;
+}
+
+#en-markup-alert-container .cell-2 {
+    position: relative;
+    float: left;
+    width: 345px;
+    margin-top: 29px;
+    margin-bottom: 20px;
+}
+
+#en-markup-alert-container .cell-2 .cell-2-title {
+    margin-bottom: 5px;
+    padding-right: 30px;
+    font-size: 12pt;
+    font-family: Tahoma, Arial;
+}
+
+#en-markup-alert-container .cell-2 .cell-2-message {
+    padding-right: 30px;
+    font-size: 9.5pt;
+    font-family: Tahoma, Arial;
+}
+
+#en-markup-alert-container .cell-3 {
+    position: relative;
+    width: 450px;
+    height: 60px;
+    float: left;
+    background-color: rgb(240,240,240);
+}
+
+#en-markup-alert-container .cell-3 button {
+    position: absolute;
+    top: 12px;
+    right: 15px;
+    width: 110px;
+    height: 36px;
+}
+
+#en-markup-alert-container .cell-3 button.alt-button {
+    position: absolute;
+    top: 12px;
+    right: 140px;
+    width: 110px;
+    height: 36px;
+}
+</style>
+
+    <style class="mx-wc-style">
+      body {padding-top: 20px;}
+      .mx-wc-main img {max-width: 100%;}
+      .mx-wc-main{
+        box-sizing: content-box;
+        background-color: rgb(255, 255, 255) !important;
+        margin: 0 auto;
+        max-width: 1139px;
+      }
+      @media (min-width: 768px) {
+        .mx-wc-main { padding: 15px 15px 80px 15px }
+      }
+      @media (max-width: 767px) {
+        .mx-wc-main { padding: 15px 3px 80px 3px }
+      }
+
+    </style>
+  </head>
+  <body style="background-color: #464646 !important; min-height: 100%; height: auto; position: static !important; overflow: auto !important; padding-bottom: 0px !important;" class=no-sidebar full-page dev>
+    <div class="mx-wc-main">
+      <DIV class="page-wrapper" style="display: block !important;float: none !important;position: relative !important;transform: initial !important;top: 0 !important;left: 0 !important;border: 0px !important;width: 100% !important;min-width: 100% !important;max-width: 100% !important;height: auto !important;min-height: auto !important;max-height: 100% !important;margin: 0px !important;padding: 0px !important;"><DIV id="page" style="display: block !important;float: none !important;position: relative !important;transform: initial !important;top: 0 !important;left: 0 !important;border: 0px !important;width: 100% !important;min-width: 100% !important;max-width: 100% !important;height: auto !important;min-height: auto !important;max-height: 100% !important;margin: 0px !important;padding: 0px !important;"><DIV role="main" id="main" style="display: block !important;float: none !important;position: relative !important;transform: initial !important;top: 0 !important;left: 0 !important;border: 0px !important;width: 100% !important;min-width: 100% !important;max-width: 100% !important;height: auto !important;min-height: auto !important;max-height: 100% !important;margin: 0px !important;padding: 0px !important;"><DIV style="display: block !important;float: none !important;position: relative !important;transform: initial !important;top: 0 !important;left: 0 !important;border: 0px !important;width: 100% !important;min-width: 100% !important;max-width: 100% !important;height: auto !important;min-height: auto !important;max-height: 100% !important;margin: 0px !important;padding: 0px !important;"><DIV id="docs-main" class="has-toc" style="display: block !important;float: none !important;position: relative !important;transform: initial !important;top: 0 !important;left: 0 !important;border: 0px !important;width: 100% !important;min-width: 100% !important;max-width: 100% !important;height: auto !important;min-height: auto !important;max-height: 100% !important;margin: 0px !important;padding: 0px !important;"><DIV id="docs-main-inner" style="display: block !important;float: none !important;position: relative !important;transform: initial !important;top: 0 !important;left: 0 !important;border: 0px !important;width: 100% !important;min-width: 100% !important;max-width: 100% !important;height: auto !important;min-height: auto !important;max-height: 100% !important;margin: 0px !important;padding: 0px !important;"><DIV id="docs-body" style="display: block !important;float: none !important;position: relative !important;transform: initial !important;top: 0 !important;left: 0 !important;border: 0px !important;width: 100% !important;min-width: 100% !important;max-width: 100% !important;height: auto !important;min-height: auto !important;max-height: 100% !important;margin: 0px !important;padding: 0px !important;"><div class="section mx-wc-selected-elem" style="display: block; float: none !important; position: relative !important; top: 0px !important; left: 0px !important; margin: 0px !important; flex: unset !important; width: 100% !important; max-width: 100% !important;">
+<div class="titlepage">
+<div>
+<div>
+<h3 class="title"><a name="session-state-tracking" data-mx-warn="Empty URL"></a>5.1.18&nbsp;Server Tracking of Client Session State Changes</h3>
+
+</div>
+
+</div>
+
+</div>
+<a class="indexterm" name="idm45896531149472" data-mx-warn="Empty URL"></a><a class="indexterm" name="idm45896531148016" data-mx-warn="Empty URL"></a><p>
+      The MySQL server implements several session state trackers. A
+      client can enable these trackers to receive notification of
+      changes to its session state.
+    </p><p>
+      One use for the tracker mechanism is to provide a means for MySQL
+      connectors and client applications to determine whether any
+      session context is available to permit session migration from one
+      server to another. (To change sessions in a load-balanced
+      environment, it is necessary to detect whether there is session
+      state to take into consideration when deciding whether a switch
+      can be made.)
+    </p><p>
+      Another use for the tracker mechanism is to permit applications to
+      know when transactions can be moved from one session to another.
+      Transaction state tracking enables this, which is useful for
+      applications that may wish to move transactions from a busy server
+      to one that is less loaded. For example, a load-balancing
+      connector managing a client connection pool could move
+      transactions between available sessions in the pool.
+    </p><p>
+      However, session switching cannot be done at arbitrary times. If a
+      session is in the middle of a transaction for which reads or
+      writes have been done, switching to a different session implies a
+      transaction rollback on the original session. A session switch
+      must be done only when a transaction does not yet have any reads
+      or writes performed within it.
+    </p><p>
+      Examples of when transactions might reasonably be switched:
+</p>
+<div class="itemizedlist">
+<ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+          Immediately after
+          <a class="link" href="https://dev.mysql.com/doc/refman/8.0/en/commit.html" title="13.3.1&nbsp;START TRANSACTION, COMMIT, and ROLLBACK Statements" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">START
+          TRANSACTION</code></a>
+        </p></li><li class="listitem"><p>
+          After <a class="link" href="https://dev.mysql.com/doc/refman/8.0/en/commit.html" title="13.3.1&nbsp;START TRANSACTION, COMMIT, and ROLLBACK Statements" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">COMMIT AND
+          CHAIN</code></a>
+</p></li></ul>
+</div>
+<p>
+      In addition to knowing transaction state, it is useful to know
+      transaction characteristics, so as to use the same characteristics
+      if the transaction is moved to a different session. The following
+      characteristics are relevant for this purpose:
+    </p><div class="copytoclipboard-wrapper" style="position: relative;"><pre class="programlisting line-numbers  language-simple"><code class=" language-simple">READ ONLY
+READ WRITE
+ISOLATION LEVEL
+WITH CONSISTENT SNAPSHOT<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre></div><p>
+      To support the preceding session-switching activities,
+      notification is available for these types of client session state
+      information:
+</p>
+<div class="itemizedlist">
+<ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+          Changes to these attributes of client session state:
+</p>
+<div class="itemizedlist">
+<ul class="itemizedlist" style="list-style-type: circle; "><li class="listitem"><p>
+              The default schema (database).
+            </p></li><li class="listitem"><p>
+              Session-specific values for system variables.
+            </p></li><li class="listitem"><p>
+              User-defined variables.
+            </p></li><li class="listitem"><p>
+              Temporary tables.
+            </p></li><li class="listitem"><p>
+              Prepared statements.
+</p></li></ul>
+</div>
+<p>
+          The
+          <a class="link" href="https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html#sysvar_session_track_state_change" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">session_track_state_change</code></a>
+          system variable controls this tracker.
+        </p></li><li class="listitem"><p>
+          Changes to the default schema name. The
+          <a class="link" href="https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html#sysvar_session_track_schema" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">session_track_schema</code></a> system
+          variable controls this tracker.
+        </p></li><li class="listitem"><p>
+          Changes to the session values of system variables. The
+          <a class="link" href="https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html#sysvar_session_track_system_variables" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">session_track_system_variables</code></a>
+          system variable controls this tracker.
+        </p></li><li class="listitem"><p>
+          Available GTIDs. The
+          <a class="link" href="https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html#sysvar_session_track_gtids" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">session_track_gtids</code></a> system
+          variable controls this tracker.
+        </p></li><li class="listitem"><p>
+          Information about transaction state and characteristics. The
+          <a class="link" href="https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html#sysvar_session_track_transaction_info" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">session_track_transaction_info</code></a>
+          system variable controls this tracker.
+</p></li></ul>
+</div>
+<p>
+      For descriptions of the tracker-related system variables, see
+      <a class="xref" href="https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html" title="5.1.8&nbsp;Server System Variables" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer">Section&nbsp;5.1.8, “Server System Variables”</a>. Those system variables
+      permit control over which change notifications occur, but do not
+      provide a way to access notification information. Notification
+      occurs in the MySQL client/server protocol, which includes tracker
+      information in OK packets so that session state changes can be
+      detected. To enable client applications to extract state-change
+      information from OK packets returned by the server, the MySQL C
+      API provides a pair of functions:
+</p>
+<div class="itemizedlist">
+<ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+          <a class="ulink" href="https://dev.mysql.com/doc/c-api/8.0/en/mysql-session-track-get-first.html" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">mysql_session_track_get_first()</code></a>
+          fetches the first part of the state-change information
+          received from the server. See
+          <a class="ulink" href="https://dev.mysql.com/doc/c-api/8.0/en/mysql-session-track-get-first.html" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer">mysql_session_track_get_first()</a>.
+        </p></li><li class="listitem"><p>
+          <a class="ulink" href="https://dev.mysql.com/doc/c-api/8.0/en/mysql-session-track-get-next.html" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">mysql_session_track_get_next()</code></a>
+          fetches any remaining state-change information received from
+          the server. Following a successful call to
+          <a class="ulink" href="https://dev.mysql.com/doc/c-api/8.0/en/mysql-session-track-get-first.html" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">mysql_session_track_get_first()</code></a>,
+          call this function repeatedly as long as it returns success.
+          See <a class="ulink" href="https://dev.mysql.com/doc/c-api/8.0/en/mysql-session-track-get-next.html" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer">mysql_session_track_get_next()</a>.
+</p></li></ul>
+</div>
+<p>
+      The <span class="command"><strong>mysqltest</strong></span> program has
+      <code class="literal">disable_session_track_info</code> and
+      <code class="literal">enable_session_track_info</code> commands that control
+      whether session tracker notifications occur. You can use these
+      commands to see from the command line what notifications SQL
+      statements produce. Suppose that a file
+      <code class="filename">testscript</code> contains the following
+      <span class="command"><strong>mysqltest</strong></span> script:
+    </p><div class="copytoclipboard-wrapper" style="position: relative;"><pre class="programlisting line-numbers  language-sql"><code class=" language-sql"><span class="token keyword">DROP</span> <span class="token keyword">TABLE</span> <span class="token keyword">IF</span> <span class="token keyword">EXISTS</span> test<span class="token punctuation">.</span>t1<span class="token punctuation">;</span>
+<span class="token keyword">CREATE</span> <span class="token keyword">TABLE</span> test<span class="token punctuation">.</span>t1 <span class="token punctuation">(</span>i <span class="token datatype">INT</span><span class="token punctuation">,</span> f <span class="token datatype">FLOAT</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">--enable_session_track_info</span>
+<span class="token keyword">SET</span> <span class="token variable">@@SESSION.session_track_schema</span><span class="token operator">=</span><span class="token keyword">ON</span><span class="token punctuation">;</span>
+<span class="token keyword">SET</span> <span class="token variable">@@SESSION.session_track_system_variables</span><span class="token operator">=</span><span class="token string">'*'</span><span class="token punctuation">;</span>
+<span class="token keyword">SET</span> <span class="token variable">@@SESSION.session_track_state_change</span><span class="token operator">=</span><span class="token keyword">ON</span><span class="token punctuation">;</span>
+<span class="token keyword">USE</span> information_schema<span class="token punctuation">;</span>
+<span class="token keyword">SET</span> <span class="token keyword">NAMES</span> <span class="token string">'utf8mb4'</span><span class="token punctuation">;</span>
+<span class="token keyword">SET</span> <span class="token variable">@@SESSION.session_track_transaction_info</span><span class="token operator">=</span><span class="token string">'CHARACTERISTICS'</span><span class="token punctuation">;</span>
+<span class="token keyword">SET</span> <span class="token keyword">TRANSACTION</span> <span class="token keyword">ISOLATION</span> <span class="token keyword">LEVEL</span> <span class="token keyword">SERIALIZABLE</span><span class="token punctuation">;</span>
+<span class="token keyword">SET</span> <span class="token keyword">TRANSACTION</span> <span class="token keyword">READ</span> <span class="token keyword">WRITE</span><span class="token punctuation">;</span>
+<span class="token keyword">START</span> <span class="token keyword">TRANSACTION</span><span class="token punctuation">;</span>
+<span class="token keyword">SELECT</span> <span class="token number">1</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> test<span class="token punctuation">.</span>t1 <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">VALUES</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> test<span class="token punctuation">.</span>t1 <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">VALUES</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token function">RAND</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">COMMIT</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div><p>
+      Run the script as follows to see the information provided by the
+      enabled trackers. For a description of the
+      <code class="literal">Tracker:</code> information displayed by
+      <span class="command"><strong>mysqltest</strong></span> for the various trackers, see
+      <a class="ulink" href="https://dev.mysql.com/doc/c-api/8.0/en/mysql-session-track-get-first.html" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer">mysql_session_track_get_first()</a>.
+    </p><div class="copytoclipboard-wrapper" style="position: relative;"><pre class="programlisting line-numbers  language-terminal"><code class=" language-terminal"><span class="token prompt">shell&gt;</span><span class="token command"> mysqltest</span> &lt; testscript
+DROP TABLE IF EXISTS test<span class="token punctuation">.</span>t1<span class="token punctuation">;</span>
+CREATE TABLE test<span class="token punctuation">.</span>t1 <span class="token punctuation">(</span>i INT<span class="token punctuation">,</span> f FLOAT<span class="token punctuation">)</span><span class="token punctuation">;</span>
+SET @@SESSION<span class="token punctuation">.</span>session_track_schema<span class="token attr-value"><span class="token punctuation">=</span>ON;</span>
+SET @@SESSION<span class="token punctuation">.</span>session_track_system_variables=<span class="token atrule">'*'</span><span class="token punctuation">;</span>
+<span class="token property">--</span> Tracker <span class="token punctuation">:</span> SESSION_TRACK_SYSTEM_VARIABLES
+<span class="token property">--</span> session_track_system_variables
+<span class="token property">--</span> *
+
+SET @@SESSION<span class="token punctuation">.</span>session_track_state_change<span class="token attr-value"><span class="token punctuation">=</span>ON;</span>
+<span class="token property">--</span> Tracker <span class="token punctuation">:</span> SESSION_TRACK_SYSTEM_VARIABLES
+<span class="token property">--</span> session_track_state_change
+<span class="token property">--</span> ON
+
+USE information_schema<span class="token punctuation">;</span>
+<span class="token property">--</span> Tracker <span class="token punctuation">:</span> SESSION_TRACK_SCHEMA
+<span class="token property">--</span> information_schema
+
+<span class="token property">--</span> Tracker <span class="token punctuation">:</span> SESSION_TRACK_STATE_CHANGE
+<span class="token property">--</span> 1
+
+SET NAMES <span class="token atrule">'utf8mb4'</span><span class="token punctuation">;</span>
+<span class="token property">--</span> Tracker <span class="token punctuation">:</span> SESSION_TRACK_SYSTEM_VARIABLES
+<span class="token property">--</span> character_set_client
+<span class="token property">--</span> utf8mb4
+<span class="token property">--</span> character_set_connection
+<span class="token property">--</span> utf8mb4
+<span class="token property">--</span> character_set_results
+<span class="token property">--</span> utf8mb4
+
+<span class="token property">--</span> Tracker <span class="token punctuation">:</span> SESSION_TRACK_STATE_CHANGE
+<span class="token property">--</span> 1
+
+SET @@SESSION<span class="token punctuation">.</span>session_track_transaction_info=<span class="token atrule">'CHARACTERISTICS'</span><span class="token punctuation">;</span>
+<span class="token property">--</span> Tracker <span class="token punctuation">:</span> SESSION_TRACK_SYSTEM_VARIABLES
+<span class="token property">--</span> session_track_transaction_info
+<span class="token property">--</span> CHARACTERISTICS
+
+<span class="token property">--</span> Tracker <span class="token punctuation">:</span> SESSION_TRACK_STATE_CHANGE
+<span class="token property">--</span> 1
+
+<span class="token property">--</span> Tracker <span class="token punctuation">:</span> SESSION_TRACK_TRANSACTION_CHARACTERISTICS
+<span class="token property">--</span>
+
+<span class="token property">--</span> Tracker <span class="token punctuation">:</span> SESSION_TRACK_TRANSACTION_STATE
+<span class="token property">--</span> ________
+
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE<span class="token punctuation">;</span>
+<span class="token property">--</span> Tracker <span class="token punctuation">:</span> SESSION_TRACK_TRANSACTION_CHARACTERISTICS
+<span class="token property">--</span> SET TRANSACTION ISOLATION LEVEL SERIALIZABLE<span class="token punctuation">;</span>
+
+SET TRANSACTION READ WRITE<span class="token punctuation">;</span>
+<span class="token property">--</span> Tracker <span class="token punctuation">:</span> SESSION_TRACK_TRANSACTION_CHARACTERISTICS
+<span class="token property">--</span> SET TRANSACTION ISOLATION LEVEL SERIALIZABLE<span class="token punctuation">;</span> SET TRANSACTION READ WRITE<span class="token punctuation">;</span>
+
+START TRANSACTION<span class="token punctuation">;</span>
+<span class="token property">--</span> Tracker <span class="token punctuation">:</span> SESSION_TRACK_TRANSACTION_CHARACTERISTICS
+<span class="token property">--</span> SET TRANSACTION ISOLATION LEVEL SERIALIZABLE<span class="token punctuation">;</span> START TRANSACTION READ WRITE<span class="token punctuation">;</span>
+
+<span class="token property">--</span> Tracker <span class="token punctuation">:</span> SESSION_TRACK_TRANSACTION_STATE
+<span class="token property">--</span> T_______
+
+SELECT 1<span class="token punctuation">;</span>
+1
+1
+<span class="token property">--</span> Tracker <span class="token punctuation">:</span> SESSION_TRACK_TRANSACTION_STATE
+<span class="token property">--</span> T_____S_
+
+INSERT INTO test<span class="token punctuation">.</span>t1 <span class="token punctuation">(</span><span class="token punctuation">)</span> VALUES<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token property">--</span> Tracker <span class="token punctuation">:</span> SESSION_TRACK_TRANSACTION_STATE
+<span class="token property">--</span> T___W_S_
+
+INSERT INTO test<span class="token punctuation">.</span>t1 <span class="token punctuation">(</span><span class="token punctuation">)</span> VALUES<span class="token punctuation">(</span>1<span class="token punctuation">,</span> RAND<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token property">--</span> Tracker <span class="token punctuation">:</span> SESSION_TRACK_TRANSACTION_STATE
+<span class="token property">--</span> T___WsS_
+
+COMMIT<span class="token punctuation">;</span>
+<span class="token property">--</span> Tracker <span class="token punctuation">:</span> SESSION_TRACK_TRANSACTION_CHARACTERISTICS
+<span class="token property">--</span>
+
+<span class="token property">--</span> Tracker <span class="token punctuation">:</span> SESSION_TRACK_TRANSACTION_STATE
+<span class="token property">--</span> ________
+
+ok<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div><p>
+      Preceding the <a class="link" href="https://dev.mysql.com/doc/refman/8.0/en/commit.html" title="13.3.1&nbsp;START TRANSACTION, COMMIT, and ROLLBACK Statements" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">START
+      TRANSACTION</code></a> statement, two <a class="link" href="https://dev.mysql.com/doc/refman/8.0/en/set-transaction.html" title="13.3.7&nbsp;SET TRANSACTION Statement" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">SET
+      TRANSACTION</code></a> statements execute that set the isolation
+      level and access mode characteristics for the next transaction.
+      The <code class="literal">SESSION_TRACK_TRANSACTION_CHARACTERISTICS</code>
+      value indicates those next-transaction values that have been set.
+    </p><p>
+      Following the <a class="link" href="https://dev.mysql.com/doc/refman/8.0/en/commit.html" title="13.3.1&nbsp;START TRANSACTION, COMMIT, and ROLLBACK Statements" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">COMMIT</code></a> statement that
+      ends the transaction, the
+      <code class="literal">SESSION_TRACK_TRANSACTION_CHARACTERISTICS</code> value
+      is reported as empty. This indicates that the next-transaction
+      characteristics that were set preceding the start of the
+      transaction have been reset, and that the session defaults apply.
+      To track changes to those session defaults, track the session
+      values of the
+      <a class="link" href="https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html#sysvar_transaction_isolation" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">transaction_isolation</code></a> and
+      <a class="link" href="https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html#sysvar_transaction_read_only" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">transaction_read_only</code></a> system
+      variables.
+</p>
+</div></DIV></DIV></DIV></DIV></DIV></DIV></DIV>
+      
+    </div>
+  </body>
+</html>
