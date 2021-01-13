@@ -29,3 +29,29 @@ log_allocate_flush_events
 --for (ulint i = 0; i < log_sys->flush_events_size; ++i)
 ----log_sys->flush_events[i] = os_event_create(NULL)
 ```
+
+#3.log_deallocate_flush_events
+
+```cpp
+
+log_deallocate_flush_events
+--for (ulint i = 0; i < log_sys->flush_events_size; ++i)
+----os_event_destroy(log_sys->flush_events[i])
+--UT_DELETE_ARRAY(log_sys->flush_events)
+```
+
+
+#4.log_wait_for_flush
+
+```cpp
+caller:
+- log_write_up_to
+
+
+log_wait_for_flush
+--log_wake_flusher(log);
+--log_max_spins_when_waiting_in_user_thread
+--stop_condition//lambda
+--slot = (lsn - 1) / OS_FILE_LOG_BLOCK_SIZE & (log_sys->flush_events_size - 1)
+--os_event_wait_for(log_sys->flush_events[slot], max_spins,srv_log_wait_for_flush_timeout, stop_condition);
+```
