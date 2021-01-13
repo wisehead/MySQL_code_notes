@@ -110,5 +110,3 @@ LogWaitQueue::release
 ----out++
 --//end while
 ```
-
-#4.async_commit
