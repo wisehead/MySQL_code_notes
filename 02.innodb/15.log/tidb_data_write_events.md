@@ -55,3 +55,39 @@ log_wait_for_write
 --slot = (lsn - 1) / OS_FILE_LOG_BLOCK_SIZE & (log.write_events_size - 1)
 --os_event_wait_for(log.write_events[slot], max_spins,srv_log_wait_for_write_timeout, stop_condition);
 ```
+
+#5.notify_about_advanced_write_lsn
+
+```cpp
+caller:
+- log_write_run_new
+- log_write_run_old
+
+
+notify_about_advanced_write_lsn
+--log_wake_flusher
+--if (first_slot == last_slot)
+----os_event_set(log.write_events[first_slot]);//OR
+--else
+----os_event_set(log.write_notifier_event);
+```
+
+
+#6.log_write_notifier
+
+```cpp
+DECLARE_THREAD(log_write_notifier)
+--os_event_wait(log.write_notifier_event)
+--while (true)
+----stop_condition//lambda
+----waiting.wait(stop_condition)
+----notified_up_to_lsn = ut_uint64_align_up(write_lsn, OS_FILE_LOG_BLOCK_SIZE);
+----while (lsn <= notified_up_to_lsn)
+------slot = (lsn - 1) / OS_FILE_LOG_BLOCK_SIZE & (log.write_events_size - 1);
+------lsn += OS_FILE_LOG_BLOCK_SIZE;
+------os_event_set(log.write_events[slot]);
+----//end while
+----lsn = write_lsn + 1;
+--//end while(true)
+
+```
