@@ -55,3 +55,47 @@ log_wait_for_flush
 --slot = (lsn - 1) / OS_FILE_LOG_BLOCK_SIZE & (log_sys->flush_events_size - 1)
 --os_event_wait_for(log_sys->flush_events[slot], max_spins,srv_log_wait_for_flush_timeout, stop_condition);
 ```
+
+#5.log_flush_set_flushed_lsn
+
+```cpp
+caller:
+- DECLARE_THREAD(ncdb_log_finish_thread)
+
+log_flush_set_flushed_lsn
+--log.flushed_to_disk_lsn.store(lsn)
+--log_flush_stats_add(lsn)
+--ncdb_stats.n_flush_log += (lsn - last_vdl);
+--if (first_slot == last_slot)
+----os_event_set(log.flush_events[first_slot])
+--else
+----os_event_set(log.flush_notifier_event)
+--os_event_set(log.flush_notifier_event_async);
+--os_event_set(log.rpl_event)
+```
+
+#6.thread log_flush_notifier
+```cpp
+
+DECLARE_THREAD(log_flush_notifier)
+--if (async_notifier)
+----notify_event = log.flush_notifier_event_async
+--else
+----notify_event = log.flush_notifier_event;
+--os_event_wait(notify_event)
+--while (true)
+----stop_condition//lambda
+----waiting.wait(stop_condition)
+----notified_up_to_lsn = ut_uint64_align_up(flush_lsn, OS_FILE_LOG_BLOCK_SIZE);
+----if (async_notifier)
+------log.wait_queue->release(flush_lsn);
+----while (lsn <= notified_up_to_lsn)
+------slot = (lsn - 1) / OS_FILE_LOG_BLOCK_SIZE & (log.flush_events_size - 1)
+------lsn += OS_FILE_LOG_BLOCK_SIZE
+------os_event_set(log.flush_events[slot]);
+----//while end
+----lsn = flush_lsn + 1
+--//end while (true)
+```
+
+#7. log.flush_notifier_event_async
