@@ -73,7 +73,7 @@ notify_about_advanced_write_lsn
 ```
 
 
-#6.log_write_notifier
+#6. thread  log_write_notifier
 
 ```cpp
 DECLARE_THREAD(log_write_notifier)
