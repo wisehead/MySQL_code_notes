@@ -27,3 +27,31 @@ log_allocate_write_events
 ----log_sys->write_events[i] = os_event_create("NULL");
 
 ```
+
+#3.log_deallocate_write_events
+
+```cpp
+caller:
+-log_shutdown
+
+log_deallocate_write_events
+--for (ulint i = 0; i < log_sys->write_events_size; ++i)
+----os_event_destroy(log_sys->write_events[i]);
+--UT_DELETE_ARRAY(log_sys->write_events)
+```
+
+#4.log_wait_for_write
+
+```cpp
+caller:
+- log_write_up_to
+
+log_wait_for_write
+--log_wake_writer(log);
+----if (log.writer_wait.load())
+------os_event_set(log.write_event);
+--log_max_spins_when_waiting_in_user_thread
+--stop_condition//lambda
+--slot = (lsn - 1) / OS_FILE_LOG_BLOCK_SIZE & (log.write_events_size - 1)
+--os_event_wait_for(log.write_events[slot], max_spins,srv_log_wait_for_write_timeout, stop_condition);
+```
