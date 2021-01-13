@@ -36,4 +36,12 @@ trx_commit_low
 ------------log_buffer_write
 ------------log_buffer_write_completed
 --------------Link_buf<unsigned long>::add_link
+------------log_buffer_close
+------mtr_t::Command::release_blocks
+------mtr_t::Command::release_latches
+------mtr_t::Command::release_resources
+--trx_commit_in_memory
+----trx_flush_log_if_needed
+------trx_flush_log_if_needed_low
+--------log_write_up_to
 ```
