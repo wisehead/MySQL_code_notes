@@ -48,4 +48,31 @@ private:
 
 #2.LogWaitQueue::reserve
 
+```cpp
+caller:
+- log_write_up_to
+
+LogWaitQueue::reserve
+--no = m_in.fetch_add(1);
+--slot = &m_data[no & (m_size - 1)];
+--while (true)
+----if (no < m_size + m_out.load())
+------slot->wait_lsn = lsn
+------slot->time = ts
+------if (lsn > log_sys->flushed_to_disk_lsn.load())
+--------slot->message = m1
+--------m_entry_add++
+------else
+--------flushed = true
+------slot->reserve_no.store(no + 1)
+----else
+------stop_condition//lambda
+------ut_wait_for(0, 10, stop_condition);
+--//end while
+
+
+```
+
 #3.LogWaitQueue::release
+
+#4.async_commit
