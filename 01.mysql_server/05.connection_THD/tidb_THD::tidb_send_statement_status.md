@@ -13,10 +13,44 @@ THD::send_statement_status
 ----------Transaction_state_tracker::store
 --//end switch
 
-
 ```
 
-#2.OK_packet
+
+#2. send_statement_status for ping command
+
+```cpp
+dispatch_command
+--Global_THD_manager *thd_manager= Global_THD_manager::get_instance();
+--thd->set_command(command);
+--thd->set_query_id(next_query_id())
+--thd_manager->inc_thread_running()
+--switch (command)
+----my_ok(thd)
+------Diagnostics_area::set_ok_status
+--//end switch
+--THD::send_statement_status
+----switch (da->status())
+------Protocol_classic::send_ok
+--------net_send_ok
+----------my_net_write
+------------int3store(buff, static_cast<uint>(len));
+------------buff[3]= (uchar) net->pkt_nr++;
+------------net_write_buff(net, buff, NET_HEADER_SIZE)//消息头
+--------------memcpy(net->write_pos, packet, len)
+------------net_write_buff(net,packet,len)
+----------net_flush
+------------net_write_packet
+--------------query_cache_insert
+----------------Query_cache::insert
+--------------net_write_raw_loop
+----------------vio_write
+------------------inline_mysql_socket_send
+--------------------send(mysql_socket.fd, buf, IF_WIN((int),) n, flags)
+----//end switch da->status
+```
+
+
+#3.OK_packet
 
 ```cpp
 (gdb) x /20xb packet
