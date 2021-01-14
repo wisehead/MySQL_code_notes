@@ -60,9 +60,15 @@ log_wait_for_write
 
 ```cpp
 caller:
-- log_write_run_new
-- log_write_run_old
 
+DECLARE_THREAD(log_write_thread)
+--while(true)
+----log_write_wait_for_log
+----log_write_run
+------log_write_run_new
+------log_write_run_old
+--------notify_about_advanced_write_lsn
+--//end while
 
 notify_about_advanced_write_lsn
 --log_wake_flusher
