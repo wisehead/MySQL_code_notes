@@ -21,5 +21,22 @@ main
 ------my_default_get_login_file
 ------my_search_option_files (conf_file=0x7fffffffdaf0 "/home/chenhui/.mylogin.cnf
 
---get_options
+--get_options//mysql.cc
+----handle_options
+
+--mysql_server_init//the same with mysqladmin
+----my_init
+
+--sql_connect
+--signal(SIGINT, handle_ctrlc_signal);
+--signal(SIGQUIT, mysql_end);
+--signal(SIGHUP, handle_quit_signal);
+--signal(SIGWINCH, window_resize);
+
+--read_and_execute
+----batch_readline
+----add_line
+----com_go
+------mysql_real_query_for_lazy
+--------mysql_real_query
 ```
