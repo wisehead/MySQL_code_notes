@@ -18,7 +18,15 @@ main
 ----mysql_extension_init
 --load_defaults
 ----my_load_defaults
-
+------init_default_directories
+------my_search_option_files//my.cnf
+--------get_defaults_options
+--------search_default_file
+------my_default_get_login_file
+------my_search_option_files//mylogin.cnf
+--------get_defaults_options
+--------search_default_file
+----------search_default_file_with_ext
 
 
 
