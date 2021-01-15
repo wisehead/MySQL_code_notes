@@ -61,6 +61,9 @@ main
 --------check_plugin_enabled
 --------native_password_auth_client
 ----------vio->write_packet(vio, (uchar*)scrambled, SCRAMBLE_LENGTH)//用scrambled随机序列加密密码
+--------cli_read_change_user_result
+----------cli_safe_read
+------------cli_safe_read_with_ok
 
 --execute_commands
 ----get_pidfile
