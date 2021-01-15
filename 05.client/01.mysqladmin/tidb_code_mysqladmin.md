@@ -1,7 +1,23 @@
-#1.mysqladmin shutdown
+#1. mysqladmin for lsn
 
 ```cpp
 main
+--mysql_init
+----mysql_server_init//libmysql.c:109
+------my_init
+------init_client_errs
+--------my_error_register
+------mysql_client_plugin_init
+--------for (builtin= mysql_client_builtins; *builtin; builtin++)
+----------add_plugin_noargs//mysql_native_password
+------------do_add_plugin
+--------//end for
+
+
+
+
+
+
 --execute_commands
 ----get_pidfile
 ------mysql_query
