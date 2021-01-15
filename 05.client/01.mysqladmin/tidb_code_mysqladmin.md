@@ -9,9 +9,15 @@ main
 --------my_error_register
 ------mysql_client_plugin_init
 --------for (builtin= mysql_client_builtins; *builtin; builtin++)
-----------add_plugin_noargs//mysql_native_password
+----------add_plugin_noargs//"mysql_clear_password","mysql_native_password","sha256_password"
 ------------do_add_plugin
+--------------sha256_password_init//init function for the plugin
 --------//end for
+------mysql_port = MYSQL_PORT;
+------mysql_unix_port = (char*) MYSQL_UNIX_ADDR;
+----mysql_extension_init
+--load_defaults
+----my_load_defaults
 
 
 
