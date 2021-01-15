@@ -16,6 +16,7 @@ main
 ------mysql_port = MYSQL_PORT;
 ------mysql_unix_port = (char*) MYSQL_UNIX_ADDR;
 ----mysql_extension_init
+
 --load_defaults
 ----my_load_defaults
 ------init_default_directories
@@ -28,9 +29,38 @@ main
 --------search_default_file
 ----------search_default_file_with_ext
 
+--handle_options
+----get_one_option
+----"-S"
+----"-u"
+----"-p"
+----"kill" (*argv)[argvpos ++]= cur_arg
+----"10"
 
+--mask_password
+--(void) signal(SIGINT,endprog)
+--(void) signal(SIGTERM,endprog)
+--set_client_ssl_options
+----mysql_ssl_set
 
-
+--sql_connect
+----mysql_real_connect
+------my_socket sock= socket(AF_UNIX, SOCK_STREAM, 0)
+------vio_new
+--------mysql_socket_setfd
+--------mysql_socket_vio_new
+----------vio_init
+------vio_socket_connect
+--------inline_mysql_socket_connect
+----------connect(mysql_socket.fd, addr, len)//linux os api
+------my_net_init
+------cli_safe_read
+------run_plugin_auth
+--------auth_plugin= &native_password_client_plugin
+--------auth_plugin_name= auth_plugin->name;
+--------check_plugin_enabled
+--------native_password_auth_client
+----------vio->write_packet(vio, (uchar*)scrambled, SCRAMBLE_LENGTH)//用scrambled随机序列加密密码
 
 --execute_commands
 ----get_pidfile
