@@ -66,6 +66,31 @@ main
 ------------cli_safe_read_with_ok
 
 --execute_commands
+----find_type
+----mysql_query
+------mysql_real_query
+--------mysql_send_query
+----------cli_advanced_command
+------------net_write_command
+--------------buff[NET_HEADER_SIZE+1]
+--------------buff[4]=command
+--------------int3store(buff, static_cast<uint>(length))
+--------------buff[3]= (uchar) net->pkt_nr++;
+--------------net_write_buff(net, header, head_len)
+--------------net_write_buff(net, packet, len)
+--------------net_flush(net))
+--------cli_read_query_result
+----------cli_safe_read
+------------cli_safe_read_with_ok
+--------------my_net_read
+
+--mysql_close
+```
+
+#2.command query for mysqladmin
+
+```cpp
+--execute_commands
 ----get_pidfile
 ------mysql_query
 --------mysql_real_query//SELECT @@datadir, @@pid_file
