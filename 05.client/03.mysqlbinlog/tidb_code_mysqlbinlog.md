@@ -53,3 +53,17 @@ do_command
 --------------Binlog_sender::send_packet
 ----------------my_net_write
 ```
+
+#3.update_cond
+
+```cpp
+caller:
+- MYSQL_BIN_LOG::open_binlog
+- MYSQL_BIN_LOG::write_incident
+- MYSQL_BIN_LOG::commit
+- MYSQL_BIN_LOG::ordered_commit
+
+
+--update_binlog_end_pos
+----signal_update
+```
