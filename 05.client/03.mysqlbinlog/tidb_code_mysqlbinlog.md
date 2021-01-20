@@ -1,4 +1,4 @@
-#1.mysqlbinlog
+#1.mysqlbinlog client side
 
 ```cpp
 main
@@ -28,4 +28,28 @@ main
 ----------process_event(print_event_info, ev, old_off, logname)
 --------//end for(1)
 
+```
+
+#2.server side
+```cpp
+do_command
+--//command 1:COM_QUERY, SELECT VERSION()
+--//command 2: COM_QUERY, SET @master_binlog_checksum='NONE'
+--//command 3:COM_BINLOG_DUMP
+--dispatch_command
+----com_binlog_dump
+------mysql_binlog_send
+--------Binlog_sender::run
+----------Binlog_sender::send_binlog
+-=----------Binlog_sender::send_format_description_event
+--------------read_event
+------------start_pos= my_b_tell(log_cache);
+------------end_pos= get_binlog_end_pos(log_cache);//hang here
+--------------Binlog_sender::wait_new_events
+----------------wait_without_heartbeat
+------------------MYSQL_BIN_LOG::wait_for_update_bin_log
+--------------------mysql_cond_wait(&update_cond, &LOCK_binlog_end_pos);
+------------Binlog_sender::send_events
+--------------Binlog_sender::send_packet
+----------------my_net_write
 ```
