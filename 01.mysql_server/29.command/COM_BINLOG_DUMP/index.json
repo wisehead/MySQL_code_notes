@@ -1,0 +1,19 @@
+{
+  "version": "2.0",
+  "clipId": "1611202000",
+  "format": "html",
+  "title": "MySQL :: MySQL Internals Manual :: 14.9.5 COM_BINLOG_DUMP",
+  "link": "https://dev.mysql.com/doc/internals/en/com-binlog-dump.html",
+  "category": "default",
+  "tags": [],
+  "created_at": "2021-01-21 12:06:40",
+  "mainPath": "index.html",
+  "paths": [
+    "index.json",
+    "a-title_MySQL-MySQL-Internals-Manual-14-9-5-COM_BINLOG_DUMP",
+    "assets/1611202000-a4cafc9cf1e3c6151d2249e9cc320f36.css",
+    "assets/1611202000-2a679ee838c39dc2e3af9a5d9ca0e0bd.css",
+    "assets/1611202000-5944f656817f5623e6cb3f0b644f4b0b.css",
+    "index.html"
+  ]
+}
