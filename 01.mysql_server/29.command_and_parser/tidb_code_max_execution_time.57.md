@@ -30,10 +30,44 @@ is_timer_applicable_to_statement
 #2. set_statement_timer
 
 ```cpp
+caller:
+- execute_sqlcom_select
+
+
 set_statement_timer
 --get_max_execution_time
 --thd->timer= thd_timer_set(thd, thd->timer_cache, max_execution_time)
 ----thd_timer_create
 ----thd_timer->thread_id= thd->thread_id();
 ----my_timer_set
+------timer_settime
 ```
+
+#3.typedef struct st_thd_timer_info THD_timer_info
+
+```cpp
+struct st_thd_timer_info
+{
+  my_thread_id thread_id;
+  my_timer_t timer;
+  mysql_mutex_t mutex;
+  bool destroy;
+};
+```
+
+#4.typedef struct st_my_timer my_timer_t;
+
+```cpp
+typedef struct st_my_timer my_timer_t;
+
+/* Non-copyable timer object. */
+struct st_my_timer
+{
+  /* Timer ID used to identify the timer in timer requests. */
+  os_timer_t id;
+
+  /** Timer expiration notification function. */
+  void (*notify_function)(my_timer_t *);
+};
+```
+
