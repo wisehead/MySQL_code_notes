@@ -52,6 +52,10 @@ do_command
 ------------Binlog_sender::send_events
 --------------Binlog_sender::send_packet
 ----------------my_net_write
+------------------int3store(buff, static_cast<uint>(len));
+------------------buff[3]= (uchar) net->pkt_nr++;
+------------------net_write_buff(net, buff, NET_HEADER_SIZE)
+------------------net_write_buff(net,packet,len)
 ```
 
 #3.update_cond
