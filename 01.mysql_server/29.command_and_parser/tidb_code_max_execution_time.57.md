@@ -38,6 +38,8 @@ set_statement_timer
 --get_max_execution_time
 --thd->timer= thd_timer_set(thd, thd->timer_cache, max_execution_time)
 ----thd_timer_create
+------thd_timer->timer.notify_function= timer_callback;
+------my_timer_create(&thd_timer->timer)
 ----thd_timer->thread_id= thd->thread_id();
 ----my_timer_set
 ------timer_settime
@@ -71,3 +73,28 @@ struct st_my_timer
 };
 ```
 
+#5.timer_callback
+
+```cpp
+timer_callback
+--timer_notify
+```
+
+#6.timer_notify
+
+```cpp
+  /*
+    Statement might have finished while the timer notification
+    was being delivered. If this is the case, the timer object
+    was detached (orphaned) and has no associated session (thd).
+  */
+  if (thd)
+  {
+    /* process only if thread is not already undergoing any kill connection. */
+    if (thd->killed != THD::KILL_CONNECTION)
+    {
+      thd->awake(THD::KILL_TIMEOUT);
+    }
+    mysql_mutex_unlock(&thd->LOCK_thd_data);
+  }
+```
