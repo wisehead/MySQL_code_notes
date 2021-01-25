@@ -17,5 +17,8 @@
 */
 
 trans_commit_stmt
---Transaction_ctx::is_active
+--if (thd->get_transaction()->is_active(Transaction_ctx::STMT))
+----ha_commit_trans
+----if (! thd->in_active_multi_stmt_transaction())
+------trans_reset_one_shot_chistics
 ```
