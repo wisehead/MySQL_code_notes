@@ -1,0 +1,259 @@
+
+<!DOCTYPE html>
+<html>
+  <!-- OriginalSrc: https://www.cnblogs.com/quzq/p/11392602.html -->
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>mysqltest语法整理 - 叶落kiss - 博客园</title>
+    
+<link rel="stylesheet" href="assets/1611732059-ffdf0c7f662ca0c5c6e21b10c6062bc5.css" referrerpolicy="no-referrer">
+<link id="MainCss" rel="stylesheet" href="assets/1611732059-d628d33255204b29790a1c08b5f5e5d7.css" referrerpolicy="no-referrer">
+<link id="mobile-style" media="only screen and (max-width: 767px)" type="text/css" rel="stylesheet" href="assets/1611732059-708771a8cba6a7958ca0b37ea242c92b.css" referrerpolicy="no-referrer">
+<style type="text/css">
+@keyframes caretBlink {
+    from { opacity: 1.0; }
+    to { opacity: 0.0; }
+}
+
+@keyframes rotateSpinner {
+    from {
+        transform:rotate(0deg);
+    }
+    to {
+        transform:rotate(360deg);
+    }
+}
+
+#text-tool-caret {
+    animation-name: caretBlink;  
+    animation-iteration-count: infinite;  
+    animation-timing-function: cubic-bezier(1.0,0,0,1.0);
+    animation-duration: 1s; 
+}
+
+#en-markup-loading-spinner {
+    position: absolute;
+    top: calc(50% - 16px);
+    left: calc(50% - 16px);
+    width: 32px;
+    height: 32px;
+}
+
+#en-markup-loading-spinner img {
+    position: relative;
+    top: 0px;
+    left: 0px;
+    animation-name: rotateSpinner;
+    animation-duration: 0.6s;
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+}
+</style>
+<style type="text/css">
+.skitchToastBoxContainer {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    top: 30px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    pointer-events: none;
+}
+
+.skitchToastBox {
+    width: 200px;
+    height: 16px;
+    padding: 12px;
+    background-color: rgba(47, 55, 61, 0.95);
+    border-radius: 4px;
+    color: white;
+    cursor: default;
+    font-size: 10pt;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.32);
+    font-family: 'Soleil', Helvetica, Arial, sans-serif;
+    border: 2px rgba(255, 255, 255, 0.38) solid;
+}
+
+.lang-zh-cn .skitchToastBox {
+    font-family: '微软雅黑', 'Microsoft YaHei', SimSun,
+        '&#x30E1;&#x30A4;&#x30EA;&#x30AA;', Meiryo, 'MS PGothic', 'Soleil',
+        Helvetica, Arial, sans-serif;
+}
+
+.lang-ja-jp .skitchToastBox {
+    font-family: '&#x30E1;&#x30A4;&#x30EA;&#x30AA;', Meiryo, 'MS PGothic',
+        '微软雅黑', 'Microsoft YaHei', SimSun, 'Soleil', Helvetica, Arial,
+        sans-serif;
+}
+
+.skitchToast {
+    padding-left: 20px;
+    padding-right: 20px;
+    display: inline-block;
+    height: 10px;
+    color: #f1f5f8;
+    text-align: center;
+}
+
+.skitchVisible {
+    
+}
+</style>
+<style type="text/css">
+
+@font-face {
+	font-family: 'Soleil';
+	src: url("");
+	font-weight: normal;
+	font-style: normal;
+}
+</style>
+<style type="text/css">
+
+#en-markup-disabled {
+    position: fixed;
+    z-index: 9999;
+    width: 100%;
+    height: 100%;
+    top: 0px;
+    left: 0px;
+    cursor: default;
+    -webkit-user-select: none;
+}
+
+#en-markup-alert-container {
+    position: absolute;
+    z-index: 9999;
+    width: 450px;
+    left: calc(50% - 225px);
+    top: calc(50% - 85px);
+    background-color: white;
+    box-shadow: 0 2px 7px 1px rgba(0,0,0,0.35);
+    -webkit-user-select: none;
+}
+
+#en-markup-alert-container .cell-1 {
+    position: relative;
+    height: 110px;
+    width: 105px;
+    float: left;
+    text-align: center;
+    background-image: url("");
+    background-position: 65% 50%;
+    background-repeat: no-repeat;
+}
+
+#en-markup-alert-container .cell-2 {
+    position: relative;
+    float: left;
+    width: 345px;
+    margin-top: 29px;
+    margin-bottom: 20px;
+}
+
+#en-markup-alert-container .cell-2 .cell-2-title {
+    margin-bottom: 5px;
+    padding-right: 30px;
+    font-size: 12pt;
+    font-family: Tahoma, Arial;
+}
+
+#en-markup-alert-container .cell-2 .cell-2-message {
+    padding-right: 30px;
+    font-size: 9.5pt;
+    font-family: Tahoma, Arial;
+}
+
+#en-markup-alert-container .cell-3 {
+    position: relative;
+    width: 450px;
+    height: 60px;
+    float: left;
+    background-color: rgb(240,240,240);
+}
+
+#en-markup-alert-container .cell-3 button {
+    position: absolute;
+    top: 12px;
+    right: 15px;
+    width: 110px;
+    height: 36px;
+}
+
+#en-markup-alert-container .cell-3 button.alt-button {
+    position: absolute;
+    top: 12px;
+    right: 140px;
+    width: 110px;
+    height: 36px;
+}
+</style>
+
+    <style class="mx-wc-style">
+      body {padding-top: 20px;}
+      .mx-wc-main img {max-width: 100%;}
+      .mx-wc-main{
+        box-sizing: content-box;
+        background-color: rgb(254, 254, 242) !important;
+        margin: 0 auto;
+        max-width: 1977.625px;
+      }
+      @media (min-width: 768px) {
+        .mx-wc-main { padding: 15px 15px 80px 15px }
+      }
+      @media (max-width: 767px) {
+        .mx-wc-main { padding: 15px 3px 80px 3px }
+      }
+
+    </style>
+  </head>
+  <body style="background-color: #ffffff !important; min-height: 100%; height: auto; position: static !important; overflow: auto !important; padding-bottom: 0px !important;" class=has-navbar has-bannerbar>
+    <div class="mx-wc-main">
+      <DIV id="home" style="display: block !important;float: none !important;position: relative !important;transform: initial !important;top: 0 !important;left: 0 !important;border: 0px !important;width: 100% !important;min-width: 100% !important;max-width: 100% !important;height: auto !important;min-height: auto !important;max-height: 100% !important;margin: 0px !important;padding: 0px !important;"><DIV id="main" style="display: block !important;float: none !important;position: relative !important;transform: initial !important;top: 0 !important;left: 0 !important;border: 0px !important;width: 100% !important;min-width: 100% !important;max-width: 100% !important;height: auto !important;min-height: auto !important;max-height: 100% !important;margin: 0px !important;padding: 0px !important;"><DIV id="mainContent" style="display: block !important;float: none !important;position: relative !important;transform: initial !important;top: 0 !important;left: 0 !important;border: 0px !important;width: 100% !important;min-width: 100% !important;max-width: 100% !important;height: auto !important;min-height: auto !important;max-height: 100% !important;margin: 0px !important;padding: 0px !important;"><DIV class="forFlow" style="display: block !important;float: none !important;position: relative !important;transform: initial !important;top: 0 !important;left: 0 !important;border: 0px !important;width: 100% !important;min-width: 100% !important;max-width: 100% !important;height: auto !important;min-height: auto !important;max-height: 100% !important;margin: 0px !important;padding: 0px !important;"><DIV id="post_detail" style="display: block !important;float: none !important;position: relative !important;transform: initial !important;top: 0 !important;left: 0 !important;border: 0px !important;width: 100% !important;min-width: 100% !important;max-width: 100% !important;height: auto !important;min-height: auto !important;max-height: 100% !important;margin: 0px !important;padding: 0px !important;"><DIV id="topics" style="display: block !important;float: none !important;position: relative !important;transform: initial !important;top: 0 !important;left: 0 !important;border: 0px !important;width: 100% !important;min-width: 100% !important;max-width: 100% !important;height: auto !important;min-height: auto !important;max-height: 100% !important;margin: 0px !important;padding: 0px !important;"><div class="post mx-wc-selected-elem" style="display: block; float: none !important; position: relative !important; top: 0px !important; left: 0px !important; margin: 0px !important; flex: unset !important; width: 100% !important; max-width: 100% !important; box-sizing: border-box !important;">
+		<h1 class="postTitle">
+			
+<a id="cb_post_title_url" class="postTitle2 vertical-middle" href="https://www.cnblogs.com/quzq/p/11392602.html" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer">
+    <span>mysqltest语法整理</span>
+    
+
+
+</a>
+
+		</h1>
+		<div class="clear"></div>
+		<div class="postBody">
+			
+<div id="cnblogs_post_body" class="blogpost-body">
+    <p>1.&nbsp;mysqltest是mysql自带的测试引擎, 它实现了一种小语言，用来描述测试过程，并将测试结果与预期对比。</p>
+<p>　小语言按照语法大致分为三类：mysql command，sql，comment。sql和comment很容易理解，前者是mysql支持的sql，</p>
+<p>　后者是注释，一般用来描述测试过程.&nbsp;&nbsp;<span style="color: rgba(255, 0, 0, 1)">mysqltest解释的是以test为后缀名的文本文件</span></p>
+<p><span style="font-size: 16px"><strong>mysqltest case的语法比较简单，分三类：</strong> </span><br>1.  command</p>
+<p style="margin-left: 30px">command用来控制运行时的行为，后面重点介绍。 <br>一般有两种写法： <br>command;   #  这是后面带;的 <br>--command  # 前面带--，不需要; <br>另外，while和if要稍微特殊些。</p>
+<p>2.  sql <br>　　就是普通的sql语句，CASE里面大部分都是sql，以分号结束。 <br>3.  comment <br>　　就是注释，用#开头 <br> <br><strong><span style="font-size: 16px">mysqltest提供了几十个command，下面只介绍我们常用的。</span></strong> <br> <br>1.  --error <br>有些CASE就是要验证sql失败的情况，在sql语句前面加上—error 错误码就可以了。--error后面可以跟两种值，一种是error no，另外一种是sqlstate，如果是后者需要加上S做前缀。 <br>比如： <br>--error 65535 <br>create table t1(pk createtime primary key, a int); <br>或 <br>--error SHY000 <br>select a from t1 union select * from t2; <br>2.  disable_abort_on_error / enable_abort_on_error <br>默认情况下(enable)sql执行失败后mysqltest就退出了，后面的内容就不会执行，也不会生成reject文件，显示执行disable命令可以在sql失败后继续执行后面的内容，并生成reject文件。 <br>3.  disable_query_log / enable_query_log <br>默认情况下(enable)所有的sql语句都会在result文件中记录，在一些情况下(比如使用了循环可能query特别多)不想打开显示调用disable既可。 <br>其他形如enable_XX/disable_XX的命令还有很多，用法都类似。 <br>4.  enable_parsing/disable_parsing <br>用来注释多行，跟comment类似。 <br>5.  connect/disconnect与conncetion <br>测试session的时候可能会用到这两个命令，前者是建立或断开一个连接。后者是表示使用哪个连接执行sql语句，可以在多个connection之间切换 <br>比如： <br>connect (conn3,127.0.0.1,root,,test,25042); <br>connection conn3; <br>create table t1(a int primary key); <br>drop table t1;  <br>disconnect conn3; <br>6.  system/exec <br>执行shell命令 <br>7.  perl [terminator] <br>嵌入perl code，直到terminator位置，比如： <br>perl END_OF_FILE; <br>print "This is another test\n"; <br>END_OF_FILE <br>8.  vertical_results/horizontal_results <br>功能跟sql语句的’\G’类似 <br>9.  exit <br>退出，其后的内容不会执行 <br>10. let $var_name = value <br>变量赋值，整数、字符串都可以 <br>11. inc $var_name/dec $var_name <br>整数加1/减1，是mysqltest唯一支持的运算。 <br>12. eval <br>执行sql语句，支持变量的传递，比如： <br>eval insert into t1(i,c1,c256,dt,d) values(0,'1','$i','2012-10-10 12:00:00','2012-10-10'); <br>13. query <br>mysqltest解释每一行的时候会先判断是sql语句还是command，如果是query指定的，都认为是sql语句，这是避免comand名字与sql有冲突，一般也不会。 <br>14. send/reap/eval_send <br>发送query后不用等待结果立即返回，在reap之前不能使用同一个connection发送sql语句。 <br>eval_send支持变量传递。 <br>15. echo <br>打印 <br>16. query_get_value(query, col_name, row_num) <br>获得query返回的结果中某行某列的值 <br>17. source <br>多个case可能共用一块代码，这块代码可以单独放到一个文件，通过source导入。 <br>18. require <br>将下一个query的结果与require指定的结果文件做对比，如果匹配失败就报“this test is not supported”的错误。这个一般用于判断test是否可以在某版本中使用。 <br>19. result <br>显式指定保存运行结果的文件路径 <br>20. sleep/real_sleep <br>休眠.  <br>21. replace_column <br>对查询结果的某些列的值进行替换，有些结果是随着执行时间变化的，比如createtime或modifytime类型，为了比较可以用这个命令将这个值替换成某常量。比如： <br>--replace_column 2 searched <br>select pk,b from t1; <br>22. if(exptr) <br>{ <br>} <br>当Exptr非0，就执行大括号部分。注意，mysqltest没有提供else if或else。低版本的mysqltest不支持exptr为比较表达式。 <br>比如： <br>if($value_now == $value_orig) <br>{ <br>    --echo succeed <br>} <br>23. while(exptr) <br>{ <br>} <br>执行大括号部分，知道exptr为0. 低版本的mysqltest不支持exptr为比较表达式。没有break类似的命令，可以使用end试试。 <br>    比如： <br>while($i &lt; 10000)  <br>{ <br>    eval insert into t1(i,c1,c256,dt,d) values(0,'1','$i','2012-10-10 12:00:00','2012-10-10'); <br>    inc $i;  <br>} <br>其他的命令还有： <br>1.  ping，shutdown，save_master_pos，sync_slave_with_master , sync_with_master 等等，类似于mysqladmin/mysql(我们暂不支持)的功能。 <br>2.  start_timer等计时命令 <br>3.  append_file, mv, remove_file,chmod,write_file等文件操作的命令 <br> <br>详细请参考：http://dev.mysql.com/doc/mysqltest/2.0/en/mysqltest-commands.html</p>
+<p>语法代码实列如下:</p>
+<p>--echo # 修改session的值,使用脚本来测别名的更改. <br>connect (conn1,$OBMYSQL_MS0,root@sys,,ob,$OBMYSQL_PORT);<br>connect (conn2,$OBMYSQL_MS0,admin@oracle,admin,test,$OBMYSQL_PORT);</p>
+<p><br>let $current_num=1;<br>let $number=575;<br>while ($current_num &lt;= $number)<br>{<br>connection conn1;<br>let $tz_name = query_get_value(select name from oceanbase.__all_time_zone_name order by name, name, $current_num);<br>connection conn2;<br>eval alter session set time_zone='$tz_name';<br>eval select sessiontimezone from dual;<br>inc $current_num;<br>}</p>
+<p>&nbsp;</p>
+</div>
+
+<div class="clear"></div>
+<div id="blog_post_info_block">
+    <div id="blog_post_info"></div>
+    <div class="clear"></div>
+    <div id="post_next_prev"></div>
+</div>
+		</div>
+		<div class="postDesc">posted @ 
+<span id="post-date">2019-08-24 11:59</span>&nbsp;
+<a href="https://www.cnblogs.com/quzq/" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer">叶落kiss</a>&nbsp;
+阅读(<span id="post_view_count">1496</span>)&nbsp;
+评论(<span id="post_comment_count">0</span>)&nbsp;
+<a href="https://i.cnblogs.com/EditPosts.aspx?postid=11392602" rel="noopener noreferrer" target="_blank" referrerpolicy="no-referrer">编辑</a>&nbsp;
+<a href="javascript:" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer">收藏</a></div>
+	</div></DIV></DIV></DIV></DIV></DIV></DIV>
+      
+    </div>
+  </body>
+</html>
