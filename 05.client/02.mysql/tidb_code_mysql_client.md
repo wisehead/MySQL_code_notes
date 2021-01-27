@@ -35,8 +35,11 @@ main
 
 --read_and_execute
 ----batch_readline
+----find_command
 ----add_line
 ----com_go
 ------mysql_real_query_for_lazy
 --------mysql_real_query
+--------cli_read_query_result
+----------read_ok_ex
 ```
