@@ -11,3 +11,13 @@ THD::awake
 ----------/* Cancel a pending lock request if there are any */
 ----------lock_trx_handle_wait
 ```
+
+
+#2.timeout sql thread
+
+```cpp
+dispatch_command
+--mysql_parse
+----mysql_execute_command
+------THD::send_kill_message
+```
