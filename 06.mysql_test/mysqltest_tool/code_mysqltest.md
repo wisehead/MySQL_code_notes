@@ -31,3 +31,13 @@ read_command
 --------info: var: '$MYSQL_TMP_DIR' -> '/ssd1/chenhui3/pripath/mysql-test/var/tmp'
 ```
 
+#4.eval command
+
+```cpp
+main
+--read_command
+--get_command_type
+--command->query= command->first_argument;
+--run_query
+----do_eval
+```
