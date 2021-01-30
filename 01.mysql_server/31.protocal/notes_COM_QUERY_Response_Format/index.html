@@ -1,0 +1,1003 @@
+
+<!DOCTYPE html>
+<html class=svg js>
+  <!-- OriginalSrc: https://dev.mysql.com/doc/internals/en/com-query-response.html -->
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>MySQL :: MySQL Internals Manual :: 14.6.4.1 COM_QUERY Response</title>
+    
+<link rel="stylesheet" media="all" href="assets/1611969697-a4cafc9cf1e3c6151d2249e9cc320f36.css" referrerpolicy="no-referrer">
+<link rel="stylesheet" media="all" href="assets/1611969697-2a679ee838c39dc2e3af9a5d9ca0e0bd.css" referrerpolicy="no-referrer">
+<link rel="stylesheet" media="print" href="assets/1611969697-5944f656817f5623e6cb3f0b644f4b0b.css" referrerpolicy="no-referrer">
+<style type="text/css">
+@keyframes caretBlink {
+    from { opacity: 1.0; }
+    to { opacity: 0.0; }
+}
+
+@keyframes rotateSpinner {
+    from {
+        transform:rotate(0deg);
+    }
+    to {
+        transform:rotate(360deg);
+    }
+}
+
+#text-tool-caret {
+    animation-name: caretBlink;  
+    animation-iteration-count: infinite;  
+    animation-timing-function: cubic-bezier(1.0,0,0,1.0);
+    animation-duration: 1s; 
+}
+
+#en-markup-loading-spinner {
+    position: absolute;
+    top: calc(50% - 16px);
+    left: calc(50% - 16px);
+    width: 32px;
+    height: 32px;
+}
+
+#en-markup-loading-spinner img {
+    position: relative;
+    top: 0px;
+    left: 0px;
+    animation-name: rotateSpinner;
+    animation-duration: 0.6s;
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+}
+</style>
+<style type="text/css">
+.skitchToastBoxContainer {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    top: 30px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    pointer-events: none;
+}
+
+.skitchToastBox {
+    width: 200px;
+    height: 16px;
+    padding: 12px;
+    background-color: rgba(47, 55, 61, 0.95);
+    border-radius: 4px;
+    color: white;
+    cursor: default;
+    font-size: 10pt;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.32);
+    font-family: 'Soleil', Helvetica, Arial, sans-serif;
+    border: 2px rgba(255, 255, 255, 0.38) solid;
+}
+
+.lang-zh-cn .skitchToastBox {
+    font-family: '微软雅黑', 'Microsoft YaHei', SimSun,
+        '&#x30E1;&#x30A4;&#x30EA;&#x30AA;', Meiryo, 'MS PGothic', 'Soleil',
+        Helvetica, Arial, sans-serif;
+}
+
+.lang-ja-jp .skitchToastBox {
+    font-family: '&#x30E1;&#x30A4;&#x30EA;&#x30AA;', Meiryo, 'MS PGothic',
+        '微软雅黑', 'Microsoft YaHei', SimSun, 'Soleil', Helvetica, Arial,
+        sans-serif;
+}
+
+.skitchToast {
+    padding-left: 20px;
+    padding-right: 20px;
+    display: inline-block;
+    height: 10px;
+    color: #f1f5f8;
+    text-align: center;
+}
+
+.skitchVisible {
+    
+}
+</style>
+<style type="text/css">
+
+@font-face {
+	font-family: 'Soleil';
+	src: url("");
+	font-weight: normal;
+	font-style: normal;
+}
+</style>
+<style type="text/css">
+
+#en-markup-disabled {
+    position: fixed;
+    z-index: 9999;
+    width: 100%;
+    height: 100%;
+    top: 0px;
+    left: 0px;
+    cursor: default;
+    -webkit-user-select: none;
+}
+
+#en-markup-alert-container {
+    position: absolute;
+    z-index: 9999;
+    width: 450px;
+    left: calc(50% - 225px);
+    top: calc(50% - 85px);
+    background-color: white;
+    box-shadow: 0 2px 7px 1px rgba(0,0,0,0.35);
+    -webkit-user-select: none;
+}
+
+#en-markup-alert-container .cell-1 {
+    position: relative;
+    height: 110px;
+    width: 105px;
+    float: left;
+    text-align: center;
+    background-image: url("");
+    background-position: 65% 50%;
+    background-repeat: no-repeat;
+}
+
+#en-markup-alert-container .cell-2 {
+    position: relative;
+    float: left;
+    width: 345px;
+    margin-top: 29px;
+    margin-bottom: 20px;
+}
+
+#en-markup-alert-container .cell-2 .cell-2-title {
+    margin-bottom: 5px;
+    padding-right: 30px;
+    font-size: 12pt;
+    font-family: Tahoma, Arial;
+}
+
+#en-markup-alert-container .cell-2 .cell-2-message {
+    padding-right: 30px;
+    font-size: 9.5pt;
+    font-family: Tahoma, Arial;
+}
+
+#en-markup-alert-container .cell-3 {
+    position: relative;
+    width: 450px;
+    height: 60px;
+    float: left;
+    background-color: rgb(240,240,240);
+}
+
+#en-markup-alert-container .cell-3 button {
+    position: absolute;
+    top: 12px;
+    right: 15px;
+    width: 110px;
+    height: 36px;
+}
+
+#en-markup-alert-container .cell-3 button.alt-button {
+    position: absolute;
+    top: 12px;
+    right: 140px;
+    width: 110px;
+    height: 36px;
+}
+</style>
+
+    <style class="mx-wc-style">
+      body {padding-top: 20px;}
+      .mx-wc-main img {max-width: 100%;}
+      .mx-wc-main{
+        box-sizing: content-box;
+        background-color: rgb(255, 255, 255) !important;
+        margin: 0 auto;
+        max-width: 1139px;
+      }
+      @media (min-width: 768px) {
+        .mx-wc-main { padding: 15px 15px 80px 15px }
+      }
+      @media (max-width: 767px) {
+        .mx-wc-main { padding: 15px 3px 80px 3px }
+      }
+
+    </style>
+  </head>
+  <body style="background-color: #464646 !important; min-height: 100%; height: auto; position: static !important; overflow: auto !important; padding-bottom: 0px !important;" class=no-sidebar full-page dev>
+    <div class="mx-wc-main">
+      <DIV class="page-wrapper" style="display: block !important;float: none !important;position: relative !important;transform: initial !important;top: 0 !important;left: 0 !important;border: 0px !important;width: 100% !important;min-width: 100% !important;max-width: 100% !important;height: auto !important;min-height: auto !important;max-height: 100% !important;margin: 0px !important;padding: 0px !important;"><DIV id="page" style="display: block !important;float: none !important;position: relative !important;transform: initial !important;top: 0 !important;left: 0 !important;border: 0px !important;width: 100% !important;min-width: 100% !important;max-width: 100% !important;height: auto !important;min-height: auto !important;max-height: 100% !important;margin: 0px !important;padding: 0px !important;"><DIV role="main" id="main" style="display: block !important;float: none !important;position: relative !important;transform: initial !important;top: 0 !important;left: 0 !important;border: 0px !important;width: 100% !important;min-width: 100% !important;max-width: 100% !important;height: auto !important;min-height: auto !important;max-height: 100% !important;margin: 0px !important;padding: 0px !important;"><DIV style="display: block !important;float: none !important;position: relative !important;transform: initial !important;top: 0 !important;left: 0 !important;border: 0px !important;width: 100% !important;min-width: 100% !important;max-width: 100% !important;height: auto !important;min-height: auto !important;max-height: 100% !important;margin: 0px !important;padding: 0px !important;"><DIV id="docs-main" class="has-toc" style="display: block !important;float: none !important;position: relative !important;transform: initial !important;top: 0 !important;left: 0 !important;border: 0px !important;width: 100% !important;min-width: 100% !important;max-width: 100% !important;height: auto !important;min-height: auto !important;max-height: 100% !important;margin: 0px !important;padding: 0px !important;"><div id="docs-main-inner" class="mx-wc-selected-elem" style="display: block; float: none !important; position: relative !important; top: 0px !important; left: 0px !important; margin: 0px !important; flex: unset !important; width: 100% !important; max-width: 100% !important;">
+
+        
+        
+
+                        <div id="docs-breadcrumbs">
+            <a href="https://dev.mysql.com/doc/internals/en/" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer">MySQL Internals Manual</a> &nbsp;/&nbsp;
+                            <span id="breadcrumbs-link"><a href="" id="show-breadcrumbs" data-mx-warn="Empty URL">...</a> &nbsp;/&nbsp;</span>
+                
+                                        COM_QUERY Response
+                                    </div>
+        
+        <div id="docs-body">
+        
+<div class="section">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="com-query-response" data-mx-warn="Empty URL"></a>14.6.4.1&nbsp;COM_QUERY Response</h4></div></div></div>
+<div class="toc"><dl class="toc">
+<dt><span class="section"><a href="#text-resultset">14.6.4.1.1 Text Resultset</a></span></dt>
+<dt><span class="section"><a href="#local-infile-request">14.6.4.1.2 LOCAL INFILE Request</a></span></dt>
+</dl></div>
+<p>
+          The query-response packet is a meta packet which can be one of
+        </p>
+<div class="variablelist"><dl class="variablelist">
+<dt><span class="term"><a name="packet-COM_QUERY_Response" data-mx-warn="Empty URL"></a>
+              COM_QUERY_Response:
+            </span></dt>
+<dd><div class="itemizedlist"><ul class="itemizedlist" type="disc">
+<li class="listitem"><p>
+                    a
+                    <a class="link" href="https://dev.mysql.com/doc/internals/en/packet-ERR_Packet.html" title="14.1.3.2&nbsp;ERR_Packet" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ERR_Packet</code></a>
+                  </p></li>
+<li class="listitem"><p>
+                    a
+                    <a class="link" href="https://dev.mysql.com/doc/internals/en/packet-OK_Packet.html" title="14.1.3.1&nbsp;OK_Packet" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">OK_Packet</code></a>
+                  </p></li>
+<li class="listitem"><p>
+                    a
+                    <a class="link" href="#packet-Protocol::LOCAL_INFILE_Request"><code class="literal">Protocol::LOCAL_INFILE_Request</code></a>
+                  </p></li>
+<li class="listitem"><p>
+                    a
+                    <a class="link" href="#packet-ProtocolText::Resultset"><code class="literal">ProtocolText::Resultset</code></a>
+                  </p></li>
+</ul></div></dd>
+</dl></div>
+<div class="mediaobject">
+<a name="graphviz-3ab2ba81081a7f3cc556d11fd09f50341bba6f15" data-mx-warn="Empty URL"></a><img src="assets/1611969697-28acac79432ed86bc8532154f60c2c27.png" alt="Image description follows." style="width: 100%; max-width: 817px;"><div class="longdesc-link" align="left"><span class="longdesc-link"><a href="https://dev.mysql.com/doc/internals/en/graphviz-3ab2ba81081a7f3cc556d11fd09f50341bba6f15.html" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer">Image description</a></span></div>
+</div>
+<p>
+          The type of the packet is defined by the type-identifier:
+        </p>
+<div class="copytoclipboard-wrapper" style="position: relative;"><pre class="programlisting line-numbers  language-clike"><code class=" language-clike">COM_QUERY response
+  response to a COM_QUERY packet
+
+  payload
+    lenenc<span class="token operator">-</span>int     number of columns <span class="token keyword">in</span> the resultset<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre></div>
+<p>
+          If the number of columns in the resultset is 0, this is a
+          <a class="link" href="https://dev.mysql.com/doc/internals/en/packet-OK_Packet.html" title="14.1.3.1&nbsp;OK_Packet" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">OK_Packet</code></a>.
+        </p>
+<div class="mediaobject">
+<a name="mscgen-ecf2c2113597dabeca24428e27ffdf5f1eddf9eb" data-mx-warn="Empty URL"></a><img src="assets/1611969697-aaa24c9ac16db572e88d75a23206856b.png" alt="Image description follows." style="width: 100%; max-width: 600px;"><div class="longdesc-link" align="left"><span class="longdesc-link"><a href="https://dev.mysql.com/doc/internals/en/mscgen-ecf2c2113597dabeca24428e27ffdf5f1eddf9eb.html" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer">Image description</a></span></div>
+</div>
+<p>
+          If it is not a valid
+          <a class="link" href="https://dev.mysql.com/doc/internals/en/integer.html#packet-Protocol::LengthEncodedInteger" title="Protocol::LengthEncodedInteger" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">Protocol::LengthEncodedInteger</code></a>
+          it is either a
+          <a class="link" href="https://dev.mysql.com/doc/internals/en/packet-ERR_Packet.html" title="14.1.3.2&nbsp;ERR_Packet" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ERR_Packet</code></a>
+          or a
+          <a class="link" href="#packet-Protocol::LOCAL_INFILE_Request"><code class="literal">Protocol::LOCAL_INFILE_Request</code></a>.
+        </p>
+<div class="mediaobject">
+<a name="mscgen-91874270b600b72a810084cdba4a71ce31d04f8f" data-mx-warn="Empty URL"></a><img src="assets/1611969697-df636cddf2d430843d2b602c096ef96e.png" alt="Image description follows." style="width: 100%; max-width: 600px;"><div class="longdesc-link" align="left"><span class="longdesc-link"><a href="https://dev.mysql.com/doc/internals/en/mscgen-91874270b600b72a810084cdba4a71ce31d04f8f.html" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer">Image description</a></span></div>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h5 class="title">
+<a name="text-resultset" data-mx-warn="Empty URL"></a>14.6.4.1.1&nbsp;Text Resultset</h5></div></div></div>
+<div class="toc"><dl class="toc">
+<dt><span class="section"><a href="#column-type">14.6.4.1.1.1 Column Type</a></span></dt>
+<dt><span class="section"><a href="#column-definition">14.6.4.1.1.2 Column Definition</a></span></dt>
+<dt><span class="section"><a href="#text-resultset-row">14.6.4.1.1.3 Text Resultset Row</a></span></dt>
+</dl></div>
+<p>
+            A Text Resultset is a possible
+            <a class="link" href="https://dev.mysql.com/doc/internals/en/com-query-response.html" title="14.6.4.1&nbsp;COM_QUERY Response" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer">COM_QUERY
+            Response</a>.
+          </p>
+<p>
+            It is made up of two parts:
+          </p>
+<div class="itemizedlist"><ul class="itemizedlist" type="disc">
+<li class="listitem"><p>
+                the column definitions
+              </p></li>
+<li class="listitem"><p>
+                the rows
+              </p></li>
+</ul></div>
+<p>
+            which consist of a sequence of packets.
+          </p>
+<p>
+            The column definitions part starts with a packet containing
+            the column-count, followed by as many
+            <a class="link" href="#column-definition" title="14.6.4.1.1.2&nbsp;Column Definition">Column Definition</a>
+            packets as there are columns and terminated by an
+            <a class="link" href="https://dev.mysql.com/doc/internals/en/packet-EOF_Packet.html" title="14.1.3.3&nbsp;EOF_Packet" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">EOF_Packet</code></a>.
+            packet if the
+            <a class="link" href="https://dev.mysql.com/doc/internals/en/capability-flags.html#flag-CLIENT_DEPRECATE_EOF" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">CLIENT_DEPRECATE_EOF</code></a>
+            capability flag is not set.
+          </p>
+<p>
+            Each row is a packet, too. The rows are terminated by
+            another
+            <a class="link" href="https://dev.mysql.com/doc/internals/en/packet-EOF_Packet.html" title="14.1.3.3&nbsp;EOF_Packet" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">EOF_Packet</code></a>.
+            In case the query could generate the column-definition, but
+            generating the rows afterwards failed, a
+            <a class="link" href="https://dev.mysql.com/doc/internals/en/packet-ERR_Packet.html" title="14.1.3.2&nbsp;ERR_Packet" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ERR_Packet</code></a>
+            may be sent instead of the last
+            <a class="link" href="https://dev.mysql.com/doc/internals/en/packet-EOF_Packet.html" title="14.1.3.3&nbsp;EOF_Packet" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">EOF_Packet</code></a>.
+          </p>
+<div class="variablelist"><dl class="variablelist">
+<dt><span class="term"><a name="packet-ProtocolText::Resultset" data-mx-warn="Empty URL"></a>
+                ProtocolText::Resultset:
+              </span></dt>
+<dd>
+<div class="itemizedlist"><ul class="itemizedlist" type="disc">
+<li class="listitem"><p>
+                      A packet containing a
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/integer.html#packet-Protocol::LengthEncodedInteger" title="Protocol::LengthEncodedInteger" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">Protocol::LengthEncodedInteger</code></a>
+                      <code class="literal">column_count</code>
+                    </p></li>
+<li class="listitem"><p>
+                      <code class="literal">column_count</code> *
+                      <a class="link" href="#packet-Protocol::ColumnDefinition"><code class="literal">Protocol::ColumnDefinition</code></a>
+                      packets
+                    </p></li>
+<li class="listitem"><p>
+                      If the
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/capability-flags.html#flag-CLIENT_DEPRECATE_EOF" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">CLIENT_DEPRECATE_EOF</code></a>
+                      client capability flag is not set,
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/packet-EOF_Packet.html" title="14.1.3.3&nbsp;EOF_Packet" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">EOF_Packet</code></a>
+                    </p></li>
+<li class="listitem"><p>
+                      One or more
+                      <a class="link" href="#packet-ProtocolText::ResultsetRow"><code class="literal">ProtocolText::ResultsetRow</code></a>
+                      packets, each containing
+                      <code class="literal">column_count</code> values
+                    </p></li>
+<li class="listitem"><p>
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/packet-ERR_Packet.html" title="14.1.3.2&nbsp;ERR_Packet" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ERR_Packet</code></a>
+                      in case of error. Otherwise: If the
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/capability-flags.html#flag-CLIENT_DEPRECATE_EOF" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">CLIENT_DEPRECATE_EOF</code></a>
+                      client capability flag is set,
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/packet-OK_Packet.html" title="14.1.3.1&nbsp;OK_Packet" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">OK_Packet</code></a>;
+                      else
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/packet-EOF_Packet.html" title="14.1.3.3&nbsp;EOF_Packet" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">EOF_Packet</code></a>.
+                    </p></li>
+</ul></div>
+<p>
+                  If the
+                  <a class="link" href="https://dev.mysql.com/doc/internals/en/status-flags.html#flag-SERVER_MORE_RESULTS_EXISTS" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">SERVER_MORE_RESULTS_EXISTS</code></a>
+                  flag is set in the last
+                  <a class="link" href="https://dev.mysql.com/doc/internals/en/packet-EOF_Packet.html" title="14.1.3.3&nbsp;EOF_Packet" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">EOF_Packet</code></a>
+                  or (if the
+                  <a class="link" href="https://dev.mysql.com/doc/internals/en/capability-flags.html#flag-CLIENT_DEPRECATE_EOF" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">CLIENT_DEPRECATE_EOF</code></a>
+                  capability flag is set)
+                  <a class="link" href="https://dev.mysql.com/doc/internals/en/packet-OK_Packet.html" title="14.1.3.1&nbsp;OK_Packet" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">OK_Packet</code></a>,
+                  another
+                  <a class="link" href="#packet-ProtocolText::Resultset"><code class="literal">ProtocolText::Resultset</code></a>
+                  will follow (see
+                  <a class="link" href="https://dev.mysql.com/doc/internals/en/multi-resultset.html" title="14.8.1&nbsp;Multi-Resultset" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><span class="emphasis"><em>Multi-resultset</em></span></a>).
+                </p>
+<div class="mediaobject">
+<a name="graphviz-ec88bc310020c1bb00fe2f43e9cdaaa83c6c6793" data-mx-warn="Empty URL"></a><img src="assets/1611969697-ffee786b1e7eae12b654552f92f505a0.png" alt="Image description follows." style="width: 100%; max-width: 645px;"><div class="longdesc-link" align="left"><span class="longdesc-link"><a href="https://dev.mysql.com/doc/internals/en/graphviz-ec88bc310020c1bb00fe2f43e9cdaaa83c6c6793.html" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer">Image description</a></span></div>
+</div>
+<div class="variablelist"><dl class="variablelist">
+<dt><span class="term">
+                      Example
+                    </span></dt>
+<dd><p>
+                        see
+                        <a class="link" href="https://dev.mysql.com/doc/internals/en/protocoltext-resultset.html" title="14.12.2&nbsp;ProtocolText::Resultset" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><span class="emphasis"><em>ProtocolText::Resultset</em></span></a>
+                      </p></dd>
+</dl></div>
+</dd>
+</dl></div>
+<div class="section">
+<div class="titlepage"><div><div><h6 class="title">
+<a name="column-type" data-mx-warn="Empty URL"></a>14.6.4.1.1.1&nbsp;Column Type</h6></div></div></div>
+<div class="table">
+<a name="packet-Protocol::ColumnType" data-mx-warn="Empty URL"></a><p class="title"><b>Table&nbsp;14.4&nbsp;Column Types</b></p>
+<div class="table-contents">
+<table class="table" summary="Column Types" border="1">
+<colgroup>
+<col>
+<col>
+<col>
+</colgroup>
+<thead><tr>
+<th scope="col">Table Column Type</th>
+<th scope="col">Hex Value</th>
+<th scope="col">Notes</th>
+</tr></thead>
+<tbody>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_DECIMAL" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_DECIMAL</td>
+<td><code class="literal">0x00</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_DECIMAL" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_DECIMAL</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_TINY" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_TINY</td>
+<td><code class="literal">0x01</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_TINY" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_TINY</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_SHORT" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_SHORT</td>
+<td><code class="literal">0x02</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_SHORT" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_SHORT</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_LONG" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_LONG</td>
+<td><code class="literal">0x03</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_LONG" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_LONG</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_FLOAT" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_FLOAT</td>
+<td><code class="literal">0x04</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_FLOAT" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_FLOAT</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_DOUBLE" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_DOUBLE</td>
+<td><code class="literal">0x05</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_DOUBLE" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_DOUBLE</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_NULL" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_NULL</td>
+<td><code class="literal">0x06</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_NULL" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_NULL</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_TIMESTAMP" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_TIMESTAMP</td>
+<td><code class="literal">0x07</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_TIMESTAMP" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_TIMESTAMP</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_LONGLONG" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_LONGLONG</td>
+<td><code class="literal">0x08</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_LONGLONG" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_LONGLONG</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_INT24" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_INT24</td>
+<td><code class="literal">0x09</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_INT24" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_INT24</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_DATE" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_DATE</td>
+<td><code class="literal">0x0a</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_DATE" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_DATE</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_TIME" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_TIME</td>
+<td><code class="literal">0x0b</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_TIME" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_TIME</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_DATETIME" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_DATETIME</td>
+<td><code class="literal">0x0c</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_DATETIME" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_DATETIME</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_YEAR" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_YEAR</td>
+<td><code class="literal">0x0d</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_YEAR" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_YEAR</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_NEWDATE" data-mx-warn="Empty URL"></a><span class="emphasis"><em>Protocol::MYSQL_TYPE_NEWDATE</em></span>
+
+                      <a href="#ftn.fnref_internal" class="footnote" name="fnref_internal"><sup class="footnote">[a]</sup></a>
+</td>
+<td><code class="literal">0x0e</code></td>
+<td>see
+                      <a class="link" href="#packet-Protocol::MYSQL_TYPE_DATE">Protocol::MYSQL_TYPE_DATE</a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_VARCHAR" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_VARCHAR</td>
+<td><code class="literal">0x0f</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_VARCHAR" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_VARCHAR</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_BIT" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_BIT</td>
+<td><code class="literal">0x10</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_BIT" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_BIT</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_TIMESTAMP2" data-mx-warn="Empty URL"></a><span class="emphasis"><em>Protocol::MYSQL_TYPE_TIMESTAMP2</em></span>
+
+                      <a href="#ftn.fnref_internal" class="footnoteref"><sup class="footnoteref">[a]</sup></a>
+</td>
+<td><code class="literal">0x11</code></td>
+<td>see
+                      <a class="link" href="#packet-Protocol::MYSQL_TYPE_TIMESTAMP">Protocol::MYSQL_TYPE_TIMESTAMP</a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_DATETIME2" data-mx-warn="Empty URL"></a><span class="emphasis"><em>Protocol::MYSQL_TYPE_DATETIME2</em></span>
+
+                      <a href="#ftn.fnref_internal" class="footnoteref"><sup class="footnoteref">[a]</sup></a>
+</td>
+<td><code class="literal">0x12</code></td>
+<td>see
+                      <a class="link" href="#packet-Protocol::MYSQL_TYPE_DATETIME">Protocol::MYSQL_TYPE_DATETIME</a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_TIME2" data-mx-warn="Empty URL"></a><span class="emphasis"><em>Protocol::MYSQL_TYPE_TIME2</em></span>
+
+                      <a href="#ftn.fnref_internal" class="footnoteref"><sup class="footnoteref">[a]</sup></a>
+</td>
+<td><code class="literal">0x13</code></td>
+<td>see
+                      <a class="link" href="#packet-Protocol::MYSQL_TYPE_TIME">Protocol::MYSQL_TYPE_TIME</a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_NEWDECIMAL" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_NEWDECIMAL</td>
+<td><code class="literal">0xf6</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_NEWDECIMAL" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_NEWDECIMAL</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_ENUM" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_ENUM</td>
+<td><code class="literal">0xf7</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_ENUM" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_ENUM</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_SET" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_SET</td>
+<td><code class="literal">0xf8</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_SET" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_SET</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_TINY_BLOB" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_TINY_BLOB</td>
+<td><code class="literal">0xf9</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_TINY_BLOB" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_TINY_BLOB</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_MEDIUM_BLOB" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_MEDIUM_BLOB</td>
+<td><code class="literal">0xfa</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_MEDIUM_BLOB" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_MEDIUM_BLOB</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_LONG_BLOB" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_LONG_BLOB</td>
+<td><code class="literal">0xfb</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_LONG_BLOB" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_LONG_BLOB</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_BLOB" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_BLOB</td>
+<td><code class="literal">0xfc</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_BLOB" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_BLOB</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_VAR_STRING" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_VAR_STRING</td>
+<td><code class="literal">0xfd</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_VAR_STRING" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_VAR_STRING</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_STRING" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_STRING</td>
+<td><code class="literal">0xfe</code></td>
+<td>Implemented by
+                      <a class="link" href="https://dev.mysql.com/doc/internals/en/binary-protocol-value.html#packet-ProtocolBinary::MYSQL_TYPE_STRING" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::MYSQL_TYPE_STRING</code></a>
+</td>
+</tr>
+<tr>
+<td scope="row">
+<a name="packet-Protocol::MYSQL_TYPE_GEOMETRY" data-mx-warn="Empty URL"></a>Protocol::MYSQL_TYPE_GEOMETRY</td>
+<td><code class="literal">0xff</code></td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+<div class="footnotes"><div id="ftn.fnref_internal" class="footnote"><p><a href="#fnref_internal" class="para"><sup class="para">[a] </sup></a>
+                          Internal to MySQL Server. Not used in
+                          <a class="link" href="https://dev.mysql.com/doc/internals/en/prepared-statements.html" title="14.7&nbsp;Prepared Statements" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolBinary::*</code></a>
+                          nor
+                          <a class="link" href="https://dev.mysql.com/doc/internals/en/text-protocol.html" title="14.6&nbsp;Text Protocol" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">ProtocolText::*</code></a>.
+                        </p></div></div>
+</div><div class="table-contents"></div>
+</div>
+<br class="table-break"><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;">
+<div class="admon-title">Note</div>
+<p>
+                Not all <code class="literal">Table Column Types</code> have a
+                representation in the Text or Binary protocol. While a
+                <code class="literal">TIMESTAMP</code> field may be a
+                <code class="literal">MYSQL_TYPE_TIMESTAMP</code> or
+                <code class="literal">MYSQL_TYPE_TIMESTAMP2</code> within the
+                MySQL Server depending on the version, in the protocol
+                it always is <code class="literal">MYSQL_TYPE_TIMESTAMP</code>.
+              </p>
+</div>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h6 class="title">
+<a name="column-definition" data-mx-warn="Empty URL"></a>14.6.4.1.1.2&nbsp;Column Definition</h6></div></div></div>
+<div class="variablelist"><dl class="variablelist">
+<dt><span class="term"><a name="packet-Protocol::ColumnDefinition" data-mx-warn="Empty URL"></a>
+                  Protocol::ColumnDefinition:
+                </span></dt>
+<dd><p>
+                    if
+                    <a class="link" href="https://dev.mysql.com/doc/internals/en/capability-flags.html#flag-CLIENT_PROTOCOL_41" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">CLIENT_PROTOCOL_41</code></a>
+                    is set
+                    <a class="link" href="#packet-Protocol::ColumnDefinition41"><code class="literal">Protocol::ColumnDefinition41</code></a>
+                    is used,
+                    <a class="link" href="#packet-Protocol::ColumnDefinition320"><code class="literal">Protocol::ColumnDefinition320</code></a>
+                    otherwise
+                  </p></dd>
+<dt><span class="term"><a name="packet-Protocol::ColumnDefinition41" data-mx-warn="Empty URL"></a>
+                  Protocol::ColumnDefinition41:
+                </span></dt>
+<dd>
+<p>
+                    Column Definition
+                  </p>
+<div class="variablelist"><dl class="variablelist">
+<dt><span class="term">
+                        Payload
+                      </span></dt>
+<dd><div class="copytoclipboard-wrapper" style="position: relative;"><pre class="programlisting line-numbers  language-clike"><code class=" language-clike">lenenc_str     catalog
+lenenc_str     schema
+lenenc_str     table
+lenenc_str     org_table
+lenenc_str     name
+lenenc_str     org_name
+lenenc_int     length of fixed<span class="token operator">-</span>length fields <span class="token punctuation">[</span>0c<span class="token punctuation">]</span>
+<span class="token number">2</span>              character set
+<span class="token number">4</span>              column length
+<span class="token number">1</span>              type
+<span class="token number">2</span>              flags
+<span class="token number">1</span>              decimals
+<span class="token number">2</span>              filler <span class="token punctuation">[</span><span class="token number">00</span><span class="token punctuation">]</span> <span class="token punctuation">[</span><span class="token number">00</span><span class="token punctuation">]</span>
+  <span class="token keyword">if</span> command was COM_FIELD_LIST <span class="token punctuation">{</span>
+lenenc_int     length of default<span class="token operator">-</span>values
+string<span class="token punctuation">[</span>$len<span class="token punctuation">]</span>   default values
+  <span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div></dd>
+<dt><span class="term">
+                        Implemented By
+                      </span></dt>
+<dd><p>
+                          <a class="link" href="https://dev.mysql.com/doc/internals/en/mysql-server.html#Protocol::send_result_set_metadata" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">Protocol::send_result_set_metadata()</code></a>
+                        </p></dd>
+<dt><span class="term">
+                        Fields
+                      </span></dt>
+<dd><div class="itemizedlist"><ul class="itemizedlist" type="disc">
+<li class="listitem"><p>
+                              <span class="strong"><strong>catalog</strong></span>
+                              (<a class="link" href="https://dev.mysql.com/doc/internals/en/describing-packets.html#type-lenenc_str" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><span class="emphasis"><em>lenenc_str</em></span></a>)
+                              -- catalog (always "def")
+                            </p></li>
+<li class="listitem"><p>
+                              <span class="strong"><strong>schema</strong></span>
+                              (<a class="link" href="https://dev.mysql.com/doc/internals/en/describing-packets.html#type-lenenc_str" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><span class="emphasis"><em>lenenc_str</em></span></a>)
+                              -- schema-name
+                            </p></li>
+<li class="listitem"><p>
+                              <span class="strong"><strong>table</strong></span>
+                              (<a class="link" href="https://dev.mysql.com/doc/internals/en/describing-packets.html#type-lenenc_str" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><span class="emphasis"><em>lenenc_str</em></span></a>)
+                              -- virtual table-name
+                            </p></li>
+<li class="listitem"><p>
+                              <span class="strong"><strong>org_table</strong></span>
+                              (<a class="link" href="https://dev.mysql.com/doc/internals/en/describing-packets.html#type-lenenc_str" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><span class="emphasis"><em>lenenc_str</em></span></a>)
+                              -- physical table-name
+                            </p></li>
+<li class="listitem"><p>
+                              <span class="strong"><strong>name</strong></span>
+                              (<a class="link" href="https://dev.mysql.com/doc/internals/en/describing-packets.html#type-lenenc_str" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><span class="emphasis"><em>lenenc_str</em></span></a>)
+                              -- virtual column name
+                            </p></li>
+<li class="listitem"><p>
+                              <span class="strong"><strong>org_name</strong></span>
+                              (<a class="link" href="https://dev.mysql.com/doc/internals/en/describing-packets.html#type-lenenc_str" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><span class="emphasis"><em>lenenc_str</em></span></a>)
+                              -- physical column name
+                            </p></li>
+<li class="listitem"><p>
+                              <span class="strong"><strong>next_length</strong></span>
+                              (<a class="link" href="https://dev.mysql.com/doc/internals/en/describing-packets.html#type-lenenc_int" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><span class="emphasis"><em>lenenc_int</em></span></a>)
+                              -- length of the following fields (always
+                              <code class="literal">0x0c</code>)
+                            </p></li>
+<li class="listitem"><p>
+                              <span class="strong"><strong>character_set</strong></span>
+                              (<a class="link" href="https://dev.mysql.com/doc/internals/en/describing-packets.html#type-2" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><span class="emphasis"><em>2</em></span></a>)
+                              -- is the column character set and is
+                              defined in
+                              <a class="link" href="https://dev.mysql.com/doc/internals/en/character-set.html#packet-Protocol::CharacterSet" title="Protocol::CharacterSet" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">Protocol::CharacterSet</code></a>.
+                            </p></li>
+<li class="listitem"><p>
+                              <span class="strong"><strong>column_length</strong></span>
+                              (<a class="link" href="https://dev.mysql.com/doc/internals/en/describing-packets.html#type-4" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><span class="emphasis"><em>4</em></span></a>)
+                              -- maximum length of the field
+                            </p></li>
+<li class="listitem"><p>
+                              <span class="strong"><strong>column_type</strong></span>
+                              (<a class="link" href="https://dev.mysql.com/doc/internals/en/describing-packets.html#type-1" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><span class="emphasis"><em>1</em></span></a>)
+                              -- type of the column as defined in
+                              <a class="link" href="#column-type" title="14.6.4.1.1.1&nbsp;Column Type">Column
+                              Type</a>
+                            </p></li>
+<li class="listitem"><p>
+                              <span class="strong"><strong>flags</strong></span>
+                              (<a class="link" href="https://dev.mysql.com/doc/internals/en/describing-packets.html#type-2" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><span class="emphasis"><em>2</em></span></a>)
+                              -- flags
+                            </p></li>
+<li class="listitem">
+<p>
+                              <span class="strong"><strong>decimals</strong></span>
+                              (<a class="link" href="https://dev.mysql.com/doc/internals/en/describing-packets.html#type-1" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><span class="emphasis"><em>1</em></span></a>)
+                              -- max shown decimal digits
+                            </p>
+<div class="itemizedlist"><ul class="itemizedlist" type="circle">
+<li class="listitem"><p>
+                                  <code class="literal">0x00</code> for integers
+                                  and static strings
+                                </p></li>
+<li class="listitem"><p>
+                                  <code class="literal">0x1f</code> for dynamic
+                                  strings, double, float
+                                </p></li>
+<li class="listitem"><p>
+                                  <code class="literal">0x00</code> to
+                                  <code class="literal">0x51</code> for decimals
+                                </p></li>
+</ul></div>
+</li>
+</ul></div></dd>
+</dl></div>
+<div class="note" style="margin-left: 0.5in; margin-right: 0.5in;">
+<div class="admon-title">Note</div>
+<p>
+                      <code class="literal">decimals</code> and
+                      <code class="literal">column_length</code> can be used for
+                      text-output formatting.
+                    </p>
+</div>
+</dd>
+<dt><span class="term"><a name="packet-Protocol::ColumnDefinition320" data-mx-warn="Empty URL"></a>
+                  Protocol::ColumnDefinition320:
+                </span></dt>
+<dd>
+<p>
+                    Column Definition
+                  </p>
+<div class="variablelist"><dl class="variablelist">
+<dt><span class="term">
+                        Payload
+                      </span></dt>
+<dd><div class="copytoclipboard-wrapper" style="position: relative;"><pre class="programlisting line-numbers  language-clike"><code class=" language-clike">lenenc<span class="token operator">-</span>str     table
+lenenc<span class="token operator">-</span>str     name
+lenenc_int     <span class="token punctuation">[</span><span class="token number">03</span><span class="token punctuation">]</span> length of the column_length field
+<span class="token number">3</span>              column_length
+lenenc_int     <span class="token punctuation">[</span><span class="token number">01</span><span class="token punctuation">]</span> length of type field
+<span class="token number">1</span>              type
+  <span class="token keyword">if</span> capabilities <span class="token operator">&amp;</span> CLIENT_LONG_FLAG <span class="token punctuation">{</span>
+lenenc_int     <span class="token punctuation">[</span><span class="token number">03</span><span class="token punctuation">]</span> length of flags<span class="token operator">+</span>decimals fields
+<span class="token number">2</span>              flags
+<span class="token number">1</span>              decimals
+  <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+<span class="token number">1</span>              <span class="token punctuation">[</span><span class="token number">02</span><span class="token punctuation">]</span> length of flags<span class="token operator">+</span>decimals fields
+<span class="token number">1</span>              flags
+<span class="token number">1</span>              decimals
+  <span class="token punctuation">}</span>
+  <span class="token keyword">if</span> command was COM_FIELD_LIST <span class="token punctuation">{</span>
+lenenc_int     length of default<span class="token operator">-</span>values
+string<span class="token punctuation">[</span>$len<span class="token punctuation">]</span>   default values
+  <span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></div></dd>
+<dt><span class="term">
+                        Implemented By
+                      </span></dt>
+<dd><p>
+                          <a class="link" href="https://dev.mysql.com/doc/internals/en/mysql-server.html#Protocol::send_result_set_metadata" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">Protocol::send_result_set_metadata()</code></a>
+                        </p></dd>
+</dl></div>
+</dd>
+</dl></div>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h6 class="title">
+<a name="text-resultset-row" data-mx-warn="Empty URL"></a>14.6.4.1.1.3&nbsp;Text Resultset Row</h6></div></div></div>
+<div class="variablelist"><dl class="variablelist">
+<dt><span class="term"><a name="packet-ProtocolText::ResultsetRow" data-mx-warn="Empty URL"></a>
+                  ProtocolText::ResultsetRow:
+                </span></dt>
+<dd>
+<p>
+                    A row with the data for each column.
+                  </p>
+<div class="itemizedlist"><ul class="itemizedlist" type="disc">
+<li class="listitem"><p>
+                        <code class="literal">NULL</code> is sent as
+                        <code class="literal">0xfb</code>
+                      </p></li>
+<li class="listitem"><p>
+                        everything else is converted into a string and
+                        is sent as
+                        <a class="link" href="https://dev.mysql.com/doc/internals/en/string.html#packet-Protocol::LengthEncodedString" title="Protocol::LengthEncodedString" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">Protocol::LengthEncodedString</code></a>.
+                      </p></li>
+</ul></div>
+</dd>
+</dl></div>
+</div>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h5 class="title">
+<a name="local-infile-request" data-mx-warn="Empty URL"></a>14.6.4.1.2&nbsp;LOCAL INFILE Request</h5></div></div></div>
+<div class="toc"><dl class="toc"><dt><span class="section"><a href="#local-infile-data">14.6.4.1.2.1 LOCAL INFILE Data</a></span></dt></dl></div>
+<p>
+            If the client wants to LOAD DATA from a LOCAL file into the
+            server it sends:
+          </p>
+<div class="copytoclipboard-wrapper" style="position: relative;"><pre class="programlisting line-numbers one-line language-sql"><code class=" language-sql"><span class="token keyword">LOAD</span> <span class="token keyword">DATA</span> <span class="token keyword">LOCAL</span> <span class="token keyword">INFILE</span> <span class="token string">'&lt;filename&gt;'</span> <span class="token keyword">INTO</span> <span class="token keyword">TABLE</span> <span class="token operator">&lt;</span><span class="token keyword">table</span><span class="token operator">&gt;</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre></div>
+<p>
+            The LOCAL keyword triggers the server to send a LOCAL INFILE
+            request packet which asks the client to send the file via a
+            <a class="link" href="#packet-Protocol::LOCAL_INFILE_Data"><code class="literal">Protocol::LOCAL_INFILE_Data</code></a>
+            response.
+          </p>
+<div class="mediaobject">
+<a name="mscgen-445c9ee0e9d88fbc18242557f909591eee6840cc" data-mx-warn="Empty URL"></a><img src="assets/1611969697-568e8aa8aa9367bcf273ea5e4a6162e1.png" alt="Image description follows." style="width: 100%; max-width: 600px;"><div class="longdesc-link" align="left"><span class="longdesc-link"><a href="https://dev.mysql.com/doc/internals/en/mscgen-445c9ee0e9d88fbc18242557f909591eee6840cc.html" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer">Image description</a></span></div>
+</div>
+<p>
+            The client has to set the
+            <a class="link" href="https://dev.mysql.com/doc/internals/en/capability-flags.html#flag-CLIENT_LOCAL_FILES" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><code class="literal">CLIENT_LOCAL_FILES</code></a>
+            capability.
+          </p>
+<div class="variablelist"><dl class="variablelist">
+<dt><span class="term"><a name="packet-Protocol::LOCAL_INFILE_Request" data-mx-warn="Empty URL"></a>
+                Protocol::LOCAL_INFILE_Request:
+              </span></dt>
+<dd><div class="variablelist"><dl class="variablelist">
+<dt><span class="term">
+                      Returns
+                    </span></dt>
+<dd><p>
+                        <a class="link" href="#local-infile-data" title="14.6.4.1.2.1&nbsp;LOCAL INFILE Data">LOCAL INFILE
+                        data</a>
+                      </p></dd>
+<dt><span class="term">
+                      Payload
+                    </span></dt>
+<dd><div class="copytoclipboard-wrapper" style="position: relative;"><pre class="programlisting line-numbers  language-clike"><code class=" language-clike"><span class="token number">1</span>              <span class="token punctuation">[</span>fb<span class="token punctuation">]</span> LOCAL INFILE
+string<span class="token punctuation">[</span>EOF<span class="token punctuation">]</span>    filename the client shall send<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre></div></dd>
+<dt><span class="term">
+                      Example
+                    </span></dt>
+<dd><div class="copytoclipboard-wrapper" style="position: relative;"><pre class="programlisting line-numbers one-line language-clike"><code class=" language-clike">0c <span class="token number">00</span> <span class="token number">00</span> <span class="token number">01</span> fb 2f <span class="token number">65</span> <span class="token number">74</span>    <span class="token number">63</span> 2f <span class="token number">70</span> <span class="token number">61</span> <span class="token number">73</span> <span class="token number">73</span> <span class="token number">77</span> <span class="token number">64</span>    <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token operator">/</span>etc<span class="token operator">/</span>passwd<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre></div></dd>
+</dl></div></dd>
+</dl></div>
+<div class="section">
+<div class="titlepage"><div><div><h6 class="title">
+<a name="local-infile-data" data-mx-warn="Empty URL"></a>14.6.4.1.2.1&nbsp;LOCAL INFILE Data</h6></div></div></div>
+<p>
+              If the client has data to send, it sends in one or more
+              non-empty packets AS IS followed by a empty packet.
+            </p>
+<p>
+              If the file is empty or there is a error while reading the
+              file only the empty packet is sent.
+            </p>
+<div class="variablelist"><dl class="variablelist">
+<dt><span class="term"><a name="packet-Protocol::LOCAL_INFILE_Data" data-mx-warn="Empty URL"></a>
+                  Protocol::LOCAL_INFILE_Data:
+                </span></dt>
+<dd><div class="variablelist"><dl class="variablelist">
+<dt><span class="term">
+                        Payload
+                      </span></dt>
+<dd><div class="copytoclipboard-wrapper" style="position: relative;"><pre class="programlisting line-numbers one-line language-clike"><code class=" language-clike">string<span class="token punctuation">[</span>EOF<span class="token punctuation">]</span>             the filedata<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre></div></dd>
+<dt><span class="term">
+                        Fields
+                      </span></dt>
+<dd><p>
+                          <span class="strong"><strong>data</strong></span>
+                          (<a class="link" href="https://dev.mysql.com/doc/internals/en/describing-packets.html#type-string.EOF" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><span class="emphasis"><em>string.EOF</em></span></a>)
+                          -- the raw file data
+                        </p></dd>
+</dl></div></dd>
+</dl></div>
+</div>
+</div>
+</div><br>
+        </div>
+
+                <div id="docs-in-page-nav-container">
+            <div id="docs-in-page-nav">
+                
+    <a href="https://dev.mysql.com/doc/internals/en/com-query.html" aria-label="Previous" title="Previous: COM_QUERY" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><span class="icon-chevron-left"></span> PREV</a> &nbsp;
+<a href="https://dev.mysql.com/doc/internals/en/index.html" aria-label="Start" title="Start" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"> HOME</a> &nbsp;
+        <a aria-label="Up" href="https://dev.mysql.com/doc/internals/en/com-query.html" title="Up: COM_QUERY" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"> UP</a> &nbsp;
+    <a href="https://dev.mysql.com/doc/internals/en/com-field-list.html" aria-label="Next" title="Next: COM_FIELD_LIST" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer">NEXT <span class="icon-chevron-right"></span></a>
+            </div>
+        </div>
+        
+         
+
+              </div></DIV></DIV></DIV></DIV></DIV>
+      
+    </div>
+  </body>
+</html>
