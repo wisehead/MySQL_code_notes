@@ -17,5 +17,8 @@ handle_query
 ------//end while
 --st_select_lex::optimize
 --JOIN::exec
+----Query_result_send::send_result_set_metadata
+----Query_result_send::send_data
+----Query_result_send::send_eof
 
 ```
