@@ -1,0 +1,309 @@
+
+<!DOCTYPE html>
+<html>
+  <!-- OriginalSrc: https://cloud.tencent.com/developer/article/1564376 -->
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>浅析mysql-test框架 - 云+社区 - 腾讯云</title>
+    
+<link rel="stylesheet" href="assets/1611966197-90b8693f99e3d0b5e3e9b0d0961a8a55.css" referrerpolicy="no-referrer">
+<link rel="stylesheet" href="assets/1611966197-2a0dbab31282df3b8770c2284c036ef8.css" referrerpolicy="no-referrer">
+<link rel="stylesheet" href="assets/1611966197-00398e6b0feb36f21823cd60a3deb569.css" referrerpolicy="no-referrer">
+<link rel="stylesheet" href="assets/1611966197-51b6ca6e63c23fc2ae7fcf5cc27eacd3.css" referrerpolicy="no-referrer">
+<link rel="stylesheet" href="assets/1611966197-60237eddcd225b805bcb6938f904a9a7.css" referrerpolicy="no-referrer">
+<link rel="stylesheet" href="assets/1611966197-91af33ab342b954f7e47f1ee9107b2f9.css" referrerpolicy="no-referrer">
+<link rel="stylesheet" href="assets/1611966197-a61e8b940c9ae1bbcb908769653445fc.css" referrerpolicy="no-referrer">
+<style media="screen">@supports (padding:max(0px)){.set-safe-area .com-main{bottom:calc(max(12px,constant(safe-area-inset-bottom)) + 50px);bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px)}.set-safe-area .com-main-simple-sec,.set-safe-area .com-main.without-tab-ft,.set-safe-area .com-main.without-ft{bottom:max(12px,constant(safe-area-inset-bottom));bottom:max(12px,env(safe-area-inset-bottom))}.set-safe-area .com-main-sec{bottom:max(12px,constant(safe-area-inset-bottom));bottom:max(12px,env(safe-area-inset-bottom))}.set-safe-area .com-m-footer,.set-safe-area .sa-fixed-btns{bottom:max(12px,constant(safe-area-inset-bottom));bottom:max(12px,env(safe-area-inset-bottom))}.set-safe-area .com-mobile-body{bottom:max(12px,constant(safe-area-inset-bottom));bottom:max(12px,env(safe-area-inset-bottom))}}@supports (padding:max(0px)){.set-safe-area .support-wrap,.set-safe-area div.body{bottom:max(12px,constant(safe-area-inset-bottom));bottom:max(12px,env(safe-area-inset-bottom))}.set-safe-area .com-responsive-no-ft div.body{bottom:max(12px,constant(safe-area-inset-bottom));bottom:max(12px,env(safe-area-inset-bottom))}}</style>
+<style id="dynamic-inserted-css-transition-slide391298858">
+.transition-slide391298858-enter {
+	opacity: 0 !important;
+	transform: translate3d(0px, -44px, 0);
+}
+.transition-slide391298858-enter-active {
+	opacity: 1 !important;
+	transform: translate3d(0, 0, 0);
+	transition: opacity 300ms ease, transform 300ms ease;
+}
+.transition-slide391298858-leave {
+	opacity: 1 !important;
+	transform: translate3d(0, 0, 0);
+}
+.transition-slide391298858-leave-active {
+	opacity: 0 !important;
+	transform: translate3d(0px, -44px, 0);
+	transition: opacity 300ms ease, transform 300ms ease;
+}
+</style>
+<style id="dynamic-inserted-css-transition-fade-312660078">
+.transition-fade-312660078-enter {
+	opacity: 0 !important;
+}
+.transition-fade-312660078-enter-active {
+	opacity: 0.7 !important;
+	transition: opacity 300ms ease;
+}
+.transition-fade-312660078-leave {
+	opacity: 0.7 !important;
+}
+.transition-fade-312660078-leave-active {
+	opacity: 0 !important;
+	transition: opacity 300.0001ms ease;
+}
+</style>
+<style id="dynamic-inserted-css-transition-slide-1496561436">
+.transition-slide-1496561436-enter {
+	opacity: 0 !important;
+	transform: translate3d(0px, -30px, 0);
+}
+.transition-slide-1496561436-enter-active {
+	opacity: 1 !important;
+	transform: translate3d(0, 0, 0);
+	transition: opacity 300ms ease, transform 300ms ease;
+}
+.transition-slide-1496561436-leave {
+	opacity: 1 !important;
+	transform: translate3d(0, 0, 0);
+}
+.transition-slide-1496561436-leave-active {
+	opacity: 0 !important;
+	transform: translate3d(0px, -30px, 0);
+	transition: opacity 300ms ease, transform 300ms ease;
+}
+</style>
+<style id="dynamic-inserted-css-article-sharing!.extra-cnt">.extra-cnt .com-share-options .qr-img img {
+					width: 130px;
+					height: 130px;
+				}</style>
+<style id="dynamic-inserted-css-transition-slide-1218967474">
+.transition-slide-1218967474-enter {
+	opacity: 0 !important;
+	transform: translate3d(20px, 0px, 0);
+}
+.transition-slide-1218967474-enter-active {
+	opacity: 1 !important;
+	transform: translate3d(0, 0, 0);
+	transition: opacity 300ms ease, transform 300ms ease;
+}
+.transition-slide-1218967474-leave {
+	opacity: 1 !important;
+	transform: translate3d(0, 0, 0);
+}
+.transition-slide-1218967474-leave-active {
+	opacity: 0 !important;
+	transform: translate3d(20px, 0px, 0);
+	transition: opacity 300ms ease, transform 300ms ease;
+}
+</style>
+<style type="text/css">
+@keyframes caretBlink {
+    from { opacity: 1.0; }
+    to { opacity: 0.0; }
+}
+
+@keyframes rotateSpinner {
+    from {
+        transform:rotate(0deg);
+    }
+    to {
+        transform:rotate(360deg);
+    }
+}
+
+#text-tool-caret {
+    animation-name: caretBlink;  
+    animation-iteration-count: infinite;  
+    animation-timing-function: cubic-bezier(1.0,0,0,1.0);
+    animation-duration: 1s; 
+}
+
+#en-markup-loading-spinner {
+    position: absolute;
+    top: calc(50% - 16px);
+    left: calc(50% - 16px);
+    width: 32px;
+    height: 32px;
+}
+
+#en-markup-loading-spinner img {
+    position: relative;
+    top: 0px;
+    left: 0px;
+    animation-name: rotateSpinner;
+    animation-duration: 0.6s;
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+}
+</style>
+<style type="text/css">
+.skitchToastBoxContainer {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    top: 30px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    pointer-events: none;
+}
+
+.skitchToastBox {
+    width: 200px;
+    height: 16px;
+    padding: 12px;
+    background-color: rgba(47, 55, 61, 0.95);
+    border-radius: 4px;
+    color: white;
+    cursor: default;
+    font-size: 10pt;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.32);
+    font-family: 'Soleil', Helvetica, Arial, sans-serif;
+    border: 2px rgba(255, 255, 255, 0.38) solid;
+}
+
+.lang-zh-cn .skitchToastBox {
+    font-family: '微软雅黑', 'Microsoft YaHei', SimSun,
+        '&#x30E1;&#x30A4;&#x30EA;&#x30AA;', Meiryo, 'MS PGothic', 'Soleil',
+        Helvetica, Arial, sans-serif;
+}
+
+.lang-ja-jp .skitchToastBox {
+    font-family: '&#x30E1;&#x30A4;&#x30EA;&#x30AA;', Meiryo, 'MS PGothic',
+        '微软雅黑', 'Microsoft YaHei', SimSun, 'Soleil', Helvetica, Arial,
+        sans-serif;
+}
+
+.skitchToast {
+    padding-left: 20px;
+    padding-right: 20px;
+    display: inline-block;
+    height: 10px;
+    color: #f1f5f8;
+    text-align: center;
+}
+
+.skitchVisible {
+    
+}
+</style>
+<style type="text/css">
+
+@font-face {
+	font-family: 'Soleil';
+	src: url("");
+	font-weight: normal;
+	font-style: normal;
+}
+</style>
+<style type="text/css">
+
+#en-markup-disabled {
+    position: fixed;
+    z-index: 9999;
+    width: 100%;
+    height: 100%;
+    top: 0px;
+    left: 0px;
+    cursor: default;
+    -webkit-user-select: none;
+}
+
+#en-markup-alert-container {
+    position: absolute;
+    z-index: 9999;
+    width: 450px;
+    left: calc(50% - 225px);
+    top: calc(50% - 85px);
+    background-color: white;
+    box-shadow: 0 2px 7px 1px rgba(0,0,0,0.35);
+    -webkit-user-select: none;
+}
+
+#en-markup-alert-container .cell-1 {
+    position: relative;
+    height: 110px;
+    width: 105px;
+    float: left;
+    text-align: center;
+    background-image: url("");
+    background-position: 65% 50%;
+    background-repeat: no-repeat;
+}
+
+#en-markup-alert-container .cell-2 {
+    position: relative;
+    float: left;
+    width: 345px;
+    margin-top: 29px;
+    margin-bottom: 20px;
+}
+
+#en-markup-alert-container .cell-2 .cell-2-title {
+    margin-bottom: 5px;
+    padding-right: 30px;
+    font-size: 12pt;
+    font-family: Tahoma, Arial;
+}
+
+#en-markup-alert-container .cell-2 .cell-2-message {
+    padding-right: 30px;
+    font-size: 9.5pt;
+    font-family: Tahoma, Arial;
+}
+
+#en-markup-alert-container .cell-3 {
+    position: relative;
+    width: 450px;
+    height: 60px;
+    float: left;
+    background-color: rgb(240,240,240);
+}
+
+#en-markup-alert-container .cell-3 button {
+    position: absolute;
+    top: 12px;
+    right: 15px;
+    width: 110px;
+    height: 36px;
+}
+
+#en-markup-alert-container .cell-3 button.alt-button {
+    position: absolute;
+    top: 12px;
+    right: 140px;
+    width: 110px;
+    height: 36px;
+}
+</style>
+<style type="text/css">.MathJax_Preview {color: #888}
+#MathJax_Message {position: fixed; left: 1em; bottom: 1.5em; background-color: #E6E6E6; border: 1px solid #959595; margin: 0px; padding: 2px 8px; z-index: 102; color: black; font-size: 80%; width: auto; white-space: nowrap}
+#MathJax_MSIE_Frame {position: absolute; top: 0; left: 0; width: 0px; z-index: 101; border: 0px; margin: 0px; padding: 0px}
+.MathJax_Error {color: #CC0000; font-style: italic}
+</style>
+
+    <style class="mx-wc-style">
+      body {padding-top: 20px;}
+      .mx-wc-main img {max-width: 100%;}
+      .mx-wc-main{
+        box-sizing: content-box;
+        background-color: rgb(247, 248, 250) !important;
+        margin: 0 auto;
+        max-width: 800px;
+      }
+      @media (min-width: 768px) {
+        .mx-wc-main { padding: 15px 15px 80px 15px }
+      }
+      @media (max-width: 767px) {
+        .mx-wc-main { padding: 15px 3px 80px 3px }
+      }
+
+    </style>
+  </head>
+  <body style="background-color: #464646 !important; min-height: 100%; height: auto; position: static !important; overflow: auto !important; padding-bottom: 0px !important;" class=bg-color>
+    <div class="mx-wc-main">
+      <DIV id="react-root" style="display: block !important;float: none !important;position: relative !important;transform: initial !important;top: 0 !important;left: 0 !important;border: 0px !important;width: 100% !important;min-width: 100% !important;max-width: 100% !important;height: auto !important;min-height: auto !important;max-height: 100% !important;margin: 0px !important;padding: 0px !important;"><DIV class="" style="display: block !important;float: none !important;position: relative !important;transform: initial !important;top: 0 !important;left: 0 !important;border: 0px !important;width: 100% !important;min-width: 100% !important;max-width: 100% !important;height: auto !important;min-height: auto !important;max-height: 100% !important;margin: 0px !important;padding: 0px !important;"><DIV class="J-body col-body pg-2-article" style="min-height: 538px;display: block !important;float: none !important;position: relative !important;transform: initial !important;top: 0 !important;left: 0 !important;border: 0px !important;width: 100% !important;min-width: 100% !important;max-width: 100% !important;height: auto !important;min-height: auto !important;max-height: 100% !important;margin: 0px !important;padding: 0px !important;"><DIV class="com-3-layout" style="display: block !important;float: none !important;position: relative !important;transform: initial !important;top: 0 !important;left: 0 !important;border: 0px !important;width: 100% !important;min-width: 100% !important;max-width: 100% !important;height: auto !important;min-height: auto !important;max-height: 100% !important;margin: 0px !important;padding: 0px !important;"><DIV class="layout-main" style="display: block !important;float: none !important;position: relative !important;transform: initial !important;top: 0 !important;left: 0 !important;border: 0px !important;width: 100% !important;min-width: 100% !important;max-width: 100% !important;height: auto !important;min-height: auto !important;max-height: 100% !important;margin: 0px !important;padding: 0px !important;"><section class="com-2-panel col-2-article J-articlePanel mx-wc-selected-elem" style="display: block; float: none !important; position: relative !important; top: 0px !important; left: 0px !important; margin: 0px !important; flex: unset !important; width: 100% !important; max-width: 100% !important;"><div class="col-2-article-header"><h1 class="article-title J-articleTitle"><span>浅析mysql-test框架</span></h1><div class="article-infos-wrap"><div class="article-infos"><span class="article-info"><time datetime="2020-01-03 14:11:08" title="2020-01-03 14:11:08"> 2020-01-03</time></span><span class="article-info">阅读 <!-- -->298</span>0</div><div class="article-infos-extra"></div></div></div><div class="com-markdown-collpase"><div class="com-markdown-collpase-main"><div class="rno-markdown J-articleContent"><p><strong>1 综述</strong></p><p>MTR框架分为两部分：perl脚本（mysql-test-run.pl）和c++二进制(mysqltest)。perl脚本负责控制流程，包括启停、识别执行哪些用例、创建文件夹、收集结果等等，mysqltest负责执行测试用例，包括读文件，解析特定语法，执行用例。用例的特殊语法（比如，--source，--replace_column等）都在command_names和enum_commands两个枚举结构体中。</p><p>MTR框架时序图如下所示：</p><figure><div class="image-block"><span><img src="assets/1611966197-677e67560bf5319b7f17918202cd96b2.jpeg" class="fade-appear-active" style="cursor: zoom-in;"></span></div></figure><p><strong>2 Perl脚本控制框架</strong></p><p>如上图所示，mysql-test-run.pl框架运行流程如下：</p><p>1、初始化（Initialization）。确定用例执行范围（collect_test_cases），包括运行哪些suite，skip哪些用例，在本阶段根据disabled.def文件--skipXXX命令（比如skip-rpl）等确定执行用例。将所有用例组织到一个大的内存结构中，包括用例启动参数，用例</p><p>同时，初始化数据库（initialize_servers()-&gt;mysql_install_db()），后面运行用例启动数据库时，不需要每次初始化，只需从这里的目录中拷贝启动</p><p>2、运行用例（run test）。主线程根据参数--parallel，默认是1）启动一个或者多个用例执行线程（run_worker()），各线程有自己独立的client port，data dir等。启动的run_worker与主线程之间是server-client模式，主线程是server，run_worker()是client。主线程与run_worker是一问一答模式，主线程向run_worker发送运行用例的文件路径、配置文件参数等各种参数信息，run_worker向主线程返回运行结果，直到所有在collection中的用例都运行完毕，主线程close各run_worker，进行收尾工作</p><p>主线程先读取各run_worker返回值，对上一个用例进行收尾工作。之后，读取collection中的用例，通过本地socket发送到run_worker线程，run_worker线程接收到主线程命令，运行进去本次用例执行函数（run_testcase()），run_worker()的run_testcase()主要负责3件事：启动mysqld、启动并监控mysqltest，处理执行结果</p><p>启动mysqld：run_testcase根据参数启动一个或者多个mysqld（start_servers()），在start_servers大多数情况下会拷贝主线程初始化后的目录到run_worker的目录，作为新实例的启动目录，用shell命令启动数据库。</p><p>启动并监控mysqltest：用例在mysqltest中执行，run_worker线程会监控mysqltest的运行状态，监测其是否运行超时或者运行结束。</p><p>处理执行结果：mysqltest执行结束会留下执行日志，框架根据执行日志判断执行是否通过，如果没通过是否需要重试等</p><p><strong>3 C++执行框架</strong></p><p>执行框架都集中在mysqltest.cc中，mysqltest读取用例文件（*.test），根据预定义的命令（比如--source，--replace_column, shutdown_server等）执行相应的操作。mysql根据run_worker传入的运行参数（args）获得用例文件路径等信息，然后读取文件逐行执行语句，语句分为两种，一种是可以直接执行的SQL语句，一种是控制语句，控制语句用来控制mysqlclient的特殊行为，比如shutdown mysqld等，这些命令预定义在command_names中
+</p><figure><div class="image-block"><span><img src="assets/1611966197-a78913c8c47852c26d29c02c5dd8c8e2.png" class="fade-appear-active" style="cursor: zoom-in;"></span></div></figure><figure><hr></figure><figure><div class="image-block"><span><img src="assets/1611966197-bf0df4737b362d04e20920a8a72cb181.jpeg" class="fade-appear-active" style="cursor: zoom-in;"></span></div></figure><blockquote><p>腾讯数据库技术团队对内支持QQ空间、微信红包、腾讯广告、腾讯音乐、腾讯新闻等公司自研业务，对外在腾讯云上支持TencentDB相关产品，如<a data-text-link="26_1564376" data-from="10680" href="https://cloud.tencent.com/product/cynosdb?from=10680" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer">CynosDB</a>、CDB、CTSDB、CMongo等。腾讯数据库技术团队专注于持续优化数据库内核和架构能力，提升数据库性能和稳定性，为腾讯自研业务和腾讯云客户提供“省心、放心”的数据库服务。此公众号和广大数据库技术爱好者一起，推广和分享数据库领域专业知识，希望对大家有所帮助。</p></blockquote></div><div class="col-2-article-source"><p>本文分享自微信公众号 - <!-- -->腾讯数据库技术（gh_83eebc796d5d）<!-- -->，作者：腾讯数据库技术</p><p>原文出处及转载信息见文内详细说明，如有侵权，请联系 <!-- -->yunjia_community@tencent.com<!-- --> 删除。</p><p>原始发表时间：<!-- -->2019-12-19</p><p>本文参与<a href="https://cloud.tencent.com/developer/support-plan" class="com-link" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer">腾讯云自媒体分享计划</a>，欢迎正在阅读的你也加入，一起分享。</p></div></div></div><div class="col-2-article-tags"><nav class="col-tags"><a href="https://cloud.tencent.com/developer/tag/10784?entry=article" class="col-tag" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer">UML</a><a href="https://cloud.tencent.com/developer/tag/10244?entry=article" class="col-tag" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer">数据库</a><a href="https://cloud.tencent.com/developer/tag/10245?entry=article" class="col-tag" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer">MySQL</a><a href="https://cloud.tencent.com/developer/tag/10253?entry=article" class="col-tag" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer">SQL</a><a href="https://cloud.tencent.com/developer/tag/10225?entry=article" class="col-tag" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer">单片机</a></nav><div class="extra-part"><div class="com-operations"><a href="javascript:" class="com-opt-link link-warn" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer"><i class="com-i-warn"></i>举报</a></div></div></div><div class="col-2-article-opts"><button type="button" class="c-btn"><span class="text"><i class="opt-icon like"></i>点赞 4</span></button><button type="button" class="c-btn c-btn-weak"><span class="text"><i class="opt-icon share"></i>分享</span></button></div><section class="group-comments"><div class="com-comment-single-edit theme2"><header class="edit-hd"><h3 class="edit-title"><i class="edit-icon"></i>我来说两句</h3><div class="edit-count"><span class="edit-count-num">0</span> 条评论</div></header><div class="edit-body"><div class="edit-textarea"></div><div class="edit-tip"><a href="javascript:" target="_blank" referrerpolicy="no-referrer" rel="noopener noreferrer">登录</a> 后参与评论</div></div></div><section class="com-comment-popup"><div class="popup-bd"><div></div></div></section></section></section></DIV></DIV></DIV></DIV></DIV>
+      
+    </div>
+  </body>
+</html>
