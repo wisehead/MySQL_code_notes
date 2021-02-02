@@ -38,3 +38,40 @@ Link_buf<Position>::add_link
 --&slot = m_links[index];
 --slot.store(to - from);
 ```
+
+#5. log_buffer_write_completed
+
+```cpp
+struct mtr_parallel_write_log_t{
+bool operator()(const mtr_buf_t::block_t *block)
+}
+
+struct mtr_fast_write_log_t {
+bool operator()(const byte* buf, ulint len)
+}
+```
+
+#6.mtr_parallel_write_log_t
+
+```cpp
+caller:
+ mtr_t::Command::finish_write
+
+```
+
+#7. mtr_fast_write_log_t
+
+```cpp
+caller:
+- mtr_t::commit_fast_finish
+```
+
+#8.mtr_t::Command::finish_write
+```cpp
+caller:
+- mtr_t::Command::execute
+- mtr_t::commit_checkpoint
+```
+
+
+
