@@ -14,5 +14,5 @@ tidb_code_trx_apply_commit_log
 
 #2. slave_max_trx_id
 
-#3. slave_dyn_low_limit_no
+#3. slave_dyn_low_limit_no//low limit no, 以上全部commit
 
