@@ -19,3 +19,10 @@ caller:
 --------que_thr_step
 ----------que_thr_node_step
 ```
+
+#2.query graph的几个用途
+
+```cpp
+1.修改元数据，用存储过程的形式，修改内部系统表数据。
+2.
+```
