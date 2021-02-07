@@ -1,6 +1,9 @@
 #1.tidb_code_trx_apply_commit_log
 
 ```cpp
+caller:
+-NCDB_rpl_sys::parse_or_apply_log_rec_body
+
 tidb_code_trx_apply_commit_log
 --trx_id = mach_read_from_8(ptr)
 --trx_no = mach_read_from_6(ptr) + trx_id;

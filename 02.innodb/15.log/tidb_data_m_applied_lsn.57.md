@@ -9,7 +9,7 @@ ncdb_rpl_init_slave
 
 ```cpp
 caller:
---NCDB_rpl_sys::parse_log_recs
+--NCDB_rpl_sys::parse_log_recs	
 ```
 
 

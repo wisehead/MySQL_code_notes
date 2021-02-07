@@ -10,7 +10,7 @@ TiDB_rpl_sys::apply_log_recs
 --end_lsn = header->_lsn + header->_cpl_len;
 --type = static_cast<mlog_id_t>(*(ptr + sizeof(mtr_log_header)));
 --buf_page_get
---page = block->frame;
+--page = block->frame;	
 --page_lsn = mach_read_from_8(page + FIL_PAGE_LSN);
 --while (ptr < end_ptr)
 ----parse_or_apply_log_rec_body
