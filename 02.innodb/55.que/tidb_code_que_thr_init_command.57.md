@@ -54,6 +54,10 @@ lock_table_for_trx
 ----node->common.type = QUE_NODE_SELECT;
 ----node->state = SEL_NODE_OPEN;
 --thr = pars_complete_graph_for_exec(node, trx, heap, NULL)
+----fork =que_fork_create
+----thr = que_thr_create
+----thr->child = node;
+----que_node_set_parent(node, thr)
 --thr->graph->state = QUE_FORK_ACTIVE;
 --que_fork_get_first_thr
 
