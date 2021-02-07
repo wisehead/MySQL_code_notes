@@ -60,5 +60,36 @@ lock_table_for_trx
 ----que_node_set_parent(node, thr)
 --thr->graph->state = QUE_FORK_ACTIVE;
 --que_fork_get_first_thr
+--que_thr_move_to_run_state_for_mysql
+----thr->is_active = TRUE;
+----thr->state = QUE_THR_RUNNING
+--lock_table
+----if (wait_for != NULL)
+------lock_table_enqueue_waiting(mode | flags, table, thr)
+--------check que_thr_stop
+--if (UNIV_LIKELY(err == DB_SUCCESS))
+----que_thr_stop_for_mysql_no_error
+------thr->state = QUE_THR_COMPLETED;
+------thr->is_active = FALSE;
+--else 
+----que_thr_stop_for_mysql
+----if (err != DB_QUE_THR_SUSPENDED)
+------row_mysql_handle_errors
+----else
+------parent = que_node_get_parent(thr);
+------que_fork_start_command(parent)
 
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
