@@ -73,8 +73,22 @@ lock_table_for_trx
 ------thr->is_active = FALSE;
 --else 
 ----que_thr_stop_for_mysql
-----if (err != DB_QUE_THR_SUSPENDED)
+----if (err != DB_QUE_THR_SUSPENDED)//期望返回 DB_LOCK_WAIT
 ------row_mysql_handle_errors
+--------case DB_LOCK_WAIT:
+--------trx_kill_blocking
+--------lock_wait_suspend_thread
+----------lock_wait_table_reserve_slot
+------------slot->suspend_time = ut_time()
+------------slot->wait_timeout = wait_timeout
+------------lock_wait_request_check_for_cycles
+--------------lock_set_timeout_event
+----------------os_event_set(lock_sys->timeout_event)//lock_wait_timeout_thread
+----------thd_wait_begin
+------------MYSQL_CALLBACK(thd->scheduler, thd_wait_begin, (thd, wait_type))
+----------os_event_wait(slot->event);
+----------thd_wait_end(trx->mysql_thd)
+----------lock_wait_table_release_slot(slot);
 ----else
 ------parent = que_node_get_parent(thr);
 ------que_fork_start_command(parent)
