@@ -49,6 +49,11 @@ fts_config_get_value
 #5.lock_table_for_trx
 
 ```cpp
+caller:
+prepare_inplace_alter_table_dict/ha_innobase::commit_inplace_alter_table
+--row_merge_lock_table
+
+
 lock_table_for_trx
 --node = sel_node_create(heap)
 ----node->common.type = QUE_NODE_SELECT;
@@ -243,6 +248,28 @@ trx_rollback_to_savepoint_low
 ----node = static_cast<roll_node_t*>(mem_heap_zalloc(heap, sizeof(*node)))
 ----node->state = ROLL_NODE_SEND;
 ----node->common.type = QUE_NODE_ROLLBACK;
+--if (savept != NULL)
+----roll_node->partial = TRUE
+----roll_node->savept = *savept;
+----check_trx_state(trx)
+--else
+----assert_trx_nonlocking_or_in_list
+--if (trx_is_rseg_updated(trx))
+----thr = pars_complete_graph_for_exec(roll_node, trx, heap, NULL);
+------fork = que_fork_create(NULL, NULL, QUE_FORK_MYSQL_INTERFACE, heap);
+------que_thr_create
+--------thr->state = QUE_THR_COMMAND_WAIT;
+----que_fork_start_command
+------case QUE_THR_COMMAND_WAIT:
+------que_thr_init_command
+--------que_thr_move_to_run_state
+----que_run_threads(thr);//运行过程中，会设置roll_node->undo_thr
+----que_run_threads(roll_node->undo_thr);
+----que_graph_free(static_cast<que_t*>(roll_node->undo_thr->common.parent));
+--if (savept == NULL)
+----trx_rollback_finish
+--else
+----trx->lock.que_state = TRX_QUE_RUNNING;
 ```
 
 #99.todo debug
