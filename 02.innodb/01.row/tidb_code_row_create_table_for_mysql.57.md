@@ -23,6 +23,42 @@ row_create_table_for_mysql
 ----thr = que_thr_create(fork, heap, prebuilt);
 --que_fork_start_command
 --que_run_threads(thr)
+----que_run_threads_low
+------while (next_thr != NULL)
+--------log_free_check
+--------que_thr_step
+----------if (type == QUE_NODE_THR_
+------------que_thr_node_step
+--------------if (thr->prev_node == thr->common.parent)
+----------------thr->run_node = thr->child;
+----------if (type == QUE_NODE_EXIT)
+----------else
+------------old_thr->prev_node = node;
+--------que_thr_step
+----------if (type == QUE_NODE_CREATE_TABLE)
+------------dict_create_table_step
+--------------if (thr->prev_node == que_node_get_parent(node))
+----------------node->state = TABLE_BUILD_TABLE_DEF;
+--------------if (node->state == TABLE_BUILD_TABLE_DEF)
+----------------dict_build_table_def_step
+------------------table = node->table;
+------------------dict_table_assign_new_id
+------------------dict_build_tablespace_for_table
+------------------ins_node_set_new_row
+--------------------node->state = INS_NODE_SET_IX_LOCK;
+--------------------node->row = row
+--------------------ins_node_create_entry_list
+----------------------UT_LIST_INIT(node->entry_list, &dtuple_t::tuple_list);
+----------------------for (index = dict_table_get_first_index(node->table);index != 0;index = dict_table_get_next_index(index))
+------------------------row_build_index_entry_low
+------------------------UT_LIST_ADD_LAST(node->entry_list, entry);
+--------------------row_ins_alloc_sys_fields
+--------------node->state = TABLE_BUILD_COL_DEF;
+--------------thr->run_node = node->tab_def;
+--------que_thr_step
+----------if (type == QUE_NODE_INSERT)
+------------row_ins_step
+------//end while
 --que_graph_free((que_t*) que_node_get_parent(thr));
 
 ```
