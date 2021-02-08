@@ -96,7 +96,16 @@ lock_table_for_trx
 ```
 
 
+#6.row_import_update_index_root
 
+```cpp
+row_import_update_index_root
+--pars_sql
+--graph->fork_type = QUE_FORK_MYSQL_INTERFACE
+--que_fork_start_command
+--que_run_threads
+--que_graph_free
+```
 
 
 
