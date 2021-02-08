@@ -313,6 +313,24 @@ trx_rollback_start
 --que_fork_start_command(roll_graph)
 ```
 
+#14.trx_purge_sys_create
+
+```cpp
+caller:
+- innobase_start_or_create_for_mysql
+
+
+trx_purge_sys_create
+--purge_sys->query = trx_purge_graph_build
+----fork = que_fork_create(NULL, NULL, QUE_FORK_PURGE, heap);
+----for (i = 0; i < n_purge_threads; ++i)
+------thr = que_thr_create(fork, heap, NULL);
+--------UT_LIST_ADD_LAST(parent->thrs, thr);
+------thr->child = row_purge_node_create(thr, heap)
+--------mem_heap_zalloc(heap, sizeof(*node))
+--------node->common.type = QUE_NODE_PURGE;
+----//end for
+```
 #99.todo debug
 
 
