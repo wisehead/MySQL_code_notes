@@ -149,6 +149,12 @@ row_create_table_for_mysql
 ----node->col_def->common.parent = node;
 ----node->v_col_def = ins_node_create(INS_DIRECT, dict_sys->sys_virtual,heap);
 ----node->v_col_def->common.parent = node;
+--pars_complete_graph_for_exec
+----fork = que_fork_create(NULL, NULL, QUE_FORK_MYSQL_INTERFACE, heap);
+----thr = que_thr_create(fork, heap, prebuilt);
+--que_fork_start_command
+--que_run_threads(thr)
+--que_graph_free((que_t*) que_node_get_parent(thr));
 ```
 
 #99.todo debug
