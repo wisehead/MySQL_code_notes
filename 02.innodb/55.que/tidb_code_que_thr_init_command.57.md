@@ -99,6 +99,11 @@ lock_table_for_trx
 #6.row_import_update_index_root
 
 ```cpp
+caller:
+- row_import_for_mysql
+- row_discard_tablespace
+
+
 row_import_update_index_root
 --pars_sql
 --graph->fork_type = QUE_FORK_MYSQL_INTERFACE
@@ -111,6 +116,11 @@ row_import_update_index_root
 #7.row_merge_create_index_graph
 
 ```cpp
+caller:
+prepare_inplace_alter_table_dict
+--row_merge_create_index
+
+
 row_merge_create_index_graph
 --ind_create_graph_create
 ----mem_heap_alloc(heap, sizeof(ind_node_t))
@@ -170,7 +180,77 @@ row_create_index_for_mysql
 --que_graph_free((que_t*) que_node_get_parent(thr));
 ```
 
+#10. row_mysql_lock_table
+
+```cpp
+caller:
+- ha_innobase::discard_or_import_tablespace
+
+
+row_mysql_lock_table
+--node = sel_node_create(heap)
+----mem_heap_alloc(heap, sizeof(sel_node_t))
+----node->common.type = QUE_NODE_SELECT;
+----node->state = SEL_NODE_OPEN;
+--pars_complete_graph_for_exec
+----que_fork_create
+----que_thr_create
+--thr->graph->state = QUE_FORK_ACTIVE;
+--que_fork_get_first_thr
+--que_thr_move_to_run_state_for_mysql
+----thr->is_active = TRUE;
+----thr->state = QUE_THR_RUNNING;
+--run_again：
+--thr->run_node = thr;
+--thr->prev_node = thr->common.parent;
+--lock_table(0, table, mode, thr);
+----lock_table_enqueue_waiting
+------que_thr_stop
+--------thr->state = QUE_THR_LOCK_WAIT;
+--if (err == DB_SUCCESS)
+----que_thr_stop_for_mysql_no_error
+------thr->state = QUE_THR_COMPLETED;
+--else
+----que_thr_stop_for_mysql
+----if (err != DB_QUE_THR_SUSPENDED)
+------case DB_LOCK_WAIT:
+------trx_kill_blocking
+------lock_wait_suspend_thread
+--------lock_wait_table_reserve_slot
+--------thd_wait_begin
+--------os_event_wait(slot->event);
+--------thd_wait_end
+--------lock_wait_table_release_slot
+--------goto run_again;
+----else
+------parent = que_node_get_parent(thr);
+------que_fork_start_command
+------trx->error_state = DB_LOCK_WAIT;
+------goto run_again;
+--que_graph_free(thr->graph);
+```
+
+
 #99.todo debug
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
