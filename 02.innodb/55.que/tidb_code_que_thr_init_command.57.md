@@ -157,6 +157,19 @@ row_create_table_for_mysql
 --que_graph_free((que_t*) que_node_get_parent(thr));
 ```
 
+#9. row_create_index_for_mysql
+
+```cpp
+row_create_index_for_mysql
+--ind_create_graph_create
+--pars_complete_graph_for_exec
+----fork = que_fork_create(NULL, NULL, QUE_FORK_MYSQL_INTERFACE, heap)
+----thr = que_thr_create(fork, heap, prebuilt);
+--que_fork_start_command
+--que_run_threads(thr);
+--que_graph_free((que_t*) que_node_get_parent(thr));
+```
+
 #99.todo debug
 
 
