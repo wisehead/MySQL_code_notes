@@ -152,6 +152,10 @@ row_merge_create_index_graph
 #8. row_create_table_for_mysql
 
 ```cpp
+caller:
+-create_table_info_t::create_table_def
+
+
 row_create_table_for_mysql
 --node = tab_create_graph_create(table, heap)
 ----mem_heap_alloc(heap, sizeof(tab_node_t))
