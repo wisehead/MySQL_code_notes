@@ -230,6 +230,20 @@ row_mysql_lock_table
 --que_graph_free(thr->graph);
 ```
 
+#11. trx_rollback_to_savepoint_low
+
+```cpp
+caller:
+- trx_rollback_to_savepoint
+- trx_rollback_for_mysql_low
+
+
+trx_rollback_to_savepoint_low
+--roll_node_create
+----node = static_cast<roll_node_t*>(mem_heap_zalloc(heap, sizeof(*node)))
+----node->state = ROLL_NODE_SEND;
+----node->common.type = QUE_NODE_ROLLBACK;
+```
 
 #99.todo debug
 
