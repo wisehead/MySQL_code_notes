@@ -36,3 +36,33 @@ struct undo_node_t{
 
 
 ```
+
+#2.enum undo_exec
+
+```cpp
+/* A single query thread will try to perform the undo for all successive
+versions of a clustered index record, if the transaction has modified it
+several times during the execution which is rolled back. It may happen
+that the task is transferred to another query thread, if the other thread
+is assigned to handle an undo log record in the chain of different versions
+of the record, and the other thread happens to get the x-latch to the
+clustered index record at the right time.
+    If a query thread notices that the clustered index record it is looking
+for is missing, or the roll ptr field in the record doed not point to the
+undo log record the thread was assigned to handle, then it gives up the undo
+task for that undo log record, and fetches the next. This situation can occur
+just in the case where the transaction modified the same record several times
+and another thread is currently doing the undo for successive versions of
+that index record. */
+
+/** Execution state of an undo node */
+enum undo_exec {
+    UNDO_NODE_FETCH_NEXT = 1,   /*!< we should fetch the next
+                    undo log record */
+    UNDO_NODE_INSERT,       /*!< undo a fresh insert of a
+                    row to a table */
+    UNDO_NODE_MODIFY        /*!< undo a modify operation
+                    (DELETE or UPDATE) on a row
+                    of a table */
+};
+```
