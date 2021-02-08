@@ -108,8 +108,20 @@ row_import_update_index_root
 ```
 
 
+#7.row_merge_create_index_graph
 
-
+```cpp
+row_merge_create_index_graph
+--ind_create_graph_create
+----mem_heap_alloc(heap, sizeof(ind_node_t))
+----node->common.type = QUE_NODE_CREATE_INDEX;
+----node->index = index;
+----node->add_v = add_v;
+----node->ind_def = ins_node_create(INS_DIRECT,dict_sys->sys_indexes, heap);
+----node->ind_def->common.parent = node;
+----node->field_def = ins_node_create(INS_DIRECT,dict_sys->sys_fields, heap);
+----node->field_def->common.parent = node;
+```
 
 
 
