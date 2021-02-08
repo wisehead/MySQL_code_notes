@@ -121,7 +121,22 @@ row_merge_create_index_graph
 ----node->ind_def->common.parent = node;
 ----node->field_def = ins_node_create(INS_DIRECT,dict_sys->sys_fields, heap);
 ----node->field_def->common.parent = node;
+--pars_complete_graph_for_exec
+----fork = que_fork_create(NULL, NULL, QUE_FORK_MYSQL_INTERFACE, heap)
+----thr = que_thr_create(fork, heap, prebuilt)
+--que_fork_start_command
+----que_thr_init_command
+------thr->run_node = thr;
+------thr->prev_node = thr->common.parent;
+------que_thr_move_to_run_state
+--que_run_threads
+--que_graph_free((que_t*) que_node_get_parent(thr));
+
 ```
+
+
+#99.todo debug
+
 
 
 
