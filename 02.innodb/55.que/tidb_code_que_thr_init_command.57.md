@@ -290,6 +290,28 @@ trx_rollback_active
 --que_graph_free
 ```
 
+#13. trx_rollback_start
+
+```cpp
+caller：
+que_thr_step
+--trx_rollback_step
+
+
+trx_rollback_start
+--que_t*  roll_graph = trx_roll_graph_build(trx);
+----fork = que_fork_create(NULL, NULL, QUE_FORK_ROLLBACK, heap)
+----que_thr_create
+----row_undo_node_create(trx, thr, heap)
+------mem_heap_alloc(heap, sizeof(undo_node_t))
+------undo->common.type = QUE_NODE_UNDO
+------undo->common.parent = parent
+------undo->state = UNDO_NODE_FETCH_NEXT
+------btr_pcur_init(&(undo->pcur))
+--trx->graph = roll_graph;
+--trx->lock.que_state = TRX_QUE_ROLLING_BACK;
+--que_fork_start_command(roll_graph)
+```
 
 #99.todo debug
 
