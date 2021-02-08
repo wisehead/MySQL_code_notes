@@ -58,6 +58,26 @@ row_create_table_for_mysql
 --------que_thr_step
 ----------if (type == QUE_NODE_INSERT)
 ------------row_ins_step
+--------------if (thr->prev_node == parent)
+----------------node->state = INS_NODE_SET_IX_LOCK;
+--------------trx_write_trx_id(node->trx_id_buf, trx->id);
+--------------if (node->state == INS_NODE_SET_IX_LOCK)
+----------------node->state = INS_NODE_ALLOC_ROW_ID;
+----------------lock_table
+----------------node->trx_id = trx->id;
+------------row_ins_step//middle
+--------------row_ins
+----------------if (node->state == INS_NODE_ALLOC_ROW_ID)
+------------------row_ins_alloc_row_id_step
+------------------node->index = dict_table_get_first_index(node->table);
+------------------node->entry = UT_LIST_GET_FIRST(node->entry_list);
+------------------node->state = INS_NODE_INSERT_ENTRIES;
+----------------while (node->index != NULL)
+------------------if (node->index->type != DICT_FTS)
+--------------------row_ins_index_entry_step
+----------------------row_ins_index_entry_set_vals
+----------------------row_ins_index_entry
+------------------------row_ins_clust_index_entry
 ------//end while
 --que_graph_free((que_t*) que_node_get_parent(thr));
 
