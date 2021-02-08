@@ -272,6 +272,25 @@ trx_rollback_to_savepoint_low
 ----trx->lock.que_state = TRX_QUE_RUNNING;
 ```
 
+#12. trx_rollback_active
+
+```cpp
+caller:
+trx_rollback_or_clean_recovered
+--trx_rollback_resurrected
+
+trx_rollback_active
+--fork = que_fork_create(NULL, NULL, QUE_FORK_RECOVERY, heap);
+--que_thr_create
+--roll_node = roll_node_create(heap);
+--que_fork_start_command
+--que_run_threads(thr);
+--que_run_threads(roll_node->undo_thr);
+--trx_rollback_finish(thr_get_trx(roll_node->undo_thr))
+--que_graph_free
+```
+
+
 #99.todo debug
 
 
