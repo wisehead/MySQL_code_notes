@@ -1,4 +1,4 @@
-#1.row_prebuilt_t
+#1.struct row_prebuilt_t
 
 ```cpp
 /** A struct for (sometimes lazily) prebuilt structures in an Innobase table
@@ -17,10 +17,6 @@ struct row_prebuilt_t {
                     an SQL statement: we may have to set
                     an intention lock on the table,
                     create a consistent read view etc. */
-    unsigned    mysql_has_locked:1;/*!< this is set TRUE when MySQL
-                    calls external_lock on this handle
-                    with a lock flag, and set FALSE when
-                    with the F_UNLOCK flag */
     unsigned    clust_index_was_generated:1;
                     /*!< if the user did not define a
                     primary key in MySQL, then Innobase
@@ -58,11 +54,19 @@ struct row_prebuilt_t {
                     the secondary index, then this is
                     set to TRUE */
     unsigned    templ_contains_blob:1;/*!< TRUE if the template contains
-                    a column with DATA_BLOB ==
-                    get_innobase_type_from_mysql_type();
+                    a column with DATA_LARGE_MTYPE(
+                    get_innobase_type_from_mysql_type())
+                    is TRUE;
                     not to be confused with InnoDB
                     externally stored columns
                     (VARCHAR can be off-page too) */
+    unsigned    templ_contains_fixed_point:1;/*!< TRUE if the
+                    template contains a column with
+                    DATA_POINT. Since InnoDB regards
+                    DATA_POINT as non-BLOB type, the
+                    templ_contains_blob can't tell us
+                    if there is DATA_POINT */
+                    
     mysql_row_templ_t* mysql_template;/*!< template used to transform
                     rows fast between MySQL and Innobase
                     formats; memory for this template
@@ -96,9 +100,9 @@ struct row_prebuilt_t {
                     trx_id or n_indexes mismatch. */
     que_fork_t* upd_graph;  /*!< Innobase SQL query graph used
                     in updates or deletes */
-    btr_pcur_t  pcur;       /*!< persistent cursor used in selects
+    btr_pcur_t* pcur;       /*!< persistent cursor used in selects
                     and updates */
-    btr_pcur_t  clust_pcur; /*!< persistent cursor used in
+    btr_pcur_t* clust_pcur; /*!< persistent cursor used in
                     some selects and updates */
     que_fork_t* sel_graph;  /*!< dummy query graph used in
                     selects */
@@ -191,6 +195,8 @@ struct row_prebuilt_t {
     mem_heap_t* old_vers_heap;  /*!< memory heap where a previous
                     version is built in consistent read */
     bool        in_fts_query;   /*!< Whether we are in a FTS query */
+    bool        fts_doc_id_in_read_set; /*!< true if table has externally
+                    defined FTS_DOC_ID coulmn. */
     /*----------------------*/
     ulonglong   autoinc_last_value;
                     /*!< last value of AUTO-INC interval */
@@ -214,12 +220,22 @@ struct row_prebuilt_t {
     ulint       idx_cond_n_cols;/*!< Number of fields in idx_cond_cols.
                     0 if and only if idx_cond == NULL. */
     /*----------------------*/
-    ulint       magic_n2;   /*!< this should be the same as
-                    magic_n */
-    /*----------------------*/
     unsigned    innodb_api:1;   /*!< whether this is a InnoDB API
                     query */
     const rec_t*    innodb_api_rec; /*!< InnoDB API search result */
+    /*----------------------*/
+
+    /*----------------------*/
+    rtr_info_t* rtr_info;   /*!< R-tree Search Info */
+    /*----------------------*/
+
+    ulint       magic_n2;   /*!< this should be the same as
+                    magic_n */
+
+    bool        ins_sel_stmt;   /*!< if true then ins_sel_statement. */
+
+    innodb_session_t*
+            session;    /*!< InnoDB session handler. */
     byte*       srch_key_val1;  /*!< buffer used in converting
                     search key values from MySQL format
                     to InnoDB format.*/
@@ -227,6 +243,22 @@ struct row_prebuilt_t {
                     search key values from MySQL format
                     to InnoDB format.*/
     uint        srch_key_val_len; /*!< Size of search key */
+    /** Disable prefetch. */
+    bool        m_no_prefetch;
 
-};                                                                
+    /** Return materialized key for secondary index scan */
+    bool        m_read_virtual_key;
+
+    /** The MySQL table object */
+    TABLE*      m_mysql_table;
+
+    /** The MySQL handler object. */
+    ha_innobase*    m_mysql_handler;
+
+    /** limit value to avoid fts result overflow */
+    ulonglong   m_fts_limit;
+
+    /** True if exceeded the end_range while filling the prefetch cache. */
+    bool        m_end_range;
+};                                            
 ```
