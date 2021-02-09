@@ -78,6 +78,32 @@ row_create_table_for_mysql
 ----------------------row_ins_index_entry_set_vals
 ----------------------row_ins_index_entry
 ------------------------row_ins_clust_index_entry
+------------------node->index = dict_table_get_next_index(node->index);
+------------------node->entry = UT_LIST_GET_NEXT(tuple_list, node->entry);
+----------------node->state = INS_NODE_ALLOC_ROW_ID;
+--------------thr->run_node = que_node_get_parent(node);
+----------if (type == QUE_NODE_EXIT)
+------------old_thr->prev_node = node;
+--------que_thr_step
+----------if (type == QUE_NODE_CREATE_TABLE)
+------------dict_create_table_step
+--------------if (node->state == TABLE_BUILD_COL_DEF)
+----------------dict_build_col_def_step
+------------------dict_create_sys_columns_tuple
+------------------ins_node_set_new_row
+--------------------ins_node_create_entry_list
+--------------------row_ins_alloc_sys_fields
+----------if (type == QUE_NODE_EXIT)
+------------old_thr->prev_node = node
+--------que_thr_step
+----------if (type == QUE_NODE_CREATE_TABLE)
+------------dict_create_table_step
+--------------if (node->state == TABLE_ADD_TO_CACHE)
+----------------dict_table_add_to_cache
+--------que_thr_step
+----------if (type == QUE_NODE_THR)
+------------que_thr_node_step
+--------------thr->state = QUE_THR_COMPLETED;
 ------//end while
 --que_graph_free((que_t*) que_node_get_parent(thr));
 
