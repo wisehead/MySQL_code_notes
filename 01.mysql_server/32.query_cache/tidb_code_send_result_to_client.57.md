@@ -15,4 +15,11 @@ Query_cache::send_result_to_client
 ----if (table->callback())
 ------Query_cache_table::callback
 --------innobase_query_caching_of_table_permitted
+--unlock
+--while (result_block != first_result_block)
+----send_data_in_chunks
+------while (len > MAX_CHUNK_LENGTH)
+--------net_write_packet
+----------query_cache_insert
+------net_write_packet//扫尾
 ```
