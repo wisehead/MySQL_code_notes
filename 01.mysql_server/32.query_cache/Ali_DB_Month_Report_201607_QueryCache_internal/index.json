@@ -1,0 +1,17 @@
+{
+  "version": "2.0",
+  "clipId": "1613984282",
+  "format": "md",
+  "title": "MySQL · 源码分析 · Query Cache内部剖析",
+  "link": "http://mysql.taobao.org/monthly/2016/07/09/",
+  "category": "default",
+  "tags": [],
+  "created_at": "2021-02-22 16:58:02",
+  "mainPath": "index.md",
+  "paths": [
+    "index.json",
+    "a-title_MySQL-·-源码分析-·-Query-Cache内部剖析",
+    "assets/1613984282-e16e51e9c57f500d14ad204126d17d06.png",
+    "index.md"
+  ]
+}
