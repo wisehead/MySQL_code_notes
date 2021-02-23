@@ -295,3 +295,21 @@
   is always committed at the end of all statements.
 */    
 ```
+
+#2.todo
+
+```
+THD_TRANS
+trans_register_ha
+handler::external_lock()
+
+  During statement execution, whenever any of data-modifying
+  PSEA API methods is used, e.g. handler::write_row() or
+  handler::update_row(), the read-write flag is raised in the
+  statement transaction for the involved engine.
+  
+trans_commit_stmt
+--handlerton::prepare()
+--handlerton::commit_one_phase()
+  
+```
