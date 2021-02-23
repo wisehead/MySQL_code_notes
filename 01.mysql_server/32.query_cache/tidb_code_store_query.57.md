@@ -28,28 +28,23 @@ Query_cache::store_query
 ----Query_cache::write_block_data
 ------all_headers_len = sizeof(Query_cache_block) + ntab*sizeof(Query_cache_block_table) + header_len
 ------Query_cache::allocate_block
---------Query_cache::get_free_block
-----------Query_cache::find_bin
-----------Query_cache::exclude_from_free_memory_list
-------------Query_cache_block::data
---------------Query_cache_block::headers_len
-------------Query_cache::double_linked_list_exclude
-------------bin->number--
-------------free_memory-=free_block->length;
-------------free_memory_blocks--
---------if (block->length >= ALIGN_SIZE(len) + min_allocation_unit)
-----------Query_cache::split_block
-------------new_block = (Query_cache_block*)(((uchar*) block)+len)
-------------Query_cache_block::init
-------------new_block->pnext = block->pnext
-------------block->pnext = new_block
-------------new_block->pnext->pprev = new_block;
-------------if (block->type == Query_cache_block::FREE)
---------------Query_cache::insert_into_free_memory_list
-----------------Query_cache::find_bin
-----------------Query_cache::insert_into_free_memory_sorted_list
-------block->type = type;
-------block->n_tables = ntab
-------block->used = static_cast<ulong>(len);
 ------memcpy((uchar *) block+ all_headers_len, data, data_len)
+--if (query_block != 0)
+----header = Query_cache_block::query
+------Query_cache_block::data
+--------(uchar*)this) + headers_len()
+----Query_cache_query::init_n_lock
+------mysql_rwlock_init(key_rwlock_query_cache_query_lock, &lock);
+------lock_writing
+----my_hash_insert(&queries, (uchar*) query_block)
+----Query_cache::register_all_tables
+------Query_cache::register_tables_from_list
+--------Query_cache::insert_table
+----double_linked_list_simple_include(query_block, &queries_blocks)
+----thd->query_cache_tls.first_query_block= query_block;
+----Query_cache_query::writer
+----Query_cache::unlock
+------mysql_cond_signal(&COND_cache_status_changed);
+----Query_cache_query::unlock_writing
+------inline_mysql_rwlock_unlock
 ```
