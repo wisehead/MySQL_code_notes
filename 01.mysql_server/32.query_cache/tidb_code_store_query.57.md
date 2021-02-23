@@ -48,4 +48,8 @@ Query_cache::store_query
 --------------Query_cache::insert_into_free_memory_list
 ----------------Query_cache::find_bin
 ----------------Query_cache::insert_into_free_memory_sorted_list
+------block->type = type;
+------block->n_tables = ntab
+------block->used = static_cast<ulong>(len);
+------memcpy((uchar *) block+ all_headers_len, data, data_len)
 ```
