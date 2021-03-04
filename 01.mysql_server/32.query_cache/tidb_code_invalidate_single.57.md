@@ -1,8 +1,21 @@
 #1.invalidate_single
 
 ```cpp
+caller:
+- invalidate
+- mysql_delete
+- invalidate_delete_tables
+- mysql_insert
+- mysql_rm_table_no_locks
+- invalidate_update_tables
+
+
 invalidate_single
---
+--if (using_transactions &&(table_used->table->file->table_cache_type() ==HA_CACHE_TBL_TRANSACT))
+----thd->add_changed_table(table_used->table)
+--else
+----Query_cache::invalidate_table(THD *thd, TABLE *table)
+------invalidate_table(thd, (uchar*) table->s->table_cache_key.str,table->s->table_cache_key.length);
 ```
 
 
