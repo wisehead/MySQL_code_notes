@@ -68,8 +68,21 @@ the InnoDB trx_sys->mutex.
 does not mean we should invalidate the query cache: invalidation is
 called explicitly */
 
+
+
 innobase_query_caching_of_table_permitted
---trx_search_latch_release_if_reserved
---innobase_srv_conc_force_exit_innodb
+--normalize_table_name
+--innobase_register_trx
+----trans_register_ha
+----trx_is_registered_for_2pc
+----trx_register_for_2pc
+--row_search_check_if_query_cache_permitted
+----table = dict_table_open_on_name
+----trx_start_if_not_started
+------trx_start_if_not_started_low
+--------trx_start_low
+----MVCC::view_open
+----dict_table_close
+
 ```
 
