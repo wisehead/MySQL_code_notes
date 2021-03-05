@@ -68,9 +68,31 @@ the InnoDB trx_sys->mutex.
 does not mean we should invalidate the query cache: invalidation is
 called explicitly */
 
-
+caller:
+store_query
+--ask_handler_allowance
+----register_query_cache_table
 
 innobase_query_caching_of_table_permitted
+--check_trx_exists
+----thd_to_trx
+------innodb_session = thd_to_innodb_session(thd)
+--------innodb_session =*(innodb_session_t**) thd_ha_data(thd, innodb_hton_ptr);
+----------thd->ha_data[hton->slot].ha_ptr
+------return(innodb_session->m_trx)
+----if (trx == NULL)
+------innobase_trx_allocate
+--------trx_allocate_for_mysql
+----------trx_allocate_for_background
+------------trx_create_low
+--------------trx = trx_pools->get()
+----------UT_LIST_ADD_FIRST(trx_sys->mysql_trx_list, trx);
+--------innobase_trx_init
+----------trx->check_foreigns = !thd_test_options(thd, OPTION_NO_FOREIGN_KEY_CHECKS);
+----------trx->check_unique_secondary = !thd_test_options(thd, OPTION_RELAXED_UNIQUE_CHECKS);
+----else
+------innobase_trx_init
+--innobase_srv_conc_force_exit_innodb
 --normalize_table_name
 --innobase_register_trx
 ----trans_register_ha
@@ -81,7 +103,12 @@ innobase_query_caching_of_table_permitted
 ----trx_start_if_not_started
 ------trx_start_if_not_started_low
 --------trx_start_low
-----MVCC::view_open
+----if (lock_table_get_n_locks(table) == 0
+            && ((trx->id != 0 && trx->id >= table->query_cache_inv_id)
+                || !MVCC::is_view_active(trx->read_view)
+                || trx->read_view->low_limit_id()
+                >= table->query_cache_inv_id))
+------MVCC::view_open
 ----dict_table_close
 
 ```
