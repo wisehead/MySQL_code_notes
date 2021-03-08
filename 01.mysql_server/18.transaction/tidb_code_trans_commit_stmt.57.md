@@ -42,7 +42,23 @@ trans_commit_stmt
 ----------------mlog_write_ulint//MLOG_4BYTES
 ----------------mlog_write_string//MLOG_WRITE_STRING
 --------------mtr_t::commit
+----MYSQL_BIN_LOG::commit
+------MYSQL_BIN_LOG::ordered_commit
+--------MYSQL_BIN_LOG::process_commit_stage_queue
+----------ha_commit_low
+------------innobase_commit
+--------------innobase_commit_low
+----------------trx_commit_for_mysql
+------------------trx_commit
+--------------------trx_commit_low
+----------------------trx_write_serialisation_history
+------------------------trx_undo_set_state_at_finish
+--------------------------mlog_write_ulint//MLOG_2BYTES
+
+
 ```
+
+
 
 
 
