@@ -62,8 +62,10 @@ trans_commit_stmt
 ----------------------------------mlog_write_ulint//MLOG_4BYTES
 --------------------------------mlog_write_ulint//MLOG_4BYTES
 ----------------------------mlog_write_ull//MLOG_8BYTES， which is trx->no
-
-
+----------------------------trx_sys_update_mysql_binlog_offset
+------------------------------mlog_write_ulint//MLOG_4BYTES
+----------------------trx_write_commit_log//MLOG_TRX_COMMIT
+----------------------mtr_t::commit
 ```
 
 
