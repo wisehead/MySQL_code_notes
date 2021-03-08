@@ -37,4 +37,7 @@ Sql_cmd_delete::mysql_delete
 ----------------------trx_undo_store_table_id
 ------------------------mlog_write_ulint(log_hdr + TRX_UNDO_TRX_TABLE_IDS +undo->n_tables * 4,table_id,MLOG_4BYTES, mtr);//MLOG_4BYTES
 ----------------------mtr_t::commit
+--------------------btr_cur_del_mark_set_clust_rec_log
+----------------------mlog_open_and_write_index//MLOG_COMP_REC_CLUST_DELETE_MARK
+--------------------mtr_t::commit
 ```
