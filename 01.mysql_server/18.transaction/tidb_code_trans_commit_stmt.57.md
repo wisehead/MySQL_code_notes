@@ -54,6 +54,14 @@ trans_commit_stmt
 ----------------------trx_write_serialisation_history
 ------------------------trx_undo_set_state_at_finish
 --------------------------mlog_write_ulint//MLOG_2BYTES
+------------------------trx_undo_update_cleanup
+--------------------------trx_purge_add_update_undo_to_history
+----------------------------flst_add_first
+------------------------------flst_add_to_empty
+--------------------------------flst_write_addr
+----------------------------------mlog_write_ulint//MLOG_4BYTES
+--------------------------------mlog_write_ulint//MLOG_4BYTES
+----------------------------mlog_write_ull//MLOG_8BYTES， which is trx->no
 
 
 ```
