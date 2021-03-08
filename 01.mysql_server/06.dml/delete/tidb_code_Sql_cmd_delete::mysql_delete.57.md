@@ -34,4 +34,7 @@ Sql_cmd_delete::mysql_delete
 ----------------------trx_undo_page_report_modify
 ------------------------trx_undof_page_add_undo_rec_log
 --------------------------mlog_write_initial_log_record_fast//MLOG_UNDO_INSERT
+----------------------trx_undo_store_table_id
+------------------------mlog_write_ulint(log_hdr + TRX_UNDO_TRX_TABLE_IDS +undo->n_tables * 4,table_id,MLOG_4BYTES, mtr);//MLOG_4BYTES
+----------------------mtr_t::commit
 ```
