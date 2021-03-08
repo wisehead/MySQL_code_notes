@@ -27,4 +27,11 @@ Sql_cmd_delete::mysql_delete
 --------------------------trx_undo_header_add_space_for_xid
 ----------------------------mlog_write_ulint//MLOG_2BYTES
 ------------------------mtr_t::commit
+----------------------trx_undo_page_report_insert
+------------------------trx_undo_page_set_next_prev_and_add
+--------------------------trx_undof_page_add_undo_rec_log
+----------------------------mlog_write_initial_log_record_fast//MLOG_UNDO_INSERT
+----------------------trx_undo_page_report_modify
+------------------------trx_undof_page_add_undo_rec_log
+--------------------------mlog_write_initial_log_record_fast//MLOG_UNDO_INSERT
 ```
