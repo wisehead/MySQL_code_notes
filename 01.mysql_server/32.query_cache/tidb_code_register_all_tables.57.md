@@ -36,8 +36,19 @@ insert_table
 --------free_query(query_block);
 --//if (table_block == 0)
 --table_block= write_block_data(key_len, (uchar*) key,ALIGN_SIZE(sizeof(Query_cache_table)),Query_cache_block::TABLE, 1);
---
-----
+--double_linked_list_simple_include(table_block, &tables_blocks);
+--my_hash_insert(&tables, (const uchar *) table_block)
+--header->table(db + db_length + 1);
+    header->key_length(key_len);
+    header->type(cache_type);
+    header->callback(callback);
+    header->engine_data(engine_data);
+--Query_cache_block_table *list_root= table_block->table(0);//将table_block的table_node和Query Block的table node连起来。
+  node->next= list_root->next;
+  list_root->next= node;
+  node->next->prev= node;
+  node->prev= list_root;
+  node->parent= table_block->table();
 ```
 
 #3.
