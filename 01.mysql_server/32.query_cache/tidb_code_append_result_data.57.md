@@ -15,6 +15,8 @@ append_result_data
 --if (last_block_free_space < data_len)
 ----write_result_data(&new_block, data_len-last_block_free_space, (uchar*)(data+last_block_free_space),query_block,Query_cache_block::RES_CONT);
 ----double_linked_list_join(last_block, new_block);
+--if (success && last_block_free_space > 0)
+----memcpy((uchar*) last_block + last_block->used, data, to_copy);
 ```
 
 #2.append_next_free_block
@@ -30,4 +32,11 @@ append_next_free_block
 ----next_block->pnext->pprev = block;
 ----if (block->length > ALIGN_SIZE(old_len + add_size) + min_allocation_unit)
 ------split_block(block,ALIGN_SIZE(old_len + add_size));
+```
+
+#3.write_result_data
+
+```cpp
+write_result_data
+--allocate_data_chain
 ```
