@@ -73,4 +73,18 @@ while (block != queries_blocks)
 --block= block->next;
 ```
 
-#8.
+#8.free_query_internal
+
+```cpp
+query->writer()->first_query_block= NULL;
+query->writer(0);
+double_linked_list_exclude(query_block, &queries_blocks);
+for (TABLE_COUNTER_TYPE i= 0; i < query_block->n_tables; i++)
+--unlink_table(table++);
+while (block != result_block);
+--Query_cache_block *current= block;
+--block= block->next;
+--free_memory_block(current);
+--query->unlock_n_destroy();
+--free_memory_block(query_block)
+```
