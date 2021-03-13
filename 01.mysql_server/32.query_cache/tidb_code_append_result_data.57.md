@@ -33,10 +33,3 @@ append_next_free_block
 ----if (block->length > ALIGN_SIZE(old_len + add_size) + min_allocation_unit)
 ------split_block(block,ALIGN_SIZE(old_len + add_size));
 ```
-
-#3.write_result_data
-
-```cpp
-write_result_data
---allocate_data_chain
-```
