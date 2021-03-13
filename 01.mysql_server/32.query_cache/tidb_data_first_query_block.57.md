@@ -6,7 +6,17 @@
 
 #2. store_query
 ```cpp
-在handle_select()之前调用，用于注册result set writer（thd->net.query_cache_query）。
+//在handle_select()之前调用，用于注册result set writer（thd->net.query_cache_query）。
+
+store_query
+--query_block= write_block_data
+--my_hash_insert(&queries, (uchar*) query_block)
+--register_all_tables(query_block, tables_used, local_tables)
+--double_linked_list_simple_include(query_block, &queries_blocks);
+--thd->query_cache_tls.first_query_block= query_block;
+--header->writer(&thd->query_cache_tls);
+--unlock();
+--BLOCK_UNLOCK_WR(query_block);
 ```
 
 #3. query_cache_insert
@@ -62,3 +72,5 @@ while (block != queries_blocks)
 --query->unlock_n_destroy();
 --block= block->next;
 ```
+
+#8.
