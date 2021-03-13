@@ -88,3 +88,17 @@ while (block != result_block);
 --query->unlock_n_destroy();
 --free_memory_block(query_block)
 ```
+
+#9.move_by_type
+
+```cpp
+    /*
+      If someone is writing to this block, inform the writer that the block
+      has been moved.
+    */
+    Query_cache_tls *query_cache_tls= new_block->query()->writer();
+    if (query_cache_tls != NULL)
+    {
+      query_cache_tls->first_query_block= new_block;
+    }
+```
