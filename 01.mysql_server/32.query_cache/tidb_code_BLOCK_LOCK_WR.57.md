@@ -7,6 +7,8 @@ try_lock and BLOCK_LOCK_UNLOCK
 #2.insert
 
 ```cpp
+//跟 Query Result有关，正在填充数据，所以加锁。
+
 insert
 --query_block = query_cache_tls->first_query_block
 --BLOCK_LOCK_WR(query_block);
@@ -16,12 +18,15 @@ insert
 
 #3.abort
 ```cpp
+//清空Query结果，所以加锁
 abort
 --try_lock
 --Query_cache_block *query_block= query_cache_tls->first_query_block;
 --BLOCK_LOCK_WR(query_block);
 --free_query(query_block);
-----//..... BLOCK_UNLOCK_WR
+----free_query_internal
+------query->unlock_n_destroy()
+--------this->unlock_writing()
 --query_cache_tls->first_query_block= NULL;
 --unlock
 ```
@@ -33,6 +38,8 @@ end_of_result
 --try_lock
 --query_block= query_cache_tls->first_query_block
 --BLOCK_LOCK_WR(query_block);
+--if (last_result_block->length >= query_cache.min_allocation_unit + len)
+----query_cache.split_block(last_result_block,len);
 --header->found_rows(current_found_rows);
 --header->result()->type= Query_cache_block::RESULT;
 --header->writer(0);
@@ -59,26 +66,36 @@ resize
 #6.flush_cache
 
 ```cpp
+
+lock_and_suspend
 flush_cache
 --my_hash_reset(&queries);
 --while (queries_blocks != 0)
 ----BLOCK_LOCK_WR(queries_blocks);
 ----free_query_internal(queries_blocks);
+------query->unlock_n_destroy
+unlock
 ```
 
 #7.invalidate_query_block_list
 
 ```cpp
+lock()
 invalidate_query_block_list
 --while (list_root->next != list_root)
 ----Query_cache_block *query_block= list_root->next->block();
 ----LOCK_LOCK_WR(query_block);
 ----free_query(query_block);
+------free_query_internal
+--------query->unlock_n_destroy()
+----------this->unlock_writing()
+unlock
 ```
 
 
 #8.move_by_type
 ```cpp
+try_lock
 move_by_type
 --case Query_cache_block::QUERY
 ----BLOCK_LOCK_WR(block)
@@ -94,17 +111,20 @@ move_by_type
 ----BLOCK_LOCK_WR(query_block);
 ----memmove((char*) new_block->data(), data, len - new_block->headers_len());
 ----BLOCK_UNLOCK_WR(query_block);
+unlock
 ```
 
 #9.join_results
 
 ```cpp
+try_lock
 join_results
 --BLOCK_LOCK_WR(block);
 --while (result_block != first_result);
 ----memcpy((char *) write_to,(char*) result_block->result()->data(),len);
 ----free_memory_block(old_result_block);
 --BLOCK_UNLOCK_WR(block);
+--unlock
 ```
 
 
