@@ -15,6 +15,9 @@ Query_cache::send_result_to_client
 ----if (table->callback())
 ------Query_cache_table::callback
 --------innobase_query_caching_of_table_permitted
+--move_to_query_list_end
+----double_linked_list_exclude(query_block, &queries_blocks);
+----double_linked_list_simple_include(query_block, &queries_blocks);
 --unlock
 --while (result_block != first_result_block)
 ----send_data_in_chunks

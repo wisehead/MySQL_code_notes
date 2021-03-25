@@ -1,0 +1,16 @@
+{
+  "version": "2.0",
+  "clipId": "1616655649",
+  "format": "md",
+  "title": "MySQL · 引擎特性 · InnoDB 同步机制",
+  "link": "http://mysql.taobao.org/monthly/2017/01/01/",
+  "category": "default",
+  "tags": [],
+  "created_at": "2021-03-25 15:00:49",
+  "mainPath": "index.md",
+  "paths": [
+    "index.json",
+    "a-title_MySQL-·-引擎特性-·-InnoDB-同步机制",
+    "index.md"
+  ]
+}
