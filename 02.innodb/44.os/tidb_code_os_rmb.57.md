@@ -42,3 +42,11 @@
 #endif
 
 ```
+
+#2.notes
+
+```
+关于内存屏障的专门指令，MySQL 5.7提供的比较完善。os_rmb表示acquire barrier，os_wmb表示release barrier。
+
+如果在编程时，需要在某个位置准确的读取一个变量的值时，记得在读取之前加上os_rmb，同理，如果需要在某个位置保证一个变量已经被写了，记得在写之后调用os_wmb。
+```
