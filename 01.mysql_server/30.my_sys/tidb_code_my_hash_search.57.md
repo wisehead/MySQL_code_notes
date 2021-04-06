@@ -8,5 +8,6 @@ my_hash_search
 --------cset_hash_sort_adapter//ulong to uint, truncate
 ----------my_hash_sort_bin
 ----my_hash_first_from_hash_value
+------my_hash_mask
 ----
 ```
