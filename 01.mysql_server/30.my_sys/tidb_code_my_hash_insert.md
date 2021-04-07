@@ -20,14 +20,19 @@ my_hash_insert
 --idx= my_hash_mask(rec_hashnr(info, record), info->blength, info->records + 1);
 ----if ((hashnr & (buffmax-1)) < maxlength) return (hashnr & (buffmax-1));
 ----return (hashnr & ((buffmax >> 1) -1));
---gpos= data + my_hash_rec_mask(info, pos, info->blength, info->records + 1);
-----key= (uchar*) my_hash_key(hash, pos->data, &length, 0)
-----my_hash_mask(calc_hash(hash, key, length), buffmax, maxlength)
---if (pos == gpos)
---else
+--if (pos == empty)//第一条插入走这个逻辑
 ----pos->data=(uchar*) record;
 ----pos->next=NO_RECORD;
-----movelink(data,(uint) (pos-data),(uint) (gpos-data),(uint) (empty-data))
+--else
+----empty[0]=pos[0];
+----gpos= data + my_hash_rec_mask(info, pos, info->blength, info->records + 1);
+------key= (uchar*) my_hash_key(hash, pos->data, &length, 0)
+------my_hash_mask(calc_hash(hash, key, length), buffmax, maxlength)
+----if (pos == gpos)
+----else
+------pos->data=(uchar*) record;
+------pos->next=NO_RECORD;
+------movelink(data,(uint) (pos-data),(uint) (gpos-data),(uint) (empty-data))
 ------
 ```
 
