@@ -23,6 +23,12 @@ my_hash_insert
 ------------flag=LOWFIND | LOWUSED;//第二条逻辑
 ------------gpos=pos;
 ------------ptr_to_rec=pos->data;
+--------else//第三条逻辑
+----------if (!(flag & HIGHFIND))
+----------else
+------------if (!(flag & HIGHUSED))
+------------gpos2=pos;
+------------ptr_to_rec2=pos->data;
 ----while ((idx=pos->next) != NO_RECORD);
 ----if ((flag & (LOWFIND | LOWUSED)) == LOWFIND)
 ----if ((flag & (HIGHFIND | HIGHUSED)) == HIGHFIND)
