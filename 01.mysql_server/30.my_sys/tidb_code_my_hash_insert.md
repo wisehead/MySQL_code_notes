@@ -15,7 +15,7 @@ my_hash_insert
 --------calc_hash(hash,key,length)
 ------if (flag == 0)
 --------if (my_hash_mask(hash_nr, info->blength, info->records) != first_index)
-----------break;
+----------break;//第四条，idx 应该等于0，但是实际上放在idx=1，直接break掉。
 ------if (!(hash_nr & halfbuff))//第二条逻辑
 --------if (!(flag & LOWFIND))
 ----------if (flag & HIGHFIND)
