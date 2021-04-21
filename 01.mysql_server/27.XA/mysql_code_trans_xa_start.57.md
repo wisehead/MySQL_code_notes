@@ -5,6 +5,7 @@ mysql_execute_command
 --Sql_cmd_xa_start::execute
 ----Sql_cmd_xa_start::trans_xa_start
 ------XID_STATE *xid_state= thd->get_transaction()->xid_state();
+----thd->rpl_detach_engine_ha_data();
 
 Sql_cmd_xa_start::trans_xa_start
 --XID_STATE *xid_state= thd->get_transaction()->xid_state();
@@ -23,4 +24,15 @@ Sql_cmd_xa_start::trans_xa_start
 ----inline_mysql_start_transaction//to be deep dive later.
 ----gtid_set_performance_schema_values
 --xid_state->start_normal_xa(m_xid);
+----xa_state= XA_ACTIVE;
+----m_xid.set(xid);
+--transaction_cache_insert
+----res= my_hash_insert(&transaction_cache, (uchar*)transaction)
+```
+
+#2.thd->rpl_detach_engine_ha_data();
+
+```cpp
+THD::rpl_detach_engine_ha_data
+--
 ```
