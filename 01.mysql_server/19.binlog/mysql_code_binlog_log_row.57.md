@@ -15,6 +15,7 @@ binlog_log_row
 ------MYSQL_LOCK const *const lock= locks[i];
 ------TABLE **const end_ptr= lock->table + lock->table_count;
 ------for (TABLE **table_ptr= lock->table ;table_ptr != end_ptr ;++table_ptr)
---------
+--------THD::binlog_write_table_map
+----//inner for
 --//end for
 ```
