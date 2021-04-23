@@ -16,6 +16,8 @@ binlog_log_row
 ------TABLE **const end_ptr= lock->table + lock->table_count;
 ------for (TABLE **table_ptr= lock->table ;table_ptr != end_ptr ;++table_ptr)
 --------THD::binlog_write_table_map
+----------binlog_start_trans_and_stmt
+------------THD::binlog_setup_trx_data
 ----//inner for
 --//end for
 ```
