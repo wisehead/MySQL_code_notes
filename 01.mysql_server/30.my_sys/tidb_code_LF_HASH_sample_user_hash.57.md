@@ -67,3 +67,15 @@ get_user_hash_pins(thread);
 destroy_thread
 --lf_hash_put_pins(pfs->m_user_hash_pins);
 ```
+
+#7. user_hash_get_key
+
+```cpp
+static uchar *user_hash_get_key(const uchar *entry, size_t *length,my_bool)
+--typed_entry= reinterpret_cast<const PFS_user* const *> (entry);
+--user= *typed_entry;
+--*length= user->m_key.m_key_length;
+--result= user->m_key.m_hash_key;
+--return const_cast<uchar*> (reinterpret_cast<const uchar*> (result));
+
+```
