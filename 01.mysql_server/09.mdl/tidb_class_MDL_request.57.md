@@ -1,6 +1,8 @@
 #1.class MDL_request
 
 ```cpp
+//在open table的时候，会init一个request，包含了请求的enum_mdl_type，enum_mdl_duration，MDL_ticket，MDL_key。
+
 /**
   A pending metadata lock request.
 
