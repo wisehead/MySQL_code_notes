@@ -1,6 +1,11 @@
 #1.class MDL_lock
 
 ```cpp
+/*
+　　mdl_lock表示系统的一个mdl锁，所有的mdl request都请求对应的mdl_lock，这个mdl_lock结构保存了两个queue，
+　　一个是grant_queue表示拿到lock的请求队列。
+　　一个是wait_queue表示请求这个mdl_lock的阻塞队列。
+*/
 /**
   The lock context. Created internally for an acquired lock.
   For a given name, there exists only one MDL_lock instance,
