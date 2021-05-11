@@ -1,6 +1,7 @@
 #1.class MDL_context
 
 ```cpp
+//mdl_context在MySQL为每一个connection创建thd时，初始化一个mdl上下文，保存了当前session请求的mdl信息。
 /**
   Context of the owner of metadata locks. I.e. each server
   connection has such a context.
