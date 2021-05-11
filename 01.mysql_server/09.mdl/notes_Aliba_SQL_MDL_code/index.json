@@ -1,0 +1,16 @@
+{
+  "version": "2.0",
+  "clipId": "1620717293",
+  "format": "md",
+  "title": "MySQL · 源码分析 · 常用SQL语句的MDL加锁源码分析",
+  "link": "http://mysql.taobao.org/monthly/2018/02/01/",
+  "category": "default",
+  "tags": [],
+  "created_at": "2021-05-11 15:14:53",
+  "mainPath": "index.md",
+  "paths": [
+    "index.json",
+    "a-title_MySQL-·-源码分析-·-常用SQL语句的MDL加锁源码分析",
+    "index.md"
+  ]
+}
