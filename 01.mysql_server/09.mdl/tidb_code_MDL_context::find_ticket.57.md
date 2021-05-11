@@ -1,4 +1,4 @@
-#1.context::find_ticket.57.MD
+#1.context::find_ticket
 
 ```cpp
 MDL_context::find_ticket 这是一个shortcut方法，加锁的时候先检查当前线程是否已持有对应key的MDL锁，并且这个锁的类型不比请求的低，那么就不需要经过MDL系统再分配一个ticket出来（这个比较复杂，代价较高），直接使用已有的ticket，或者clone一个。
