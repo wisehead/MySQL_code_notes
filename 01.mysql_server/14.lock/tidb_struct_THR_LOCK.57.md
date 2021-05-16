@@ -11,9 +11,9 @@ typedef struct st_thr_lock {
   /* write_lock_count is incremented for write locks and reset on read locks */
   ulong write_lock_count;
   uint read_no_write_count;
-  void (*get_status)(void*, int);   /* When one gets a lock */
+  void (*get_status)(void*, int);       /* When one gets a lock */
   void (*copy_status)(void*,void*);
-  void (*update_status)(void*);     /* Before release of write */
+  void (*update_status)(void*);         /* Before release of write */
   void (*restore_status)(void*);         /* Before release of read */
   my_bool (*check_status)(void *);
 } THR_LOCK;
