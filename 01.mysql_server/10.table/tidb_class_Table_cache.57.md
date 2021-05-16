@@ -15,7 +15,6 @@
 
   This significantly increases scalability in some scenarios.
 */
-
 class Table_cache
 {
 private:
@@ -68,9 +67,5 @@ private:
     Open_tables status variable.
   */
   uint m_table_count;
-#ifdef HAVE_PSI_INTERFACE
-  static PSI_mutex_key m_lock_key;
-  static PSI_mutex_info m_mutex_keys[];
-#endif
-};    
+};   
 ```
