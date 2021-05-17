@@ -11,6 +11,7 @@ innobase_query_caching_of_table_permitted
 ----return((my_bool)TRUE);
 --create_table_info_t::normalize_table_name_low
 --innobase_register_trx
+----trans_register_ha
 --row_search_check_if_query_cache_permitted
 
 ```
