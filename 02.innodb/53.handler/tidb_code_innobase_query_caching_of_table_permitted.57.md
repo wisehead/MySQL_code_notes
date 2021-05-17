@@ -23,4 +23,8 @@ row_search_check_if_query_cache_permitted
 --trx_start_if_not_started
 ----trx_start_if_not_started_low
 ------trx_start_low
+--if (lock_table_get_n_locks(table) == 0 &&((trx->id != 0 && trx->id >= table->query_cache_inv_id)|| !MVCC::is_view_active(trx->read_view)|| trx->read_view->low_limit_id()>= table->query_cache_inv_id))
+----ret = TRUE;
+----if (trx->isolation_level >= TRX_ISO_REPEATABLE_READ && !srv_read_only_mode && !MVCC::is_view_active(trx->read_view))
+------trx_sys->mvcc->view_open(trx->read_view, trx)
 ```
