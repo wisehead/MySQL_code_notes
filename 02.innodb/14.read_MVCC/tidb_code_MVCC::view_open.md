@@ -13,5 +13,7 @@ MVCC::view_open
 ----uintptr_t       p = reinterpret_cast<uintptr_t>(view);
 ----view = reinterpret_cast<ReadView*>(p & ~1);//最后一位是标志位，清空表示可用。
 ----if (trx_is_autocommit_non_locking(trx) && view->empty())
-------
+------view->m_closed = false;
+------if (view->m_low_limit_id == trx_sys_get_max_trx_id())
+--------return
 ```
