@@ -44,5 +44,12 @@ tdc_remove_table
 --if (! has_lock)
 ----Table_cache_manager::lock_all_and_tdc
 --create_table_def_key
---
+----key_length= strmake(strmake(key, db_name, NAME_LEN) +1, table_name, NAME_LEN) - key + 1;
+--if ((share= (TABLE_SHARE*) my_hash_search(&table_def_cache,(uchar*) key,key_length)))
+----if (share->ref_count)
+------table_cache_manager.free_table(thd, remove_type, share)
+----else
+------my_hash_delete(&table_def_cache, (uchar*) share);
+--if (! has_lock)
+----table_cache_manager.unlock_all_and_tdc()
 ```
