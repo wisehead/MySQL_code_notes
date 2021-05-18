@@ -1,4 +1,4 @@
-#1.tidb_rpl_sys::parse_log_recs
+#1.ncdb_rpl_sys::parse_log_recs
 
 ```cpp
 tidb_rpl_sys::parse_log_recs
