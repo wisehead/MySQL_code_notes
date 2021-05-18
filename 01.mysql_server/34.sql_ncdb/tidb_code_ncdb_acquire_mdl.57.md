@@ -13,5 +13,5 @@ ncdb_acquire_mdl
 ----ret= thd->mdl_context.acquire_lock(&mdl_request, thd->variables.lock_wait_timeout);//killed and retry.
 --if (mdl_request.ticket != NULL && mdl_type == MDL_key::TABLE)
 ----*need_evict= true;
-----tdc_remove_table(thd, TDC_RT_REMOVE_ALL, db, object_name, false);
+----tdc_remove_table(thd, TDC_RT_REMOVE_ALL, db, object_name, false);	
 ```
