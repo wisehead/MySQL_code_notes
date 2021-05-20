@@ -33,3 +33,14 @@ trx_start_low
 --trx->start_time = thd_start_time_in_secs(trx->mysql_thd);
 --trx->lock.schedule_weight.store(0, std::memory_order_relaxed);
 ```
+
+#2.caller
+
+```cpp
+- trx_commit_or_rollback_prepare
+- trx_commit_for_mysql
+- trx_start_if_not_started_xa_low
+- trx_start_if_not_started_low
+- trx_start_internal_low
+- trx_start_internal_read_only_low
+```
