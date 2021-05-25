@@ -38,3 +38,44 @@
 query_cache_insert
 --Query_cache::insert
 ```
+
+#2.Query_cache::insert
+
+```cpp
+Query_cache::insert
+--if (is_disabled() || query_cache_tls->first_query_block == NULL)//由于异常abort
+----return
+--query_block->query()->state.atomic_compare_and_swap(&old, Query_cache_query::INSERTING)
+--append_result_data
+----if (*current_block == 0)
+------write_result_data(current_block, data_len, data, query_block, Query_cache_block::RES_BEG));
+--------allocate_data_chain
+----------while (1)
+------------allocate_block
+--------------while (block == 0 && !free_old_query())
+----------------free_old_query
+----------------get_free_block
+------------------char *p = (char*)malloc(len);
+------------new_block->type = Query_cache_block::RES_INCOMPLETE;
+------------Query_cache_result *header = new_block->result();
+
+```
+
+#3. free_old_query
+
+```cpp
+free_old_query
+--RW_RLOCK(&dlink_queries_blocks_rwlock);//chenhui
+--while ((block=block->next) != queries_blocks )
+----if (header->result() != 0 && header->result()->type == Query_cache_block::RESULT && header->state.atomic_get() == 0  && block->query()->try_lock_writing())
+------query_block->query()->state.atomic_set(Query_cache_query::FREEING);//chenhui
+------	BLOCK_UNLOCK_WR(query_block);
+--RW_UNLOCK(&dlink_queries_blocks_rwlock);//chenhui
+--free_query
+```
+
+#4.free_query
+```cpp
+free_query
+--
+```
