@@ -38,3 +38,11 @@ NCDB_DDL_Opr_Ctl::ncdb_log_meta_change
 --ncdb_master_info->unlock_ddl();
 --log_write_up_to(mtr.commit_lsn(), true);
 ```
+
+#2.caller
+
+```cpp
+- ncdb_log_ddl_start
+- ncdb_log_ddl_end
+- innobase_log_meta_change
+```

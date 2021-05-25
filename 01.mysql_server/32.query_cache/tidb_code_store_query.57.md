@@ -48,3 +48,75 @@ Query_cache::store_query
 ----Query_cache_query::unlock_writing
 ------inline_mysql_rwlock_unlock
 ```
+
+#2.new store_query
+
+```cpp
+Query_cache::store_query
+--is_cacheable
+----process_and_count_tables
+--ask_handler_allowance
+--lf_hash_search(&meta_hash, pins,cache_key, tot_length));
+--if (entry_meta && (entry_meta != MY_ERRPTR))
+----meta_block->count.atomic_add(1);
+----move_to_query_list_end(meta_block);//HOT
+----if (query_cache_sum + meta_block->length > query_cache_size && meta_block_cnt <= oldest_query_freq.atomic_get())//无法插入
+------DBUG_VOID_RETURN
+--else//hash不在
+----meta_block= write_meta_data(tot_length, (uchar*) cache_key);
+----meta_block->count.atomic_add(1);
+----if (query_cache_sum + meta_block->length > query_cache_size && meta_block->count.atomic_get() <= oldest_query_freq.atomic_get())//无法插入
+------lf_hash_insert(&meta_hash, pins, &meta_block)//插入meta LRU
+------double_linked_list_simple_include(meta_block, &meta_blocks);
+------while (query_cache_meta_sum + meta_block->length > query_cache_size/20)
+--------double_linked_list_exclude(meta_old, &meta_blocks);
+--------lf_hash_delete(&meta_hash, pins,cache_key, len);
+--------meta_old->state.atomic_set(0);
+--------free(meta_old);
+----else//可以插入
+------insert_flag = true;
+--lf_hash_search(&queries_hash, query_pins, cache_key, tot_length));
+--if (entry && (entry != MY_ERRPTR))//已经有别人插入
+----return
+--write_block_data
+----allocate_block
+----block->type = type
+----memcpy((uchar *) block+ all_headers_len, data, data_len);//cahce_key
+--header->init_n_lock();
+--query_block->query()->state.atomic_set(Query_cache_query::INSERTING);
+--BLOCK_UNLOCK_WR(query_block);
+--lf_hash_insert(&queries_hash, query_pins, &query_block);
+--register_all_tables(query_block, tables_used, local_tables)
+--double_linked_list_simple_include(query_block, &queries_blocks);
+--if (!insert_flag)
+----lf_hash_delete(&meta_hash, pins,cache_key, len);
+----double_linked_list_exclude(meta_block, &meta_blocks);
+----meta_block->state.atomic_set(0);
+----free(meta_block);
+--thd->query_cache_tls.first_query_block= query_block;//!!!!!!!!!!!!!!!!!
+--header->writer(&thd->query_cache_tls);
+--header->tables_type(tables_type);
+--query_block->query()->state.atomic_set(0);//chenhui
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
