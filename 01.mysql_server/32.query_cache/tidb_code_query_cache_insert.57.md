@@ -77,5 +77,24 @@ free_old_query
 #4.free_query
 ```cpp
 free_query
---
+--lf_hash_delete(&queries_hash, pins, cache_key, len);
+--free_query_internal
+----if (query->writer() != 0)
+------query->writer()->first_query_block= NULL;
+------query->writer(0);
+----double_linked_list_exclude(query_block, &queries_blocks);
+----for (TABLE_COUNTER_TYPE i= 0; i < query_block->n_tables; i++)
+------unlink_table
+--------node->prev->next= node->next;
+--------node->next->prev= node->prev;
+--------if (neighbour->next == neighbour)
+----------double_linked_list_exclude(table_block, &tables_blocks);
+----------my_hash_delete(&tables,(uchar *) table_block);
+----------node->parent->unlock_n_destroy();//chenhui
+----------free_memory_block(table_block);
+----while (block != result_block);
+------free_memory_block(current);
+----query->unlock_n_destroy();
+----free_memory_block(query_block);
 ```
+
