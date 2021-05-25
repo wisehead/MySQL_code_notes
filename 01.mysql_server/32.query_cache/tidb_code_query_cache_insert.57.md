@@ -47,31 +47,45 @@ Query_cache::insert
 ----return
 --query_block->query()->state.atomic_compare_and_swap(&old, Query_cache_query::INSERTING)
 --append_result_data
-----if (*current_block == 0)
+----if (*current_block == 0)//第一次插入结果
 ------write_result_data(current_block, data_len, data, query_block, Query_cache_block::RES_BEG));
---------allocate_data_chain
-----------while (1)
-------------allocate_block
---------------while (block == 0 && !free_old_query())
-----------------free_old_query
-----------------get_free_block
-------------------char *p = (char*)malloc(len);
-------------new_block->type = Query_cache_block::RES_INCOMPLETE;
-------------Query_cache_result *header = new_block->result();
---------if (success)
-----------while (block != *result_block);
-------------block->type = type;//RES_BEG or RES_CONT
-------------memcpy((uchar*) block+headers_len, rest, length);
-------------block = block->next;
-------------type = Query_cache_block::RES_CONT;
---------else
-----------while (block != *result_block);
-------------free_memory_block(current);
-------------block = block->next;
+----if (last_block_free_space < data_len)//结果特别大，每次插入4KB
+------write_result_data(&new_block, data_len-last_block_free_space,(uchar*)(data+last_block_free_space),query_block,Query_cache_block::RES_CONT);
+------double_linked_list_join(last_block, new_block);
+----memcpy((uchar*) last_block + last_block->used, data, to_copy);
+--if (failed)//append_result_data
+----header->result(result);
+----query_cache.free_query(query_block, false, 1);//chenhui6
+--header->result(result);//success
+```
+
+#3. write_result_data
+
+```cpp
+write_result_data(current_block, data_len, data, query_block, Query_cache_block::RES_BEG));
+--allocate_data_chain
+----while (1)
+------allocate_block
+--------while (block == 0 && !free_old_query())
+----------free_old_query
+----------get_free_block
+------------char *p = (char*)malloc(len);
+------new_block->type = Query_cache_block::RES_INCOMPLETE;
+------Query_cache_result *header = new_block->result();
+--if (success)
+----while (block != *result_block);
+------block->type = type;//RES_BEG or RES_CONT
+------memcpy((uchar*) block+headers_len, rest, length);
+------block = block->next;
+------type = Query_cache_block::RES_CONT;
+--else
+----while (block != *result_block);
+------free_memory_block(current);
+------block = block->next;
 
 ```
 
-#3. free_old_query
+#4. free_old_query
 
 ```cpp
 free_old_query
@@ -84,7 +98,7 @@ free_old_query
 --free_query
 ```
 
-#4.free_query
+#5.free_query
 ```cpp
 free_query
 --lf_hash_delete(&queries_hash, pins, cache_key, len);
