@@ -35,3 +35,25 @@ timer_callback
 --mysql_mutex_unlock(&thd_timer->mutex);
 
 ```
+
+#3.THD::awake
+
+```cpp
+THD::awake
+--if (this->m_server_idle && state_to_set == KILL_QUERY)
+----//do nothing
+--else
+----killed= state_to_set;
+--if (state_to_set != THD::KILL_QUERY && state_to_set != THD::KILL_TIMEOUT 
+      && state_to_set != THD::KILL_TIMEOUT_NCDB)
+----if (this != current_thd)
+------if (active_vio)
+--------vio_cancel(active_vio, SHUT_RDWR);
+----if (!slave_thread)
+------MYSQL_CALLBACK(scheduler, post_kill_notification, (this));
+--if (state_to_set != THD::NOT_KILLED)
+----ha_kill_connection
+------plugin_foreach(thd, kill_handlerton, MYSQL_STORAGE_ENGINE_PLUGIN, 0)
+------kill_connection
+--------innobase_kill_connection
+```
