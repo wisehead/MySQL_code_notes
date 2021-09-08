@@ -25,4 +25,8 @@ threadpool_add_connection
 --------reset_root_defaults
 --------get_transaction()->init_mem_root_defaults
 --------get_transaction()->xid_state()->reset();
+--if (thd_connection_alive(thd))
+----thd_set_net_read_write(thd, 1);
+----threadpool_init_net_server_extension(thd);
+--
 ```
