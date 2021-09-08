@@ -1,0 +1,17 @@
+{
+  "version": "2.0",
+  "clipId": "1631063944",
+  "format": "md",
+  "title": "MySQL · 性能优化 · thread pool 原理分析",
+  "link": "http://mysql.taobao.org/monthly/2014/12/03/",
+  "category": "default",
+  "tags": [],
+  "created_at": "2021-09-08 09:19:04",
+  "mainPath": "index.md",
+  "paths": [
+    "index.json",
+    "a-title_MySQL-·-性能优化-·-thread-pool-原理分析",
+    "assets/1631063944-8232d49bd3e964f917fa8f469ae7c52a.png",
+    "index.md"
+  ]
+}
