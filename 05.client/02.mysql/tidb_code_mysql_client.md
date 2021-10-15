@@ -28,6 +28,7 @@ main
 ----my_init
 
 --sql_connect
+----sql_real_connect
 --signal(SIGINT, handle_ctrlc_signal);
 --signal(SIGQUIT, mysql_end);
 --signal(SIGHUP, handle_quit_signal);
