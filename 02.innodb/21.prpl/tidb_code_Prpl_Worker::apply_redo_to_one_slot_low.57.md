@@ -10,5 +10,6 @@ Prpl_Worker::apply_redo_to_one_slot_low
 ----if (rec->multi_page)
 ------prpl_mgr->log_group_mtr_dec(mtr_end_lsn);
 --------m_applying_group->m_mtrs.slot_dec(mtr_end_lsn);
+--prpl_mgr->log_group_page_dec(ut_fold_ulint_pair(space, page_no));
 --slot->state = RECV_PROCESSED;
 ```
