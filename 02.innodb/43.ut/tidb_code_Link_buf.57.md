@@ -54,3 +54,61 @@ claim_position(Position position)
 --&slot = m_links[index];
 --slot.store(0);
 ```
+
+#6.advance_tail_until(Stop_condition stop_condition)
+
+```cpp
+advance_tail_until(Stop_condition stop_condition)
+--position = m_tail.load();
+--while (true)
+----stop = next_position(position, next);
+----if (stop || stop_condition(position, next))
+------break;
+----claim_position(position);
+----position = next;
+--if (position > m_tail.load())
+----m_tail.store(position);
+----return true;
+--else
+----return false;
+```
+
+#7.advance_tail()
+
+```cpp
+advance_tail()
+--auto stop_condition = [](Position from, Position to) { return (to == from); };
+--advance_tail_until(stop_condition);
+```
+
+#8.has_space(Position position)
+
+```cpp
+has_space
+--return tail() + m_capacity > position;
+```
+
+#9.validate_no_links(Position begin, Position end)
+
+```cpp
+validate_no_links(Position begin, Position end)
+--end = std::min(end, begin + m_capacity);
+--for (; begin < end; ++begin)
+----index = slot_index(begin);
+----&slot = m_links[index];
+----ut_a(slot.load() == 0);
+
+```
+#10.validate_no_links()
+
+```cpp
+validate_no_links()
+--validate_no_links(0, m_capacity);
+```
+
+
+
+
+
+
+
