@@ -4,6 +4,7 @@
 caller:
 trx_commit_in_memory/trx_free_prepared
 --trx_release_impl_and_expl_locks
+----trx_erase_lists
 ----lock_trx_release_locks
 
 lock_release
