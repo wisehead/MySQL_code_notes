@@ -2,7 +2,10 @@
 
 ```cpp
 show_readview_gtid
---
+--m_info= trx->read_view->gtid();
+--var->type= SHOW_CHAR;
+--var->value= buff;
+--sprintf(buff, "%s", &m_info[0]);
 ```
 
 #2. Gtid_info
