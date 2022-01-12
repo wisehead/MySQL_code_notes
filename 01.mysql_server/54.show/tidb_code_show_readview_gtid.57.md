@@ -28,3 +28,10 @@ struct Gtid_desc {
 ```
 
 #3.slave_latest_gtid_info
+
+```cpp
+-- ncdb_rpl_init_slave
+-- ReadView::prepare
+-- trx_slave_flush_ids
+```
+
