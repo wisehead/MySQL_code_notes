@@ -1,5 +1,7 @@
-#latest\_gtid_desc
+#latest\_gtid\_desc
 ```cpp
+caller of latest_gtid_desc:
+
 - ncdb_get_info_for_slave_startup
 - trx_commit_low
 - trx_apply_commit_log
@@ -42,6 +44,7 @@ struct trx_sys_t {
 
 ```cpp
 NCDB_Master_Info::ncdb_get_info_for_slave_startup
---rpl_sidno sidno = gtid_state->get_server_sidno();
-----
+--gtid_state->get_server_sidno();
+--gtid_state->get_last_executed_gno(sidno)
+----Gtid_set::get_last_gno
 ```
