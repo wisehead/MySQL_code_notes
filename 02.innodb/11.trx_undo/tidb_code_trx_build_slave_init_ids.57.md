@@ -27,3 +27,9 @@ trx_build_slave_init_ids
 ----if (trx_no != TRX_ID_MAX)
 ------ids->insert(trx_no);
 ```
+
+#2.ncdb_get_info_for_slave_startup
+
+```cpp
+caller: ncdb_get_info_for_slave_startup
+```
