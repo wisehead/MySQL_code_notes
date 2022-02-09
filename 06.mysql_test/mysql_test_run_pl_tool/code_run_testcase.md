@@ -70,9 +70,25 @@ run_testcase
         }                                                                                             
       }                                                                                               
 ----} 
-                                                                                  
---start_servers                   
---do_before_run_mysqltest         
+    # Write the new my.cnf                                                         
+----$config->save($path_config_file);                                              
+                                                                                   
+    # Remember current config so a restart can occur when a test need              
+    # to use a different one                                                       
+----$current_config_name = $tinfo->{template_path};                                
+                                                                                   
+    # Set variables in the ENV section                                             
+----foreach my $option ($config->options_in_group("ENV")) {                        
+      # Save old value to restore it before next time                              
+      $old_env{ $option->name() } = $ENV{ $option->name() };                       
+      mtr_verbose($option->name(), "=", $option->value());                         
+      $ENV{ $option->name() } = $option->value();                                  
+----}                                                                              
+                                                                                
+--start_servers  
+                 
+--do_before_run_mysqltest   
+      
 --start_mysqltest
 ```
 
@@ -82,4 +98,17 @@ run_testcase
 main
 --run_worker
 ----run_testcase
+```
+
+#3. start_mysqltest
+
+```cpp
+start_mysqltest
+--my $proc = My::SafeProcess->new(name   => "mysqltest",
+                                  path   => $exe,
+                                  args   => \$args,
+                                  append => 1,
+                                  @redirect_output,
+                                  error   => $path_current_testlog,
+                                  verbose => $opt_verbose,);
 ```
