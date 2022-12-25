@@ -1,4 +1,5 @@
 #1.handle_select(查询优化器整体流程)
+![优化器主干流程](./images/handle_select.png)
 
 ```
 handle_select(){//第1层
