@@ -115,7 +115,8 @@ JOIN::optimize()
 
 ```
 
-#2.comments
+#2.caller
+![](../images/optimize_caller.png)
 
 ```cpp
 /**
