@@ -71,3 +71,5 @@ if (select_lex-＞master_unit()-＞item && //子查询
 
 #3.caller
 
+![] (../images/prepare_caller.png)
+
