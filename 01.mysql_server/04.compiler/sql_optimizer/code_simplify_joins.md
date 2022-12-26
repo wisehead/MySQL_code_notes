@@ -8,6 +8,15 @@ JOIN::optimize
 #2.comments
 
 ```cpp
+/*
+simplify_joins函数用于连接化简，其主要工作包括两个方面，一是外连接消除，二是嵌套连接消除。
+
+外连接消除，把可以转换为内连接的外连接进行转换。对于以嵌套形式存在的外连接也进行处理。
+
+具体优化方式参见如下情形一。嵌套连接消除，把一些用于表示嵌套的括号尽可能消除。
+
+具体优化方式参见如下情形二。
+*/
 /**
   Simplify joins replacing outer joins by inner joins whenever it's
   possible.
