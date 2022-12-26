@@ -5,7 +5,68 @@ JOIN::optimize
 --simplify_joins
 ```
 
-#2.comments
+#2.code flow
+
+```cpp
+static COND *
+simplify_joins(JOIN *join, List＜TABLE_LIST＞ *join_list, Item *conds, bool top,
+                               bool in_sj, Item **new_conds, uint *changelog)
+{
+...
+        while ((table= li++)) //第一部分：对连接处理,转换外连接为内连接
+        {
+                ...
+                if ((nested_join= table-＞nested_join))
+                {
+                        if (table-＞join_cond()) //如果表上有连接条件表达式,消除其中可能的外连接
+                        {
+                                Item *join_cond= table-＞join_cond();
+                                //递归调用simplify_joins的conds参数table-＞join_cond()
+                                if (simplify_joins(join, &nested_join-＞join_list,
+                                        join_cond, false, in_sj || table-＞sj_on_expr,
+                                        &join_cond, changelog));
+                                        DBUG_RETURN(true);
+                                ...
+                        }
+...
+                        //有嵌套连接存在,递归处理嵌套连接的情况。参数与前面的递归调用不同
+                        if ( simplify_joins(join, &nested_join-＞join_list, conds, top,
+                                           in_sj || table-＞sj_on_expr, &conds, changelog))
+                                DBUG_RETURN(true);...
+                } // if ((nested_join= table-＞nested_join))结束
+                else{...}
+                ...
+                //如果是内表(a left join b,b为内表)
+                if (!table-＞outer_join || (used_tables & not_null_tables))
+                {...
+                        /* 对于内接的内表,在WHERE或ON表达式上存在有包含连接谓词的嵌入式的嵌套连接,且有空值拒绝的条件在内表的列上,则这样的外连接可以被转换为内连接 */
+                        if (table-＞join_cond())
+                        {
+                                //外连接转为内连接,代码中的实现是把条件放到WHERE子句的条件上
+                                if (conds)
+                                {
+                                        Item_cond_and *new_cond=
+                                                static_cast＜Item_cond_and*＞(and_conds(conds, table-＞join_cond()));
+                                        ...
+                                } else{...}
+...
+                        }
+                } //对内表的处理结束
+                /* 如果top为false,则循环继续执行,这意味着本轮次(本次函数被调用)第一个simplify_joins递归结束。即table上的table-＞on_expr被逐层处理完毕(因为可能有多层的嵌套)*/
+                if (!top)
+                        continue;
+                //经过上面的代码处理后,如果表上还有表达式,则对应的是不可以再转换的外连接的内表
+                if (table-＞on_expr){...}
+...
+        }//第一部分结束,遍历所有表结束
+        /* 第二部分：可以转换为内连接的外连接全部处理完毕,扁平化可被扁平处理的连接,消除嵌套连接 */
+        /* 没有连接条件且不是半连接的,都可以被扁平化处理 */
+        while ((table= li++)) {...}
+...
+}
+```
+
+#3.comments
 
 ```cpp
 /*
