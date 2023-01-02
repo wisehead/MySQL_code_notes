@@ -1,0 +1,10 @@
+#1.update_ref_and_keys
+
+```cpp
+
+update_ref_and_keys函数通过调用add_key_fields函数找出可用的索引，以备使用。找出索引信息，是为了利用索引快速完成查询。
+
+由于update_ref_and_keys函数主要通过调用add_key_fields来完成相应功能的，所以这里就不给出update_ref_and_keys函数的代码了。
+
+下面重点分析一下add_key_fields函数。add_key_fields函数用于处理key集合，确认这个key集合中的单个key上是否有索引可以使用。add_key_fields函数通过调用add_key_field完成单个key上索引是否可用的判断。
+```
