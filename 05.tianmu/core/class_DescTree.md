@@ -8,7 +8,7 @@
 class DescTree {
  public:
   DescTreeNode *root, *curr;
-...ß
+...
 ...  
 };  
 ```
