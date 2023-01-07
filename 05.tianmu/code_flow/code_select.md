@@ -25,5 +25,6 @@ mysql_execute_command
 --------------cq->BuildTableIDStepsMap();
 --------------AddGlobalOrderByFields
 ------------Tianmu::core::Query::Preexecute
-------------
+------------Tianmu::core::TempTable::Materialize
+------------sender->Finalize(result);
 ```
