@@ -9,4 +9,21 @@ mysql_execute_command
 --------Tianmu::core::Engine::IsTIANMURoute
 ----------if (!IsTianmuTable(tl->table))
 ------------has_TIANMUTable = true;
+--------lock_tables
+--------Tianmu::core::optimize_select
+----------st_select_lex::prepare
+----------JOIN::optimize
+----------Tianmu::core::Engine::Execute
+------------Tianmu::core::Query::Compile
+--------------Tianmu::core::Query::AddJoins
+--------------AddFields
+--------------AddGroupByFields
+--------------AddOrderByFields
+--------------BuildConditions
+--------------AddConds
+--------------ApplyConds
+--------------cq->BuildTableIDStepsMap();
+--------------AddGlobalOrderByFields
+------------Tianmu::core::Query::Preexecute
+------------
 ```
