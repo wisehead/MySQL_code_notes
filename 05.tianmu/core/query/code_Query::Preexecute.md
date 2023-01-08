@@ -26,4 +26,6 @@ Query::Preexecute
                         ->AddVirtColumn(
                             new vcolumn::SingleColumn(phc, mind, step.t2.n, step.a2.n, ta[-step.t2.n - 1].get(), dim),
                             step.a1.n);
+------case CompiledQuery::StepType::ADD_COLUMN: 
+--------                            
 ```
