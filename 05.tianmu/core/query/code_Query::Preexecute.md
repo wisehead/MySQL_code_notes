@@ -20,5 +20,5 @@ Query::Preexecute
 ------case CompiledQuery::StepType::CREATE_VC: 
 --------else if (step.a2.n != common::NULL_VALUE_32) {
 ----------JustATable *t_src = ta[-step.t2.n - 1].get();
-----------
+----------MultiIndex *mind = (step.t2.n == step.t1.n) ? t->GetOutputMultiIndexP() : t->GetMultiIndexP();
 ```
