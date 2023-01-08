@@ -21,4 +21,9 @@ Query::Preexecute
 --------else if (step.a2.n != common::NULL_VALUE_32) {
 ----------JustATable *t_src = ta[-step.t2.n - 1].get();
 ----------MultiIndex *mind = (step.t2.n == step.t1.n) ? t->GetOutputMultiIndexP() : t->GetMultiIndexP();
+----------phc = (PhysicalColumn *)t_src->GetColumn(step.a2.n >= 0 ? step.a2.n : -step.a2.n - 1);
+----------int c = ((TempTable *)ta[-step.t1.n - 1].get())
+                        ->AddVirtColumn(
+                            new vcolumn::SingleColumn(phc, mind, step.t2.n, step.a2.n, ta[-step.t2.n - 1].get(), dim),
+                            step.a1.n);
 ```
