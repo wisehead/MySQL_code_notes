@@ -17,4 +17,8 @@ Query::Preexecute
 ----------TempTable::Create
 ------------new TempTable(t, alias, q)
 --------((TempTable *)ta[-step.t1.n - 1].get())->ReserveVirtColumns(qu.NumOfVirtualColumns(step.t1));
+------case CompiledQuery::StepType::CREATE_VC: 
+--------else if (step.a2.n != common::NULL_VALUE_32) {
+----------JustATable *t_src = ta[-step.t2.n - 1].get();
+----------
 ```
