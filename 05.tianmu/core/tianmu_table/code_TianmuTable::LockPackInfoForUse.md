@@ -2,5 +2,12 @@
 
 ```
 TianmuTable::LockPackInfoForUse
---TraceableObject::Lock
+--for (auto &attr : m_attrs) 
+----TraceableObject::Lock
+----attr->TrackAccess();
+------TraceableObject:: TrackAccess
+--------Instance()->TrackAccess(this);
+----------MemoryHandling::TrackAccess
+------------_releasePolicy->Access(o);
+--------------
 ```
