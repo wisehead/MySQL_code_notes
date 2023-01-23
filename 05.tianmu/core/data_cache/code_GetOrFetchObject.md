@@ -2,9 +2,19 @@
 
 ```
 GetOrFetchObject
+--auto &c(cache<U>());
+----DataCache::cache
+------return _packs
+--auto &w(waitIO<U>());
+----DataCache::waitIO
+------return (_packPendingIO);
+--auto &cond(condition<U>());
+----DataCache::condition<PackCoordinate>()
+------return (_packWaitIO);
 --fetcher_->Fetch(coord_);
 ----TianmuAttr::Fetch
 ------dpn = m_share->get_dpn_ptr(pc_dp(pc));
+--obj->SetOwner(this);
 
 ```
 
@@ -18,4 +28,14 @@ TianmuAttr::LockPackForUse
 ```cpp
 using PackCoordinate = ObjectId<COORD_TYPE::PACK, 3>;
 //table, column, data pack
+```
+
+#4. PackContainer
+```cpp
+using PackContainer = std::unordered_map<PackCoordinate, TraceableObjectPtr, PackCoordinate>;
+```
+
+#5. IOPackReqSet
+```cpp
+using IOPackReqSet = std::unordered_set<PackCoordinate, PackCoordinate>;
 ```
