@@ -21,7 +21,11 @@ TempTable::SendResult
 ----------col_->GetNotNullValueString(mit[dim_], s);
 ------------TempTable::GetNotNullValueString
 --------------TempTable::Attr::GetValueString
---ResultSender::SendRow
+----ResultSender::SendRow
+--//end while
+--for (auto &attr : attrs) {
+----attr->term.vc->UnlockSourcePacks();
+--}
 ```
 
 #2.ResultSender::SendRow
