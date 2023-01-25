@@ -3,6 +3,8 @@
 ```
 TempTable::SendResult
 --while (it.IsValid() && row < no_obj) 
+----if (it.PackrowStarted() || first_row_for_vc) 
+------for (auto &attr : attrs) attr->term.vc->LockSourcePacks(it);
 ----std::vector<std::unique_ptr<types::TianmuDataType>> record;
 ----for (uint att = 0; att < NumOfDisplaybleAttrs(); ++att) {
 ------Attr *col = GetDisplayableAttrP(att);

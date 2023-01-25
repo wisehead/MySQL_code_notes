@@ -15,5 +15,10 @@ TempTable::Materialize
 ------local_limit = no_obj;
 ----output_mind.Clear();
 ----output_mind.AddDimension_cross(local_limit);
- 
+----CalculatePageSize
+----if (CanOrderSources())
+------TempTable::OrderByAndMaterialize
+----if (!materialized_by_ordering)
+------if (order_by.size() == 0)
+--------FillMaterializedBuffers(local_limit, local_offset, sender, lazy); 
 ```
