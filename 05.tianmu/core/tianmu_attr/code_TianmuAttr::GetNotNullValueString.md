@@ -9,4 +9,5 @@ TianmuAttr::GetNotNullValueString
 ------return reinterpret_cast<PackStr *>(get_pack(i)); 
 --------TianmuAttr::get_pack
 ----return cur_pack->GetValueBinary(offset);
+------PackStr::GetValueBinary
 ```
