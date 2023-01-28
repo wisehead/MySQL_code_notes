@@ -18,4 +18,5 @@ SELECT_LEX::prepare
       DBUG_RETURN(true); 
 --if (with_wild && setup_wild(thd))
 ----DBUG_RETURN(true);
+--setup_ref_array(thd)
 ```
