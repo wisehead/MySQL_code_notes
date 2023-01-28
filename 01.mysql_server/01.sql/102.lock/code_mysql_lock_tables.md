@@ -19,7 +19,13 @@ mysql_lock_tables
 ----handler::ha_external_lock
 ------ha_innobase::external_lock
 --------ha_innobase::external_lock//todo ........？？？？？？？？
---thr_multi_lock
+--memcpy(sql_lock->locks + sql_lock->lock_count, sql_lock->locks,
+         sql_lock->lock_count * sizeof(*sql_lock->locks));
+  /* Lock on the copied half of the lock data array. */
+--rc= thr_lock_errno_to_mysql[(int) thr_multi_lock(sql_lock->locks +
+                                                   sql_lock->lock_count,
+                                                   sql_lock->lock_count,
+                                                   &thd->lock_info, timeout)];
 ```
 
 #2.ha_innobase::external_lock//todo
@@ -36,7 +42,8 @@ mysql_lock_tables
 --(! (sql_lock= get_lock_data(thd, tables, count, GET_LOCK_STORE_LOCKS)))
 --(sql_lock->table_count && lock_external(thd, sql_lock->table,
                                              sql_lock->table_count))
-
+----for (pos=data,end=data+count; pos < end ; pos++)
+------result= thr_lock(*pos, owner, (*pos)->type,lock_wait_timeout);
 ```
 
 #4.get_lock_data
