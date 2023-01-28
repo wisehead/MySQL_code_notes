@@ -34,6 +34,8 @@ mysql_lock_tables
 --------if (t->reginfo.lock_type >= TL_WRITE_ALLOW_WRITE &&
         check_readonly(thd, true))
 --(! (sql_lock= get_lock_data(thd, tables, count, GET_LOCK_STORE_LOCKS)))
+--(sql_lock->table_count && lock_external(thd, sql_lock->table,
+                                             sql_lock->table_count))
 
 ```
 
