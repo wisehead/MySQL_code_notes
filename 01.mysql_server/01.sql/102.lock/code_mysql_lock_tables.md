@@ -44,6 +44,7 @@ mysql_lock_tables
                                              sql_lock->table_count))
 ----for (pos=data,end=data+count; pos < end ; pos++)
 ------result= thr_lock(*pos, owner, (*pos)->type,lock_wait_timeout);
+--thd->set_time_after_lock();
 ```
 
 #4.get_lock_data
