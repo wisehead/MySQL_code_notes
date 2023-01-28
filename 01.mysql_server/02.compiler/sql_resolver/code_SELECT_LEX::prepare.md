@@ -24,4 +24,8 @@ SELECT_LEX::prepare
 --thd->mark_used_columns= MARK_COLUMNS_READ;
 --thd->want_privilege= SELECT_ACL;
 --setup_conds
+--if (group_list.elements && setup_group(thd))
+    DBUG_RETURN(true);
+--flatten_subqueries
+--apply_local_transforms
 ```
