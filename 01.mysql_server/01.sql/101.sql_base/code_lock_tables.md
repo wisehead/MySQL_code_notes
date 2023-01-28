@@ -9,4 +9,6 @@ lock_tables
             table->table->s->tmp_table != NO_TMP_TABLE))
 -------- *(ptr++)= table->table;
 ----(thd->lock= mysql_lock_tables(thd, start, (uint) (ptr - start),flags)))
+--thd->lex->lock_tables_state= Query_tables_list::LTS_LOCKED;
+--int ret= thd->decide_logging_format(tables);
 ```
