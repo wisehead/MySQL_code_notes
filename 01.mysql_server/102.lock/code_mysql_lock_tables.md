@@ -60,6 +60,12 @@ get_lock_data
     locks= table->file->store_lock(thd, locks,
                                    (flags & GET_LOCK_UNLOCK) ? TL_IGNORE :
                                    lock_type);
+----if (flags & GET_LOCK_STORE_LOCKS)
+------table->lock_position=   (uint) (to - table_buf);
+------table->lock_data_start= (uint) (locks_start - locks_buf);
+------table->lock_count=      (uint) (locks - locks_start);
+----*to++= table;
+--sql_lock->lock_count= locks - locks_buf;
 ```
 
 
