@@ -19,4 +19,6 @@ SELECT_LEX::prepare
 --if (with_wild && setup_wild(thd))
 ----DBUG_RETURN(true);
 --setup_ref_array(thd)
+--setup_fields(thd, ref_ptrs, fields_list, thd->want_privilege,
+                   &all_fields, true, false)
 ```
