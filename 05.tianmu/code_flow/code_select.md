@@ -10,6 +10,7 @@ mysql_execute_command
 ----------if (!IsTianmuTable(tl->table))
 ------------has_TIANMUTable = true;
 --------lock_tables
+--------query_cache.store_query(thd, thd->lex->query_tables);
 --------Tianmu::core::optimize_select
 ----------st_select_lex::prepare
 ----------JOIN::optimize
