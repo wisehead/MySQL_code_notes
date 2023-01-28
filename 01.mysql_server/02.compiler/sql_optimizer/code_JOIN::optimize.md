@@ -1,4 +1,4 @@
-#1.JOIN::optimize
+#1.JOIN::optimize notes
 
 ```
 int
@@ -131,3 +131,23 @@ JOIN::optimize()
     1   error
 */
 ```
+
+#3.JOIN::optimize for tianmu
+
+```
+JOIN::optimize
+--if(part != 4) {
+----if (part==0 || part==1)
+------count_field_types
+```
+
+
+
+
+
+
+
+
+
+
+
