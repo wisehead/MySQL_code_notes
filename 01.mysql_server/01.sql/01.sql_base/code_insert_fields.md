@@ -18,9 +18,13 @@ insert_fields
 ------if (!found)
 --------found= true;
 --------it->replace(item); /* Replace '*' with the first found item. */
+------else
+--------it->after(item);   /* Add 'item' to the SELECT list. */
 ------thd->lex->used_tables|= item->used_tables();
 ------thd->lex->current_select()->select_list_tables|= item->used_tables();
 ------Field *const field= field_iterator.field();
 ------if (field)
 --------field->table->mark_column_used(thd, field, thd->mark_used_columns);
+--if (found)
+    DBUG_RETURN(FALSE);
 ```
