@@ -9,4 +9,6 @@ SELECT_LEX::setup_wild
 ------insert_fields(thd, item_field->context,
                           item_field->db_name, item_field->table_name,
                           &it, any_privileges)   
+----all_fields.elements+= fields_list.elements - elem;
+----with_wild--;
 ```
