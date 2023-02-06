@@ -17,10 +17,22 @@ TempTable::SendResult
 ------} else if (ATI::IsRealType(ct)) {
 ------} else if (ATI::IsDateTimeType(ct)) {
 ------else
---------vc->GetNotNullValueString(*data_ptr, it);//SingleColumn
-----------col_->GetNotNullValueString(mit[dim_], s);
-------------TempTable::GetNotNullValueString
---------------TempTable::Attr::GetValueString
+--------if (vc->IsNull(it))
+----------IsNullImpl
+------------IsNull//tianmu_attr.h
+--------------pack = row2pack(obj);
+--------------get_dpn(pack);
+--------------if (!dpn.Trivial()) {
+----------------get_pack(pack)->IsNull(row2offset(obj));
+------------------IsNull//pack
+--------------------return ((nulls_ptr_[locationInPack >> 5] & ((uint32_t)(1) << (locationInPack % 32))) != 0);
+----------data_ptr->SetToNull();
+------------null_ = true; //class TianmuDataType
+--------else
+----------vc->GetNotNullValueString(*data_ptr, it);//SingleColumn
+------------col_->GetNotNullValueString(mit[dim_], s);
+--------------TempTable::GetNotNullValueString
+----------------TempTable::Attr::GetValueString
 ----ResultSender::SendRow
 --//end while
 --for (auto &attr : attrs) {

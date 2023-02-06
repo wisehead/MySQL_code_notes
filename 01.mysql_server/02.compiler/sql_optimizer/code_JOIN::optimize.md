@@ -139,6 +139,8 @@ JOIN::optimize
 --if(part != 4) {
 ----if (part==0 || part==1)
 ------count_field_types
+------alloc_func_list
+------elect_lex->get_optimizable_conditions(thd, &where_cond, &having_cond)
 ```
 
 
