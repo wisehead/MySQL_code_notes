@@ -10,7 +10,20 @@ execution.
 */
 
 Engine::HandleSelect
---optimize_select
+--if (!IsTIANMURoute)
+----return QueryRouteTo::kToMySQL;
+--lock_tables
+--query_cache.store_query(thd, thd->lex->query_tables);
+--if (thd->fill_derived_tables() && lex->derived_tables) 
+----//return !stmt_arena->is_stmt_prepare() && !lex->only_view_structure();
+----for (SELECT_LEX *sl = lex->all_selects_list; sl; sl = sl->next_select_in_list())        // for all selects
+------for (TABLE_LIST *cursor = sl->get_table_list(); cursor; cursor = cursor->next_local)  // for all tables
+--------if (cursor->table && cursor->is_view_or_derived()) {  // data source (view or FROM subselect)
+--if (select_lex->next_select()) {  // it is union
+--else
+----unit->set_limit(unit->global_parameters());
+----optimize_select
+
 ```
 
 #2.caller
