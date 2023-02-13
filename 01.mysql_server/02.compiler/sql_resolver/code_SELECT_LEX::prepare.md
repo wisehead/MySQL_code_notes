@@ -13,6 +13,8 @@ SELECT_LEX::prepare
       outer_select()->allow_merge_derived);
 --if (!(active_options() & OPTION_SETUP_TABLES_DONE))
 ----setup_tables(thd, get_table_list(), false)
+----if (derived_table_count && resolve_derived(thd, true))
+------DBUG_RETURN(true);
 ----if (!thd->derived_tables_processing &&
         check_view_privileges(thd, SELECT_ACL, SELECT_ACL))
       DBUG_RETURN(true); 
