@@ -18,5 +18,11 @@ st_select_lex_unit::prepare
 ----sl->fields_list= sl->item_list;
 ----added_options&= ~OPTION_SETUP_TABLES_DONE;
 ----thd_arg->lex->set_current_select(sl);
-
+----if (sl->prepare(thd_arg))
+      goto err;
+----if (simple_query_expression)
+------types= first_select()->item_list;
+--//end for
+--thd_arg->lex->set_current_select(lex_select_save);
+--set_prepared
 ```
