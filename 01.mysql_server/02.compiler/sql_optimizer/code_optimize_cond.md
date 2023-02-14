@@ -6,6 +6,12 @@ optimize_cond
 --if (part == 0 || part == 1)
 ----if (join_list) 
 ------build_equal_items
+--if (*cond)
+----if (part==0 || part==1)
+------propagate_cond_constants
+--if (*cond)
+----remove_eq_conds
+------internal_remove_eq_conds
 ```
 
 #2.code flow

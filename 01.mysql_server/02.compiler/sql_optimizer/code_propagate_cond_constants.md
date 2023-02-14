@@ -1,3 +1,12 @@
+#0.code
+
+```
+propagate_cond_constants
+--if (cond->type() == Item::COND_ITEM)
+--else if (and_father != cond && !cond->marker)// In a AND group
+----
+```
+
 #1.propagate_cond_constants
 
 ```cpp
