@@ -1,8 +1,11 @@
 #1.optimize_cond
 
 ```
-JOIN::optimize
---optimize_cond
+//caller: JOIN::optimize
+optimize_cond
+--if (part == 0 || part == 1)
+----if (join_list) 
+------build_equal_items
 ```
 
 #2.code flow
