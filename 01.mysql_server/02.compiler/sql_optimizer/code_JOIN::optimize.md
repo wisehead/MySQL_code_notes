@@ -147,6 +147,10 @@ JOIN::optimize
 ------------DBUG_RETURN(1);
 ------if (where_cond || select_lex->outer_join)
 --------optimize_cond
+------get_sort_by_table
+------substitute_gc
+------make_join_plan
+------
 ```
 
 
