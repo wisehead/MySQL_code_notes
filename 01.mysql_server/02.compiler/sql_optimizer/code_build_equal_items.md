@@ -4,6 +4,30 @@
 build_equal_items
 --if (cond) 
 ----build_equal_items_for_cond
+----cond->update_used_tables()
+```
+
+#1.build_equal_items_for_cond
+```
+build_equal_items_for_cond
+--check_stack_overrun
+--if (cond_type == Item::COND_ITEM)
+--else if (cond->type() == Item::FUNC_ITEM)
+----check_equality
+------if (item->type() == Item::FUNC_ITEM &&
+      (item_func= down_cast<Item_func *>(item))->functype() ==
+      Item_func::EQ_FUNC)
+--------Item *left_item= item_func->arguments()[0];
+--------Item *right_item= item_func->arguments()[1];
+--------check_simple_equality
+----------if (left_item->type() == Item::FIELD_ITEM &&
+      right_item->type() == Item::FIELD_ITEM &&
+      (left_item_field= down_cast<Item_field *>(left_item)) &&
+      (right_item_field= down_cast<Item_field *>(right_item)) &&
+      !left_item_field->depended_from &&
+      !right_item_field->depended_from)
+------------......
+----
 ```
 
 #1.build_equal_items
