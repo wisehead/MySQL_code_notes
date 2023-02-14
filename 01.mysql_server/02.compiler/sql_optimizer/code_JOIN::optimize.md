@@ -1,6 +1,6 @@
 #1.JOIN::optimize notes
 
-```
+```cpp
 int
 JOIN::optimize()
 {...
@@ -140,7 +140,11 @@ JOIN::optimize
 ----if (part==0 || part==1)
 ------count_field_types
 ------alloc_func_list
-------elect_lex->get_optimizable_conditions(thd, &where_cond, &having_cond)
+------select_lex->get_optimizable_conditions(thd, &where_cond, &having_cond)
+------if (select_lex->materialized_derived_table_count)
+--------for (TABLE_LIST *tl= select_lex->leaf_tables; tl; tl= tl->next_leaf)
+----------if (tl->is_view_or_derived() && tl->optimize_derived(thd))
+------------DBUG_RETURN(1);
 ```
 
 

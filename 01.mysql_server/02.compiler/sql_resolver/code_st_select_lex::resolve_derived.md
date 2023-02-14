@@ -19,4 +19,6 @@ st_select_lex::resolve_derived
 --for (TABLE_LIST *tl= get_table_list(); tl; tl= tl->next_local)
 ----if (tl->setup_materialized_derived(thd))
       DBUG_RETURN(true);
+----materialized_derived_table_count++;
+----
 ```
