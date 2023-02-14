@@ -5,6 +5,19 @@ build_equal_items
 --if (cond) 
 ----build_equal_items_for_cond
 ----cond->update_used_tables()
+------Item_equal::update_used_tables
+----if (cond_type == Item::COND_ITEM &&
+        down_cast<Item_cond *>(cond)->functype() == Item_func::COND_AND_FUNC)
+      cond_equal= &down_cast<Item_cond_and *>(cond)->cond_equal;
+----else if (cond_type == Item::FUNC_ITEM &&
+         down_cast<Item_func *>(cond)->functype() == Item_func::MULT_EQUAL_FUNC)
+------cond_equal= new COND_EQUAL;
+------if (cond_equal == NULL)
+        return true;
+------cond_equal->current_level.push_back(down_cast<Item_equal *>(cond));
+--if (join_list)
+----while ((table= li++))
+------if (table->join_cond_optim())
 ```
 
 #1.build_equal_items_for_cond
