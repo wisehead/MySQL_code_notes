@@ -145,6 +145,8 @@ JOIN::optimize
 --------for (TABLE_LIST *tl= select_lex->leaf_tables; tl; tl= tl->next_leaf)
 ----------if (tl->is_view_or_derived() && tl->optimize_derived(thd))
 ------------DBUG_RETURN(1);
+------if (where_cond || select_lex->outer_join)
+--------optimize_cond
 ```
 
 
