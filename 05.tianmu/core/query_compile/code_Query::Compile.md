@@ -11,4 +11,5 @@ Query::Compile
             throw CompilationError();
 --------AddTable(m_conn->GetTableByPath(path));
 ----AddJoins
+----AddFields
 ```
