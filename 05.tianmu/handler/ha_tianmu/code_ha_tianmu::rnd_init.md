@@ -9,5 +9,7 @@ ha_tianmu::rnd_init
 ----else
 ------ha_tianmu_engine_->GetTableIterator(table_name_, table_new_iter_, table_new_iter_end_, rctp,
                                             GetAttrsUseIndicator(table), table->in_use);
-------
+------table_ptr_ = rctp.get();
+------filter_ptr_.reset();
+
 ```
