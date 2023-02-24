@@ -7,5 +7,8 @@ Engine::GetTableIterator
 ----TianmuTable::Iterator::CreateBegin
 ------ret.Initialize(attrs);
 ------ret.it.Rewind();
+------if (ret.it.IsValid())
+--------ret.position = *(ret.it);
+------ret.conn = current_txn_;
 --iter_end = table->End();
 ```
