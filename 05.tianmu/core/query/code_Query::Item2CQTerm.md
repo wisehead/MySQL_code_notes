@@ -9,4 +9,9 @@ Query::Item2CQTerm
 ----} else if (an_arg->type() == Item::VARBIN_ITEM) {
 ----else
 ------WrapMysqlExpression
+------vc.n = VirtualColumnAlreadyExists(tmp_table, expr);
+------if (vc.n == common::NULL_VALUE_32) {
+--------cq->CreateVirtualColumn(vc, tmp_table, expr);
+--------tab_id2expression.insert(std::make_pair(tmp_table, std::make_pair(vc.n, expr)));
+----term = CQTerm(vc.n, an_arg);
 ```
