@@ -22,4 +22,5 @@ Query::Compile
 ----------AddTable(m_conn->GetTableByPath(path));
 ----AddJoins
 ----AddFields
+----BuildConditions
 ```
