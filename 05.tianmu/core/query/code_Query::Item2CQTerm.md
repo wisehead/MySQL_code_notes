@@ -6,6 +6,8 @@ Query::Item2CQTerm
 --if (filter_type == CondType::HAVING_COND) {
 --else
 ----if (IsFieldItem(an_arg) && cq->ExistsInTempTable(tab, tmp_table)) {
+------auto phys_vc = VirtualColumnAlreadyExists(tmp_table, tab, col);
+------vc.n = phys_vc.second;
 ----} else if (an_arg->type() == Item::VARBIN_ITEM) {
 ----else
 ------WrapMysqlExpression
