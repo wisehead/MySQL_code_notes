@@ -7,7 +7,10 @@ Query::FieldUnmysterify
 ----Item *tmp_item = UnRef(is->get_arg(0));
 ----if (tmp_item->type() == Item::FIELD_ITEM)
 ------ifield = (Item_field *)tmp_item;
+--} else if (item->type() == Item::FIELD_ITEM)
+----ifield = (Item_field *)item;
 --for (; it != it_end; it++) {
 ----if (!mysql_table->pos_in_table_list->is_view_or_derived()) {
 ------col = AttrID(field_num);
+------return true;
 ```
