@@ -40,8 +40,12 @@ Query::Preexecute
 
 ------case CompiledQuery::StepType::APPLY_CONDS: {
 --------ParameterizedFilter *filter = tb->GetFilterP();
---------
-
+--------std::set<int> used_dims = qu.GetUsedDims(step.t1, ta);
+--------for (int i = 0; i < filter->mind_->NumOfDimensions(); i++) {
+----------(used_dims.find(i) == used_dims.end() && is_simple_filter && (!tb->CanCondPushDown()))
+                ? filter->mind_->ResetUsedInOutput(i)
+                : filter->mind_->SetUsedInOutput(i);
+--------filter->UpdateMultiIndex(qu.CountColumnOnly(step.t1), cur_limit);
 
 ------case CompiledQuery::StepType::CREATE_VC: 
 --------if (step.mysql_expr.size() > 0) {
