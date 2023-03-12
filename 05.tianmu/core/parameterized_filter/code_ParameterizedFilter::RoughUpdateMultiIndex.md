@@ -11,5 +11,11 @@ ParameterizedFilter::RoughUpdateMultiIndex
 ------descriptors_[i].DimensionUsed(dims);
 ------int dim = dims.GetOneDim();
 ------common::RoughSetValue *rf = rough_mind_->GetLocalDescFilter(dim, i);
+------descriptors_[i].ClearRoughValues(); 
+------while (mit.IsValid()) 
+--------int p = mit.GetCurPackrow(dim);
+----------return cur_pack[dim]
+--------if (p >= 0 && rf[p] != common::RoughSetValue::RS_NONE)
+----------rf[p] = descriptors_[i].EvaluateRoughlyPack(mit);  // rough values are also accumulated inside
 ```
 
