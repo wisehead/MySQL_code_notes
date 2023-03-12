@@ -32,6 +32,17 @@ Query::Preexecute
 ----------if (step.c2.IsNull()) 
 ------------conds[step.c1.n]->AddDescriptor(
 
+------case CompiledQuery::StepType::ADD_CONDS: {
+--------if (step.n1 != static_cast<int64_t>(CondType::HAVING_COND))
+----------conds[step.c1.n]->Simplify();
+--------AddConds
+----------filter.AddConditions(cond, CondType::WHERE_COND);
+
+------case CompiledQuery::StepType::APPLY_CONDS: {
+--------ParameterizedFilter *filter = tb->GetFilterP();
+--------
+
+
 ------case CompiledQuery::StepType::CREATE_VC: 
 --------if (step.mysql_expr.size() > 0) {
 ----------MultiIndex *mind = (step.t2.n == step.t1.n) ? t->GetOutputMultiIndexP() : t->GetMultiIndexP();
