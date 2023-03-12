@@ -23,4 +23,11 @@ Query::Compile
 ----AddJoins
 ----AddFields
 ----BuildConditions
+----cq->AddConds(tmp_table, cond_id, CondType::WHERE_COND);
+----BuildConditions(having, cond_id, cq, tmp_table, CondType::HAVING_COND))
+----cq->AddConds(tmp_table, cond_id, CondType::HAVING_COND);
+----cq->ApplyConds(tmp_table);
+--//end for
+--cq->BuildTableIDStepsMap();
+--cq->Result(prev_result);
 ```
