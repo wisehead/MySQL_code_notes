@@ -20,4 +20,5 @@ ParameterizedFilter::UpdateMultiIndex
 --for (uint i = 0; i < descriptors_.Size(); i++) {
 ----//do nothing
 --PrepareRoughMultiIndex
+--nonempty = RoughUpdateMultiIndex();  // calculate all rough conditions,
 ```
