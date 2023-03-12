@@ -7,9 +7,15 @@ Query::Preexecute
 --global_limits = qu.GetGlobalLimit();
 --for (int i = 0; i < qu.NumOfSteps(); i++)
 ----CompiledQuery::CQStep step = qu.Step(i);
+----if (step.t1.n != common::NULL_VALUE_32) {
+------if (step.t1.n >= 0)
+--------t1_ptr = Table(step.t1.n);  // normal table
+------else
+--------t1_ptr = ta[-step.t1.n - 1];  // TempTable
 ----switch (step.type)
 ------case CompiledQuery::StepType::TABLE_ALIAS:
 --------ta[-step.t1.n - 1] = t2_ptr;
+
 ------case CompiledQuery::StepType::TMP_TABLE:
 --------ta[-step.t1.n - 1] = step.n1
                                    ? TempTable::Create(ta[-step.tables1[0].n - 1].get(), step.tables1[0].n, this, true)
@@ -17,21 +23,24 @@ Query::Preexecute
 ----------TempTable::Create
 ------------new TempTable(t, alias, q)
 --------((TempTable *)ta[-step.t1.n - 1].get())->ReserveVirtColumns(qu.NumOfVirtualColumns(step.t1));
+
 ------case CompiledQuery::StepType::CREATE_VC: 
+--------if (step.mysql_expr.size() > 0) {
+----------MultiIndex *mind = (step.t2.n == step.t1.n) ? t->GetOutputMultiIndexP() : t->GetMultiIndexP();
+--------} else if (step.virt_cols.size() > 0) {
 --------else if (step.a2.n != common::NULL_VALUE_32) {
 ----------JustATable *t_src = ta[-step.t2.n - 1].get();
 ----------MultiIndex *mind = (step.t2.n == step.t1.n) ? t->GetOutputMultiIndexP() : t->GetMultiIndexP();
-----------phc = (PhysicalColumn *)t_src->GetColumn(step.a2.n >= 0 ? step.a2.n : -step.a2.n - 1);
-----------int c = ((TempTable *)ta[-step.t1.n - 1].get())
-                        ->AddVirtColumn(
-                            new vcolumn::SingleColumn(phc, mind, step.t2.n, step.a2.n, ta[-step.t2.n - 1].get(), dim),
-                            step.a1.n);
+----------phc = (PhysicalColumn *)t_src->GetColumn();
+----------AddVirtColumn(new vcolumn::SingleColumn)
+                            
 ------case CompiledQuery::StepType::ADD_COLUMN: 
 --------e.vc =((TempTable *)ta[-step.t1.n - 1].get())->GetVirtualColumn(step.e1.vc_id);  
---------step.a1.n = ((TempTable *)ta[-step.t1.n - 1].get())->AddColumn(e, step.cop, step.alias, step.n1 ? true : false, step.si); 
+--------((TempTable *)ta[-step.t1.n - 1].get())->AddColumn(); 
 ----------TempTable::AddColumn
 ------------attrs.push_back(new Attr(e, mode, p_power, distinct, alias, -2, type, scale, precision, notnull,
-                           e.vc ? e.vc->GetCollation() : DTCollation(), &si));                         
+                           e.vc ? e.vc->GetCollation() : DTCollation(), &si));   
+                                                 
 ------case CompiledQuery::StepType::APPLY_CONDS: 
 --------
 ```
