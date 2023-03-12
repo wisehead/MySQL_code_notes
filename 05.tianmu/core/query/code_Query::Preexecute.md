@@ -24,6 +24,14 @@ Query::Preexecute
 ------------new TempTable(t, alias, q)
 --------((TempTable *)ta[-step.t1.n - 1].get())->ReserveVirtColumns(qu.NumOfVirtualColumns(step.t1));
 
+------case CompiledQuery::StepType::CREATE_CONDS:
+--------step.e1.vc = TempTable::GetVirtualColumn(step.e1.vc_id)//where id=2, e1.vc_id = 0, value is id column
+--------step.e2.vc =GetVirtualColumn(step.e2.vc_id)//e2.vc_id =2, value = 2
+--------if (step.n1 != static_cast<int64_t>(CondType::OR_SUBTREE)) {  // on result = false
+----------conds[step.c1.n] = new Condition();
+----------if (step.c2.IsNull()) 
+------------conds[step.c1.n]->AddDescriptor(
+
 ------case CompiledQuery::StepType::CREATE_VC: 
 --------if (step.mysql_expr.size() > 0) {
 ----------MultiIndex *mind = (step.t2.n == step.t1.n) ? t->GetOutputMultiIndexP() : t->GetMultiIndexP();
