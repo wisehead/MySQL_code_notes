@@ -22,4 +22,7 @@ ParameterizedFilter::SyntacticalDescriptorListPreprocessing
 --------ConditionEncoder ce(additional_nulls, desc.table->Getpackpower());
 --------ce(desc);
 --------desc.Simplify();
+----//// descriptor merging
+----for (uint i = 0; i < no_desc; i++) {
+------//do nothing
 ```
