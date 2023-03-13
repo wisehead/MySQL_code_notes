@@ -1,4 +1,12 @@
-#1.remove_eq_conds
+#0.remove_eq_conds
+
+```
+remove_eq_conds
+--internal_remove_eq_conds
+```
+
+
+#1.notes
 
 ```cpp
 /*

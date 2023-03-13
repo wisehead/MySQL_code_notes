@@ -3,7 +3,7 @@
 ```
 //caller: JOIN::optimize
 optimize_cond
---if (part == 0 || part == 1)
+--if (phase == OptimizePhase::Beginning || phase == OptimizePhase::Before_LOJ_Transform)
 ----if (join_list) 
 ------build_equal_items
 --if (*cond)
