@@ -22,5 +22,9 @@ ParameterizedFilter::RoughUpdateMultiIndex
 ------descriptors_[i].UpdateVCStatistics();
 ------descriptors_[i].SimplifyAfterRoughAccumulate();  // simplify tree if there is a
                                                        // roughly trivial leaf
+--// Recalculate all multidimensional dependencies only if there are 1-dim
+  // descriptors_ which can benefit from the projection
+--if (DimsWith1dimFilters())
+----RoughMakeProjections();                                                       
 ```
 
