@@ -21,4 +21,5 @@ ParameterizedFilter::UpdateMultiIndex
 ----//do nothing
 --PrepareRoughMultiIndex
 --nonempty = RoughUpdateMultiIndex();  // calculate all rough conditions,
+--PropagateRoughToMind
 ```
