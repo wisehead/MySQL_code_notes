@@ -22,4 +22,9 @@ ParameterizedFilter::UpdateMultiIndex
 --PrepareRoughMultiIndex
 --nonempty = RoughUpdateMultiIndex();  // calculate all rough conditions,
 --PropagateRoughToMind
+--for (uint i = 0; i < descriptors_.Size(); i++) {
+----if (descriptors_[i].attr.vc) {
+------cur_dim = descriptors_[i].attr.vc->GetDim();
+----// limit should be applied only for the last descriptor
+----ApplyDescriptor(i, (desc_no != no_desc || no_of_delayed_conditions > 0 || no_of_join_conditions) ? -1 : limit);
 ```
