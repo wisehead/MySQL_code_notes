@@ -17,5 +17,7 @@ ParameterizedFilter::RoughUpdateMultiIndex
 ----------return cur_pack[dim]
 --------if (p >= 0 && rf[p] != common::RoughSetValue::RS_NONE)
 ----------rf[p] = descriptors_[i].EvaluateRoughlyPack(mit);  // rough values are also accumulated inside
+--------mit.NextPackrow();
+------rough_mind_->UpdateGlobalRoughFilter(dim, i);  // update the filter using local information
 ```
 
