@@ -18,6 +18,20 @@ ParameterizedFilter::ApplyDescriptor
 --for (int b = 0; b < pack_all; b++) {
 ----if (rough_mind_->GetPackStatus(one_dim, b) != common::RoughSetValue::RS_NONE)
 ------pack_some++;
-
-
+--desc.EvaluateOnIndex(mit, limit)
+--int poolsize = ha_tianmu_engine_->query_thread_pool.size();
+--if ((tianmu_sysvar_threadpoolsize > 0) && (packs_no / poolsize > 0) && !desc.IsType_Subquery() &&
+        !desc.ExsitTmpTable()) 
+--else
+----while (mit.IsValid()) {
+------if (rf && mit.GetCurPackrow(one_dim) >= 0)
+--------cur_roughval = rf[mit.GetCurPackrow(one_dim)];
+------if (cur_roughval == common::RoughSetValue::RS_NONE) {
+          mit.ResetCurrentPack();
+          mit.NextPackrow();
+------} else if (cur_roughval == common::RoughSetValue::RS_ALL) {
+          mit.NextPackrow();
+------} else {
+          // common::RoughSetValue::RS_SOME or common::RoughSetValue::RS_UNKNOWN
+--------desc.EvaluatePack(mit);
 ```
