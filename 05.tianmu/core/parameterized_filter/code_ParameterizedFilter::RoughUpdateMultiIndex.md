@@ -19,5 +19,8 @@ ParameterizedFilter::RoughUpdateMultiIndex
 ----------rf[p] = descriptors_[i].EvaluateRoughlyPack(mit);  // rough values are also accumulated inside
 --------mit.NextPackrow();
 ------rough_mind_->UpdateGlobalRoughFilter(dim, i);  // update the filter using local information
+------descriptors_[i].UpdateVCStatistics();
+------descriptors_[i].SimplifyAfterRoughAccumulate();  // simplify tree if there is a
+                                                       // roughly trivial leaf
 ```
 
