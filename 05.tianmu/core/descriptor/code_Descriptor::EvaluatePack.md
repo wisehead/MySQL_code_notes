@@ -7,4 +7,5 @@ Descriptor::EvaluatePack
 ------if (attr.vc)
 --------attr.vc->LockSourcePacks(mit);//VirtualColumn::LockSourcePacks
 ----------vc_pack_guard_.LockPackrow(mit); //VCPackGuardian::LockPackrow
+--Descriptor::EvaluatePackImpl
 ```
