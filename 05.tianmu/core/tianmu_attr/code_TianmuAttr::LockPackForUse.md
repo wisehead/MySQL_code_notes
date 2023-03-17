@@ -10,7 +10,9 @@ TianmuAttr::LockPackForUse
 ------return
 ----if (dpn->CAS(v, loading_flag)) 
 ------sp = ha_tianmu_engine_->cache.GetOrFetchObject<Pack>(get_pc(pn), this);
-------dpn->SetPackPtr(0);
+------uint64_t newv = reinterpret_cast<unsigned long>(sp.get()) + tag_one;
+------uint64_t expected = loading_flag;
+------dpn->CAS(expected, newv)
 ```
 
 #2.IncRef
