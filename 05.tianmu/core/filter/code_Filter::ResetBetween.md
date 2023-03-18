@@ -7,4 +7,6 @@ Filter::ResetBetween
 ------Commit();
 ------delayed_block = b;
 ------delayed_stats = -1;
+----if (pos == delayed_stats + 1) {
+------delayed_stats++;
 ```
