@@ -27,4 +27,12 @@ ParameterizedFilter::UpdateMultiIndex
 ------cur_dim = descriptors_[i].attr.vc->GetDim();
 ----// limit should be applied only for the last descriptor
 ----ApplyDescriptor(i, (desc_no != no_desc || no_of_delayed_conditions > 0 || no_of_join_conditions) ? -1 : limit);
+----last_desc_dim = cur_dim;
+--rough_mind_->UpdateReducedDimension();
+--mind_->UpdateNumOfTuples();
+--for (int i = 0; i < mind_->NumOfDimensions(); i++) {
+----if (mind_->GetFilter(i))
+------table_->SetVCDistinctVals(i, mind_->GetFilter(i)->NumOfOnes());  // distinct values - not more than the number of rows after WHERE
+--rough_mind_->ClearLocalDescFilters();
+--DescriptorJoinOrdering
 ```
