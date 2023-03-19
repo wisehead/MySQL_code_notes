@@ -14,5 +14,9 @@ Engine::Execute
 --FunctionExecutor lock_and_unlock_pack_info(std::bind(&Query::LockPackInfoForUse, &query),
                                              std::bind(&Query::UnlockPackInfoFromUse, &query));
 --sender.reset(new ResultSender(selects_list->master_unit()->thd, result_output, selects_list->item_list));
---query.Preexecute(cqu, sender.get());                                             
+--query.Preexecute(cqu, sender.get());
+--if (query.IsRoughQuery())
+      result->RoughMaterialize(false, sender.get());
+--else
+----result->Materialize(false, sender.get());                                             
 ```
