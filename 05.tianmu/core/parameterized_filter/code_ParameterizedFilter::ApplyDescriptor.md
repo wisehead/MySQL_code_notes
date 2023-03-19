@@ -36,4 +36,11 @@ ParameterizedFilter::ApplyDescriptor
 --------desc.EvaluatePack(mit);
 ----//end while (mit.IsValid())
 ----mit.Commit();
+--if (one_dim != -1 && mind_->GetFilter(one_dim)) {  // update global rough part
+----for (int p = 0; p < rough_mind_->NumOfPacks(one_dim); p++) {
+------//nothing
+--desc.UpdateVCStatistics();
 ```
+
+
+
