@@ -1,4 +1,4 @@
-#1.Filter::ResetBetween
+#1.Filter::ResetDelayed
 
 ```
 Filter::ResetBetween
