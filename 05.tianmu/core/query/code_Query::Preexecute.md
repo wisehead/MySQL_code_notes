@@ -65,5 +65,10 @@ Query::Preexecute
                            e.vc ? e.vc->GetCollation() : DTCollation(), &si));   
                                                  
 ------case CompiledQuery::StepType::APPLY_CONDS: 
---------
+--------filter->UpdateMultiIndex
+------case CompiledQuery::StepType::RESULT:
+--------output_table = (TempTable *)ta[-step.t1.n - 1].get();
 ```
+
+
+
