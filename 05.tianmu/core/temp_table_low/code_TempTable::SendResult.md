@@ -2,6 +2,9 @@
 
 ```
 TempTable::SendResult
+--for (auto &attr : attrs) { /* materialize dependent tables */
+----if (attr->ShouldOutput()) {
+------has_intresting_columns = true;
 --while (it.IsValid() && row < no_obj) 
 ----if (it.PackrowStarted() || first_row_for_vc) 
 ------for (auto &attr : attrs) attr->term.vc->LockSourcePacks(it);
