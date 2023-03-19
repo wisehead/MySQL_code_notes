@@ -37,6 +37,8 @@ TempTable::SendResult
 --------------TempTable::GetNotNullValueString
 ----------------TempTable::Attr::GetValueString
 ----ResultSender::SendRow
+----row++;
+----++it;
 --//end while
 --for (auto &attr : attrs) {
 ----attr->term.vc->UnlockSourcePacks();

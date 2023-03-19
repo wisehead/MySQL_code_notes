@@ -16,4 +16,6 @@ ResultSender::SendRecord
 ------------else
 --------------if (field->real_maybe_null())
 ----------------field->set_notnull();
+--res->send_data(fields);
+----Query_result_send::send_data(
 ```
