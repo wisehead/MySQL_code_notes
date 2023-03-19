@@ -34,4 +34,6 @@ ParameterizedFilter::ApplyDescriptor
 ------} else {
           // common::RoughSetValue::RS_SOME or common::RoughSetValue::RS_UNKNOWN
 --------desc.EvaluatePack(mit);
+----//end while (mit.IsValid())
+----mit.Commit();
 ```
