@@ -35,4 +35,8 @@ ParameterizedFilter::UpdateMultiIndex
 ------table_->SetVCDistinctVals(i, mind_->GetFilter(i)->NumOfOnes());  // distinct values - not more than the number of rows after WHERE
 --rough_mind_->ClearLocalDescFilters();
 --DescriptorJoinOrdering
+--for (uint i = 0; i < descriptors_.Size(); i++) {
+----if (descriptors_[i].done || descriptors_[i].IsDelayed())
+      continue;
+--mind_->UpdateNumOfTuples();
 ```
