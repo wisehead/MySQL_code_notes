@@ -16,4 +16,6 @@ Filter::ResetBetween
 ----------new (blocks[b1]) Block(block_filter, new_block_size,
                                  true);  // block_filter->this // set as full,
                                          // then reset a part of it
+----if (blocks[b1]) {
+------bool empty = blocks[b1]->Reset(n1, n2);
 ```
