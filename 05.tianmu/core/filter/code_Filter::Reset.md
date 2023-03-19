@@ -7,4 +7,5 @@ Filter::Reset
 ----//nothing
 --if (blocks[b]) {
 ----if (blocks[b]->Reset(n))
+------//nothing
 ```
