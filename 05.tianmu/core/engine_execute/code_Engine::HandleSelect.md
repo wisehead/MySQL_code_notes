@@ -23,6 +23,12 @@ Engine::HandleSelect
 --else
 ----unit->set_limit(unit->global_parameters());
 ----optimize_select
+----route = Execute(thd, lex, result);
+----if (tianmu_free_join) {  // there was a join created in an upper function
+------if (err || route == QueryRouteTo::kToTianmu) {
+--------err |= (int)select_lex->cleanup(0);
+--------is_optimize_after_tianmu = FALSE;
+--------tianmu_free_join = 0;
 
 ```
 
