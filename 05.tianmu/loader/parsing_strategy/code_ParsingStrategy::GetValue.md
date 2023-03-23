@@ -12,5 +12,8 @@ ParsingStrategy::GetValue
 --} else {
 ----types::BString tmp_string(value_ptr, value_size);
 ----function = types::ValueParserForText::GetParsingFuntion(ati);
+----function(tmp_string, *reinterpret_cast<int64_t *>(buffer.Prepare(sizeof(int64_t)))
+------ValueParserForText::ParseNumeric
+--------
 
 ```
