@@ -33,5 +33,10 @@ ParsingStrategy::GetOneRow
 --while ((item = it++)) {
 ----Item *real_item = item->real_item();
 ----if (real_item->type() == Item::FIELD_ITEM)   
-------
+------((Item_field *)real_item)->field->check_constraints(ER_WARN_NULL_TO_NOTNULL);
+--// step4,row is completed, to make the whole row
+--for (uint col = 0; col < attr_infos_.size(); ++col) {
+----auto &ptr_field = vec_ptr_field[col];
+----GetValue(ptr_field.first, ptr_field.second, col, record[col]);
+
 ```
