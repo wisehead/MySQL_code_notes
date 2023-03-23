@@ -22,5 +22,16 @@ ParsingStrategy::GetOneRow
 ----vec_ptr_field.emplace_back(str->ptr(), str->length());
 --while ((item = it++)) {
 ----SearchUnescapedPatternNoEOL   
-----ParsingStrategy::ReadField   
+----ParsingStrategy::ReadField
+----if (res == SearchResult::PATTERN_FOUND) {
+      ptr += delimiter_.size();
+--if (!row_incomplete && !eof) {
+----SearchUnescapedPatternNoEOL
+----if (res != SearchResult::END_OF_BUFFER) {
+------ptr += terminator_.size();
+--it.rewind();
+--while ((item = it++)) {
+----Item *real_item = item->real_item();
+----if (real_item->type() == Item::FIELD_ITEM)   
+------
 ```
