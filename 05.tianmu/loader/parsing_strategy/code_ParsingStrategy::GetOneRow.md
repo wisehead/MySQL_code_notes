@@ -20,5 +20,6 @@ ParsingStrategy::GetOneRow
 ------vec_field_num_to_index_.push_back(0);
 ------map_field_name_to_index_[field_name] = i;
 ----vec_ptr_field.emplace_back(str->ptr(), str->length());
-      
+--while ((item = it++)) {
+----SearchUnescapedPatternNoEOL      
 ```
