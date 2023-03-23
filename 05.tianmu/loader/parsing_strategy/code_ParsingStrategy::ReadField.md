@@ -19,4 +19,11 @@ ParsingStrategy::ReadField
 ------ield->set_notnull();
 ------field->store(val_start, val_len, char_info);
 --------Field_long::store
+------if (!first_row_prepared_) {
+        std::string field_name(field->field_name);
+        index_of_field = map_field_name_to_index_[field_name];
+        vec_field_num_to_index_[field_index_in_field_list] = index_of_field;
+------vec_ptr_field[index_of_field] = std::make_pair(val_start, val_len);
+------++field_index_in_field_list;
+------
 ```
