@@ -13,4 +13,6 @@ ParsingStrategy::SearchUnescapedPatternNoEOL
 ------else
 --------++ptr;
 --} else if (size == 2) {
+----//nothing
+--return (ptr < search_end) ? SearchResult::PATTERN_FOUND : SearchResult::END_OF_BUFFER;
 ```
