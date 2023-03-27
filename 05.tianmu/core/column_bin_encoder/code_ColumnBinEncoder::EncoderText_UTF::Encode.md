@@ -9,4 +9,8 @@ ColumnBinEncoder::EncoderText_UTF::Encode
 ------maxs.PersistentCopy(s);
 ------mins.PersistentCopy(s);
 ------min_max_set = true;
+--common::strnxfrm(collation, buf, size - sizeof(uint32_t), (uchar *)s.GetDataBytesPointer(), s.len_);
+--uint32_t length = s.len_ + 1;
+--std::memcpy(buf + size - sizeof(uint32_t), &length, sizeof(uint32_t));
+--
 ```
