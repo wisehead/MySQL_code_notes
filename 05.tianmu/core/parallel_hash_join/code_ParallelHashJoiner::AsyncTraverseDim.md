@@ -18,5 +18,10 @@ ParallelHashJoiner::AsyncTraverseDim
 ------ColumnBinEncoder *column_bin_encoder = params->traversed_hash_table->GetColumnEncoder(index);
 ------ColumnBinEncoder::Encode
 ----if (!omit_this_row) { 
-------hash_row = hash_table->AddKeyValue(key_input_buffer, &params->too_many_conflicts);        
+------hash_row = hash_table->AddKeyValue(key_input_buffer, &params->too_many_conflicts);       
+------actually_traversed_rows_++; 
+------if (!tips.count_only || other_cond_exist_) {
+        for (int index = 0; index < mind->NumOfDimensions(); ++index)
+          if (traversed_dims_[index])
+            hash_table->SetTupleValue(traversed_hash_column_[index], hash_row, miter[index]);
 ```
