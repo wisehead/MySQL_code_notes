@@ -16,5 +16,7 @@ ParallelHashJoiner::AsyncTraverseDim
 --------omit_this_row = true;
         break;
 ------ColumnBinEncoder *column_bin_encoder = params->traversed_hash_table->GetColumnEncoder(index);
-------ColumnBinEncoder::Encode        
+------ColumnBinEncoder::Encode
+----if (!omit_this_row) { 
+------hash_row = hash_table->AddKeyValue(key_input_buffer, &params->too_many_conflicts);        
 ```
