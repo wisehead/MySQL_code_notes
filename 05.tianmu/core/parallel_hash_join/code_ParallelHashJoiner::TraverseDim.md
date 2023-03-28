@@ -27,5 +27,7 @@ ParallelHashJoiner::TraverseDim
 ----params.traversed_hash_table = &ht;
 ----params.build_item = multi_index_builder_->CreateBuildItem();
 ----params.task_miter = iter;
-----res.insert(ha_tianmu_engine_->query_thread_pool.add_task(&ParallelHashJoiner::AsyncTraverseDim, this, &params));                                            
+----res.insert(ha_tianmu_engine_->query_thread_pool.add_task(&ParallelHashJoiner::AsyncTraverseDim, this, &params));  
+--for (size_t i = 0; i < res.size(); i++) 
+----traversed_rows += res.get(i);//等待异步线程完成任务                                          
 ```
