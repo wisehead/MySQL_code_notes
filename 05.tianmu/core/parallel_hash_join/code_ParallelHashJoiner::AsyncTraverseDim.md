@@ -24,4 +24,6 @@ ParallelHashJoiner::AsyncTraverseDim
         for (int index = 0; index < mind->NumOfDimensions(); ++index)
           if (traversed_dims_[index])
             hash_table->SetTupleValue(traversed_hash_column_[index], hash_row, miter[index]);
+----++miter;
+----traversed_rows++;            
 ```
