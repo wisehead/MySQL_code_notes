@@ -10,4 +10,6 @@ JustATable::GetComplexValue
 ------TianmuTable::GetTable_S
 --------m_attrs[attr]->GetValueString(obj);
 ----------TianmuAttr::GetValueString
+----val.SetBString(s);
+    return val;
 ```
