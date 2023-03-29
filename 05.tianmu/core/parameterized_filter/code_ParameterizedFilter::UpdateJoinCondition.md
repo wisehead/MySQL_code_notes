@@ -10,6 +10,6 @@ ParameterizedFilter::UpdateJoinCondition
 --join_alg = TwoDimensionalJoiner::ChooseJoinAlgorithm(*mind_, cond);
 --do
 ----auto joiner = TwoDimensionalJoiner::CreateJoiner(join_alg, *mind_, tips, table_);
-----
+----joiner->ExecuteJoinConditions(cond);
 ```
 
