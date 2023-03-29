@@ -8,5 +8,8 @@ ParameterizedFilter::UpdateJoinCondition
 --bool is_outer = cond[0].IsOuter();
 --int conditions_used = cond.Size();
 --join_alg = TwoDimensionalJoiner::ChooseJoinAlgorithm(*mind_, cond);
+--do
+----auto joiner = TwoDimensionalJoiner::CreateJoiner(join_alg, *mind_, tips, table_);
+----
 ```
 
