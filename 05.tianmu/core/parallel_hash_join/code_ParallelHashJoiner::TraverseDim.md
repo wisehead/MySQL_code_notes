@@ -42,5 +42,14 @@ ParallelHashJoiner::TraverseDim
 ----params.task_miter = iter;
 ----res.insert(ha_tianmu_engine_->query_thread_pool.add_task(&ParallelHashJoiner::AsyncTraverseDim, this, &params));  
 --for (size_t i = 0; i < res.size(); i++) 
-----traversed_rows += res.get(i);//等待异步线程完成任务                                          
+----traversed_rows += res.get(i);//等待异步线程完成任务 
+--for (auto &params : traverse_task_params) {
+    if (params.too_many_conflicts && !tianmu_sysvar_join_disable_switch_side) {
+      if (!force_switching_sides_ && !too_many_conflicts_)
+        too_many_conflicts_ = true;
+----if (params.no_space_left)
+------//-
+----multi_index_builder_->AddBuildItem(params.build_item);    
+--for (int index = 0; index < cond_hashed_; ++index) {
+----vc1_[index]->UnlockSourcePacks();                                             
 ```
