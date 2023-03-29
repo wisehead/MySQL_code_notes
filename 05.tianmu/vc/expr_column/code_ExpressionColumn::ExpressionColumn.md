@@ -17,4 +17,5 @@ ExpressionColumn::ExpressionColumn
 --------var_types_[v] = (*tables)[ndx]->GetColumnType(var_map_[var_map_.size() - 1].col_ndx);
 --------var_buf_[v] = std::vector<core::MysqlExpression::value_or_null_info_t>();  // now empty, pointers
 ----ct = core::ColumnType(expr_->EvalType(&var_types_)); 
+----expr->SetBufsOrParams(&var_buf_);
 ```
