@@ -39,4 +39,16 @@ ParallelHashJoiner::PrepareBeforeJoin
 ----vc1_[i] = cond[hash_descriptors[i]].attr.vc;
 ----vc2_[i] = cond[hash_descriptors[i]].val1.vc;
 ----compatible = AddKeyColumn(vc1_[i], vc2_[i]) && compatible;
+--for (int i = 0; i < mind->NumOfDimensions(); i++) {
+----if (traversed_dims_[i] && !(tips.count_only && !other_cond_exist_)) {  
+------traversed_hash_column_[i] = cond_hashed_ + num_of_traversed_dims;    // jump over the joining key columns
+      num_of_traversed_dims++;
+      int bin_index_size = 4;
+      if (mind->OrigSize(i) > 0x000000007FFFFF00)
+        bin_index_size = 8;
+      hash_table_tuple_size_.push_back(bin_index_size);
+--for (size_t index = 0; index < column_bin_encoder_.size(); ++index) {
+----column_bin_encoder_[index].SetPrimaryOffset(key_buf_width);
+----key_buf_width += hash_table_key_size_[index];
+--ParallelHashJoiner::InitOuter      
 ```
