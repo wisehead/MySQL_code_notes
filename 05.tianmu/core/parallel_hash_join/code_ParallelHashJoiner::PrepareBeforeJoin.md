@@ -19,4 +19,15 @@ ParallelHashJoiner::PrepareBeforeJoin
 --------if (dims2.Intersects(cond[i].right_dims))
 ----------dims2.Plus(cond[i].right_dims);
 --------first_found = false;
+--cond_hashed_ = int(hash_descriptors.size());
+--bool switch_sides = false;
+  int64_t dim1_size = mind->NumOfTuples(dims1);
+  int64_t dim2_size = mind->NumOfTuples(dims2);
+--if (std::min(dim1_size, dim2_size) > 100000) {  // approximate criteria for large tables (many packs)
+----if (dim1_size > 2 * dim2_size)
+------switch_sides = true;  
+--if (switch_sides) {
+---for (int i = 0; i < cond_hashed_; i++)  // switch sides of joining conditions
+------cond[hash_descriptors[i]].SwitchSides();
+
 ```
