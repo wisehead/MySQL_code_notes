@@ -27,7 +27,16 @@ ParallelHashJoiner::PrepareBeforeJoin
 ----if (dim1_size > 2 * dim2_size)
 ------switch_sides = true;  
 --if (switch_sides) {
----for (int i = 0; i < cond_hashed_; i++)  // switch sides of joining conditions
+----for (int i = 0; i < cond_hashed_; i++)  // switch sides of joining conditions
 ------cond[hash_descriptors[i]].SwitchSides();
-
+----traversed_dims_ = dims2;
+----matched_dims_ = dims1;
+--mind->MarkInvolvedDimGroups(traversed_dims_);
+--mind->MarkInvolvedDimGroups(matched_dims_);
+--vc1_.resize(cond_hashed_);
+--vc2_.resize(cond_hashed_);
+--for (int i = 0; i < cond_hashed_; i++) {  // add all key columns
+----vc1_[i] = cond[hash_descriptors[i]].attr.vc;
+----vc2_[i] = cond[hash_descriptors[i]].val1.vc;
+----compatible = AddKeyColumn(vc1_[i], vc2_[i]) && compatible;
 ```
