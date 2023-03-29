@@ -7,7 +7,20 @@ ParallelHashJoiner::TraverseDim
 --if (slice_capability.type == MIIterator::SliceCapability::Type::kFixed) {
 ----//--
 --else if ((slice_capability.type == MIIterator::SliceCapability::Type::kLinear) &&(availabled_packs > kTraversedPacksPerFragment * 2)) {
-----//--
+----int64_t origin_size = rows_count;
+----for (int index = 0; index < mind->NumOfDimensions(); index++) {
+------if (traversed_dims_[index]) {
+--------origin_size = std::max<int64_t>(origin_size, mind->OrigSize(index));
+----packs_count = (int)((origin_size + (1 << pack_power_) - 1) >> pack_power_);
+----split_count = EvaluateTraversedFragments(packs_count);
+----packs_per_fragment = packs_count / split_count;
+----int64_t rows_length = origin_size / split_count;
+----for (int index = 0; index < split_count; ++index) {
+------int packs_started = index * packs_per_fragment;
+------packs_increased = (index == split_count - 1) ? (-1 - packs_started) : (packs_per_fragment - 1);
+------MITaskIterator *iter = new MILinearPackTaskIterator(pack_power_, mind, traversed_dims_, index, split_count,
+                                                          rows_length, packs_started, packs_started + packs_increased);
+------task_iterators.push_back(iter);
 --else
 ----MITaskIterator *iter = new MITaskIterator(mind, traversed_dims_, 0, 1, rows_count);
 ----task_iterators.push_back(iter);
