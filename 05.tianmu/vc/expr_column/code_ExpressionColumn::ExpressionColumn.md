@@ -18,4 +18,7 @@ ExpressionColumn::ExpressionColumn
 --------var_buf_[v] = std::vector<core::MysqlExpression::value_or_null_info_t>();  // now empty, pointers
 ----ct = core::ColumnType(expr_->EvalType(&var_types_)); 
 ----expr->SetBufsOrParams(&var_buf_);
+----dim_ = (only_dim_number >= 0 ? only_dim_number : -1);
+--else
+----DEBUG_ASSERT(!"unexpected!!");
 ```
