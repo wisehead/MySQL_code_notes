@@ -12,4 +12,8 @@ ParallelHashJoiner::ExecuteJoin
 --multi_index_builder_->Init(approx_join_size, dims_involved);
 --if (traversed_dims_size > 0 && matched_dims_size > 0) {
 ----TraverseDim(traversed_mit, &outer_tuples);
+----outer_tuples_ += outer_tuples;
+----if (too_many_conflicts_) {
+------tianmu_control_.lock(m_conn->GetThreadID()) << "Too many hash conflicts: restarting join." << system::unlock;
+------return;
 ```

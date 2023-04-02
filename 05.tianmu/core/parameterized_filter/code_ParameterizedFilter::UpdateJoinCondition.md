@@ -11,5 +11,7 @@ ParameterizedFilter::UpdateJoinCondition
 --do
 ----auto joiner = TwoDimensionalJoiner::CreateJoiner(join_alg, *mind_, tips, table_);
 ----joiner->ExecuteJoinConditions(cond);
+----if (join_result != TwoDimensionalJoiner::JoinFailure::NOT_FAILED)
+------join_alg = TwoDimensionalJoiner::ChooseJoinAlgorithm(join_result, join_alg, cond.Size());
 ```
 
