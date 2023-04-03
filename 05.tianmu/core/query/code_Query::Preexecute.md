@@ -41,7 +41,7 @@ Query::Preexecute
 ------case CompiledQuery::StepType::ADD_CONDS: {
 --------if (step.n1 != static_cast<int64_t>(CondType::HAVING_COND))
 ----------conds[step.c1.n]->Simplify();
---------AddConds
+--------TempTable::AddConds
 ----------filter.AddConditions(cond, CondType::WHERE_COND);
 
 ------case CompiledQuery::StepType::APPLY_CONDS: {
