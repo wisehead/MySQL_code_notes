@@ -31,6 +31,9 @@ Query::Preexecute
 ----------conds[step.c1.n] = new Condition();
 ----------if (step.c2.IsNull()) 
 ------------conds[step.c1.n]->AddDescriptor(
+------case CompiledQuery::StepType::JOIN_T:
+--------((TempTable *)ta[-step.t1.n - 1].get())->JoinT(t2_ptr.get(), step.t2.n, step.jt);
+----------TempTable::JoinT
 
 ------case CompiledQuery::StepType::ADD_CONDS: {
 --------if (step.n1 != static_cast<int64_t>(CondType::HAVING_COND))
