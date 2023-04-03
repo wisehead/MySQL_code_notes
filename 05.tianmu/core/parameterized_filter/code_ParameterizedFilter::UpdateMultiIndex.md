@@ -48,6 +48,12 @@ ParameterizedFilter::UpdateMultiIndex
 
 --for (uint i = 0; i < descriptors_.Size(); i++) {
 ----PrepareJoiningStep(join_desc, descriptors_, i, *mind_);  // group together all join conditions for one step
+----if (no_of_join_conditions == 0 &&  // optimizations used only for the last group of conditions
+        no_of_delayed_conditions == 0 && parametrized_desc_.Size() == 0) {
+------for (int dim = 0; dim < mind_->NumOfDimensions(); dim++) {
+--------if (mind_->IsUsedInOutput(dim))
+----------dims_in_output++;
+----UpdateJoinCondition(join_desc, join_tips);
 
 --mind_->UpdateNumOfTuples();
 ```
