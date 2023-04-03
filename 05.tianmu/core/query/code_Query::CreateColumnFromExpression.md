@@ -10,5 +10,7 @@ Query::CreateColumnFromExpression
 ----------type = DataType(common::ColumnType::BIGINT, 0, 0, DTCollation(), item->unsigned_flag);
 ----vc = new vcolumn::ConstColumn(*(exprs[0]->Evaluate()), type, true);
 --params = vc->GetParams();
---
+--} else if (vcolumn::VirtualColumn::IsConstExpression(exprs[0], temp_table_alias, &temp_table->GetAliases()) &&
+             exprs[0]->IsDeterministic()) {
+--             
 ```
