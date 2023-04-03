@@ -9,4 +9,6 @@ TianmuAttr::EvaluatePack
 ----if (!ATI::IsRealType(TypeName()))
 ------EvaluatePack_BetweenInt(mit, dim, d);
 --------
+--else if (d.op == common::Operator::O_EQ_ALL)
+----EvaluatePack_IsNoDelete(mit, dim);
 ```

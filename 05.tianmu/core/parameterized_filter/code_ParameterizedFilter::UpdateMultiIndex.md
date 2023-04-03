@@ -16,6 +16,8 @@ ParameterizedFilter::UpdateMultiIndex
             (desc.attr.vc->GetVarMap()[0].GetTabPtr().get() == rcTable) &&
             (desc.GetJoinType() == DescriptorJoinType::DT_NON_JOIN)) {
 --------isVald = true;
+----if (!isVald) {
+------FilterDeletedByTable(rcTable, no_dims, tableIndex);
 --// Prepare execution - rough set part
 --for (uint i = 0; i < descriptors_.Size(); i++) {
 ----//do nothing
