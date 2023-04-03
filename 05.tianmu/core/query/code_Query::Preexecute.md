@@ -51,6 +51,8 @@ Query::Preexecute
 ----------(used_dims.find(i) == used_dims.end() && is_simple_filter && (!tb->CanCondPushDown()))
                 ? filter->mind_->ResetUsedInOutput(i)
                 : filter->mind_->SetUsedInOutput(i);
+----------SetUsedInOutput
+------------used_in_output[dim] = true                
 --------filter->UpdateMultiIndex(qu.CountColumnOnly(step.t1), cur_limit);
 
 ------case CompiledQuery::StepType::ADD_COLUMN: 
