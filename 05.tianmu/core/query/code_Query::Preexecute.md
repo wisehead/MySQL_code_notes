@@ -31,6 +31,8 @@ Query::Preexecute
 ----------conds[step.c1.n] = new Condition();
 ----------if (step.c2.IsNull()) 
 ------------conds[step.c1.n]->AddDescriptor(
+--------------Condition::AddDescriptor
+----------------descriptors.push_back(Descriptor(e1, op, e2, e3, t, no_dims, like_esc));
 
 ------case CompiledQuery::StepType::JOIN_T:
 --------((TempTable *)ta[-step.t1.n - 1].get())->JoinT(t2_ptr.get(), step.t2.n, step.jt);
