@@ -31,6 +31,7 @@ Query::Preexecute
 ----------conds[step.c1.n] = new Condition();
 ----------if (step.c2.IsNull()) 
 ------------conds[step.c1.n]->AddDescriptor(
+
 ------case CompiledQuery::StepType::JOIN_T:
 --------((TempTable *)ta[-step.t1.n - 1].get())->JoinT(t2_ptr.get(), step.t2.n, step.jt);
 ----------TempTable::JoinT
@@ -50,25 +51,28 @@ Query::Preexecute
                 : filter->mind_->SetUsedInOutput(i);
 --------filter->UpdateMultiIndex(qu.CountColumnOnly(step.t1), cur_limit);
 
-------case CompiledQuery::StepType::CREATE_VC: 
---------if (step.mysql_expr.size() > 0) {
-----------MultiIndex *mind = (step.t2.n == step.t1.n) ? t->GetOutputMultiIndexP() : t->GetMultiIndexP();
---------} else if (step.virt_cols.size() > 0) {
---------else if (step.a2.n != common::NULL_VALUE_32) {
-----------JustATable *t_src = ta[-step.t2.n - 1].get();
-----------MultiIndex *mind = (step.t2.n == step.t1.n) ? t->GetOutputMultiIndexP() : t->GetMultiIndexP();
-----------phc = (PhysicalColumn *)t_src->GetColumn();
-----------AddVirtColumn(new vcolumn::SingleColumn)
-                            
 ------case CompiledQuery::StepType::ADD_COLUMN: 
 --------e.vc =((TempTable *)ta[-step.t1.n - 1].get())->GetVirtualColumn(step.e1.vc_id);  
 --------((TempTable *)ta[-step.t1.n - 1].get())->AddColumn(); 
 ----------TempTable::AddColumn
 ------------attrs.push_back(new Attr(e, mode, p_power, distinct, alias, -2, type, scale, precision, notnull,
-                           e.vc ? e.vc->GetCollation() : DTCollation(), &si));   
-                                                 
-------case CompiledQuery::StepType::APPLY_CONDS: 
---------filter->UpdateMultiIndex
+                           e.vc ? e.vc->GetCollation() : DTCollation(), &si));  
+                           
+------case CompiledQuery::StepType::CREATE_VC: 
+--------if (step.mysql_expr.size() > 0) {
+----------MultiIndex *mind = (step.t2.n == step.t1.n) ? t->GetOutputMultiIndexP() : t->GetMultiIndexP();
+--------} else if (step.virt_cols.size() > 0) {
+----------//-
+--------else if (step.a2.n != common::NULL_VALUE_32) {
+----------JustATable *t_src = ta[-step.t2.n - 1].get();//
+----------MultiIndex *mind = (step.t2.n == step.t1.n) ? t->GetOutputMultiIndexP() : t->GetMultiIndexP();
+------------filter.mind_; //output_mind区分。
+----------phc = (PhysicalColumn *)t_src->GetColumn();//alias get column 0. a2.n=0.
+------------TianmuTable::GetColumn
+------------return m_attrs[col_no].get(); 
+----------AddVirtColumn(new vcolumn::SingleColumn)//根据之前-3alias获取的column信息，在-2，TempTable中增加虚拟列。注意增加的是SingleColumn。
+											                   //tempTable有virt_cols，还有attrs
+                               
 ------case CompiledQuery::StepType::RESULT:
 --------output_table = (TempTable *)ta[-step.t1.n - 1].get();
 ```
