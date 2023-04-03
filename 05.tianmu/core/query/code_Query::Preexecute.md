@@ -61,6 +61,8 @@ Query::Preexecute
 ------case CompiledQuery::StepType::CREATE_VC: 
 --------if (step.mysql_expr.size() > 0) {
 ----------MultiIndex *mind = (step.t2.n == step.t1.n) ? t->GetOutputMultiIndexP() : t->GetMultiIndexP();
+----------int c = ((TempTable *)ta[-step.t1.n - 1].get())
+                        ->AddVirtColumn(CreateColumnFromExpression(step.mysql_expr, t, step.t1.n, mind), step.a1.n);
 --------} else if (step.virt_cols.size() > 0) {
 ----------//-
 --------else if (step.a2.n != common::NULL_VALUE_32) {
