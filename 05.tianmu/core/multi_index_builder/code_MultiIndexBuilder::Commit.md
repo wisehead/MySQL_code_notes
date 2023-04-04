@@ -24,4 +24,6 @@ MultiIndexBuilder::Commit
 ----------ng->AddDimensionContent(dim, index_table, build_item->GetCount(), build_item->NullExisted(dim));
 ------------DimensionGroupMultiMaterialized::AddDimensionContent
 --------------tables->AddTable(table, count, nulls);
+--multi_index_->FillGroupForDim();
+--multi_index_->UpdateNumOfTuples();
 ```
