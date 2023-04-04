@@ -18,4 +18,9 @@ ParallelHashJoiner::ExecuteJoin
 ------return;
 ----joined_tuples += MatchDim(match_mit);
 --multi_index_builder_->Commit(joined_tuples, tips.count_only);
+--or (int i = 0; i < mind->NumOfDimensions(); i++)
+    if (traversed_dims_[i])
+      table->SetVCDistinctVals(i,
+                               traversed_dist_limit);  // all dimensions involved in traversed side
+--mind->UnlockAllFromUse();
 ```
