@@ -36,4 +36,9 @@ ParallelHashJoiner::AsyncMatchDim
 ----------if (!tips.count_only)
 ------------while ((hash_row = hash_table_finder.GetNextRow()) != common::NULL_VALUE_64)
 --------------SubmitJoinedTuple(params->build_item.get(), &traversed_hash_table, hash_row, miter);
+----++miter;
+----matching_row++;
+--if (watch_matched_)
+----outer_matched_filter_->Commit(true);  // Commit the delayed resetsC.
+--params->build_item->Finish();
 ```
