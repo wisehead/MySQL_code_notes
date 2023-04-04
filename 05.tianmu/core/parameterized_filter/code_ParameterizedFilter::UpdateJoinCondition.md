@@ -13,5 +13,8 @@ ParameterizedFilter::UpdateJoinCondition
 ----joiner->ExecuteJoinConditions(cond);
 ----if (join_result != TwoDimensionalJoiner::JoinFailure::NOT_FAILED)
 ------join_alg = TwoDimensionalJoiner::ChooseJoinAlgorithm(join_result, join_alg, cond.Size());
+--for (int i = 0; i < conditions_used; i++) cond.EraseFirst();  // erase the first condition (already used)
+--mind_->UpdateNumOfTuples();
+--DisplayJoinResults(all_involved_dims, join_alg, is_outer, conditions_used);
 ```
 
