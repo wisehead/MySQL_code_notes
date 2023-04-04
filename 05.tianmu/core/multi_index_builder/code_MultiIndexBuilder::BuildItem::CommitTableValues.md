@@ -10,5 +10,5 @@ MultiIndexBuilder::BuildItem::CommitTableValues
 --------//--
 ------else
 --------index_table_[dim]->Set64(added_count_, cached_values_[dim] + 1);
-
+--added_count_++;
 ```
