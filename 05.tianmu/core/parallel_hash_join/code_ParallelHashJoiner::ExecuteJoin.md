@@ -17,4 +17,5 @@ ParallelHashJoiner::ExecuteJoin
 ------tianmu_control_.lock(m_conn->GetThreadID()) << "Too many hash conflicts: restarting join." << system::unlock;
 ------return;
 ----joined_tuples += MatchDim(match_mit);
+--multi_index_builder_->Commit(joined_tuples, tips.count_only);
 ```
