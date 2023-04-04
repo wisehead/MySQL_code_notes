@@ -17,5 +17,11 @@ ParallelHashJoiner::MatchDim
     params.build_item = multi_index_builder_->CreateBuildItem();
     params.task_miter = *task_iterators.begin();
     matched_rows = AsyncMatchDim(&params);
---    
+--for (auto &params : match_task_params) {
+----multi_index_builder_->AddBuildItem(params.build_item);
+--for (int index = 0; index < cond_hashed_; ++index) {
+    vc2_[index]->UnlockSourcePacks();
+  }
+--for (auto &j : other_cond_) j.UnlockSourcePacks();
+--return matched_rows;
 ```
