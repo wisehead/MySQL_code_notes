@@ -18,5 +18,6 @@ Engine::EncodeInsertRecord
 ----if (f->is_null()) {
 ------//--
 ----ptr = FiledToStr(ptr, f, &deltaRecord, i, thd);
-
+--std::memcpy(buf.get() + deltaRecord.null_offset_, deltaRecord.null_mask_.data(), deltaRecord.null_mask_.data_size());
+--size = ptr - buf.get();
 ```
