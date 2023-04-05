@@ -8,6 +8,7 @@ GetRows
 ----value_buffers.emplace_back(pack_size, pack_size * 128);
 --for (no_of_rows_returned = 0; no_of_rows_returned < no_of_rows; no_of_rows_returned++) {
 ----auto ptr = (*vec)[processed].get();
+----ptr = rec_head.recordDecode(ptr);
       // int  tid = *(int32_t *)ptr;
       ptr += sizeof(int32_t);
       std::string path(ptr);
@@ -23,6 +24,11 @@ GetRows
         auto &attr(attrs[i]);
 ------switch (attr->GetPackType())
 --------case common::PackType::STR: 
+----------str_len = rec_head.field_len_[i];
+----------buf = vc.Prepare(str_len);
+----------std::memcpy(buf, ptr, str_len);
+----------vc.ExpectedSize(str_len);
+----------ptr += str_len;
 --------case common::PackType::INT:
 ----------if (attr->Type().Lookup()) {
 ----------else
@@ -31,9 +37,9 @@ GetRows
 ------------if (attr->GetIfAutoInc()) 
 --------------//
 ------------vc.ExpectedSize(sizeof(int64_t));
-              ptr += sizeof(int64_t);
+------------ptr += sizeof(int64_t);
 ----for (auto &vc : value_buffers) {
-      vc.Commit();
+------vc.Commit();
 ----processed++;
-----InsertIndex(value_buffers, start_row)
+--//
 ```
