@@ -17,3 +17,14 @@ HandleDelayedLoad
 --Global_THD_manager *thd_manager = Global_THD_manager::get_instance();  // global thread manager
 --
 ```
+
+#2.flow
+
+```
+HandleDelayedLoad
+--mysql_load
+----Tianmu::DBHandler::ha_my_tianmu_load
+------tianmu_load_impl
+--------Engine::RunLoader
+----------TianmuTable::LoadDataInfile
+```
