@@ -9,4 +9,5 @@ Engine::InsertToDelta
 --// Insert primary key first
 --tm_table->InsertIndexForDelta(table, row_id);
 --EncodeInsertRecord(table_path, table->field, table->s->fields, table->s->blob_fields, buf, buf_sz, table->in_use);
+--tm_table->InsertToDelta(row_id, std::move(buf), buf_sz);
 ```
