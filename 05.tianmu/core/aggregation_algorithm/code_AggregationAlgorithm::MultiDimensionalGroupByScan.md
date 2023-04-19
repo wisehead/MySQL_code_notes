@@ -17,4 +17,17 @@ AggregationAlgorithm::MultiDimensionalGroupByScan
 ----while (mit.IsValid()) {
 ------packrow_length = mit.GetPackSizeLeft();
 ------grouping_result = AggregatePackrow(gbw, &mit, cur_tuple, &mem_used);
+------cur_tuple += packrow_length;
+--MultiDimensionalDistinctScan(gbw, mit); 
+--ag_worker.Commit();
+--if (first_pass) {
+----upper_groups = gbw.NumOfGroups() + gbw.TuplesNoOnes();
+----t->CalculatePageSize(upper_groups);
+----output_size = (gbw.NumOfGroups() + gbw.TuplesNoOnes()) * t->GetOneOutputRecordSize();
+----if (t->GetPageSize() >= (gbw.NumOfGroups() + gbw.TuplesNoOnes()) && output_size > (1L << 29) &&
+          !t->HasHavingConditions() && tianmu_sysvar_parallel_filloutput) {
+------//-
+----else
+------while (gbw.RowValid()) {
+--------AggregateFillOutput(gbw, gbw.GetCurrentRow(), offset);
 ```
