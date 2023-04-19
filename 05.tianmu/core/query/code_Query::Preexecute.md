@@ -34,6 +34,14 @@ Query::Preexecute
 --------------Condition::AddDescriptor
 ----------------descriptors.push_back(Descriptor(e1, op, e2, e3, t, no_dims, like_esc));
 
+------case CompiledQuery::StepType::AND_DESC: {
+--------step.e1.vc = (step.e1.vc_id != common::NULL_VALUE_32)
+                           ? ((TempTable *)ta[-step.t1.n - 1].get())->GetVirtualColumn(step.e1.vc_id)
+                           : nullptr;
+--------step.e2.vc = (step.e2.vc_id != common::NULL_VALUE_32)
+                           ? ((TempTable *)ta[-step.t1.n - 1].get())->GetVirtualColumn(step.e2.vc_id)
+                           : nullptr;
+
 ------case CompiledQuery::StepType::JOIN_T:
 --------((TempTable *)ta[-step.t1.n - 1].get())->JoinT(t2_ptr.get(), step.t2.n, step.jt);
 ----------TempTable::JoinT
