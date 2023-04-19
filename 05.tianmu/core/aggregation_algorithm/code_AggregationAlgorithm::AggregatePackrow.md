@@ -14,4 +14,10 @@ AggregationAlgorithm::AggregatePackrow
 --rows_in_pack = gbw.TuplesLeftBetween(cur_tuple, cur_tuple + packrow_length - 1);
 --skip_packrow = AggregateRough(gbw, *mit, packrow_done, part_omitted, aggregations_not_changeable, stop_all,
                                 uniform_pos, rows_in_pack, factor);
+--while (mit->IsValid()) {  // becomes invalid on pack end
+----if (gbw.TuplesGet(cur_tuple)) {
+------for (int gr_a = 0; gr_a < gbw.NumOfGroupingAttrs(); gr_a++)
+--------if (gbw.ColumnNotOmitted(gr_a))
+----------gbw.PutGroupingValue(gr_a, *mit);
+------existed = gbw.FindCurrentRow(pos);
 ```
