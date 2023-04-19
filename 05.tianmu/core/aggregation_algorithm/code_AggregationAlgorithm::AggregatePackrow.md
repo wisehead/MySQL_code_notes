@@ -20,4 +20,16 @@ AggregationAlgorithm::AggregatePackrow
 --------if (gbw.ColumnNotOmitted(gr_a))
 ----------gbw.PutGroupingValue(gr_a, *mit);
 ------existed = gbw.FindCurrentRow(pos);
+------if (pos != common::NULL_VALUE_64) {
+--------gbw.TuplesReset(cur_tuple);
+--------if (!existed) {
+----------gbw.AddGroup();
+----------if (t->NumOfObj() + gbw.NumOfGroups() == gbw.UpperApproxOfGroups()) {  // no more groups!
+------------//--
+--------if (!aggregations_not_changeable) {
+----------//--
+----cur_tuple++;
+----mit->Increment();
+----if (mit->PackrowStarted())
+------break;
 ```
