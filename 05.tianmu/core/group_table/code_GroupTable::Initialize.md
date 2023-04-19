@@ -26,4 +26,6 @@ GroupTable::Initialize
 --vm_tab.reset(ValueMatchingTable::CreateNew_ValueMatchingTable(primary_total_size, declared_max_no_groups,
                                                                 max_group_code, total_width, grouping_and_UTF_width,
                                                                 grouping_buf_width, p_power, false));
+--input_buffer.resize(grouping_and_UTF_width);
+--
 ```
