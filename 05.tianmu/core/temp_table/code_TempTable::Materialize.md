@@ -21,4 +21,7 @@ TempTable::Materialize
 ----if (!materialized_by_ordering)
 ------if (order_by.size() == 0)
 --------FillMaterializedBuffers(local_limit, local_offset, sender, lazy); 
+--else
+----aggr.Aggregate(table_distinct, local_limit, local_offset, local_sender);  // this->tree (HAVING) used inside
+------AggregationAlgorithm::Aggregate
 ```
