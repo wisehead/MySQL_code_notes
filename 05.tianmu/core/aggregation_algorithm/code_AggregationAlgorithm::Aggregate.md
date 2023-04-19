@@ -16,4 +16,16 @@ AggregationAlgorithm::Aggregate
 --t->SetAsMaterialized();
 --t->SetNumOfMaterialized(0);
 --gbw.Initialize(upper_approx_of_groups);
+--if (gbw.IsCountOnly() || mind->ZeroTuples()) {
+----//-
+--else if (gbw.IsCountDistinctOnly()) {
+----//-
+--else if (t->GetWhereConds().Size() == 0 &&
+           ((gbw.IsMinOnly() && t->NumOfAttrs() == 1 && min_v != common::MINUS_INF_64) ||
+            (gbw.IsMaxOnly() && t->NumOfAttrs() == 1 && max_v != common::PLUS_INF_64))) {
+----//-
+--if (all_done_in_one_row) {
+----//-
+--else
+----MultiDimensionalGroupByScan(gbw, local_limit, offset, sender, limit_less_than_no_groups);            
 ```
