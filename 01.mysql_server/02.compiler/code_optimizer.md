@@ -1,3 +1,12 @@
+#0.架构图
+![优化器主干流程](./images/optimizer.png)
+
+
+-- ------华丽分割线------
+
+
+![优化器主干流程](./images/handle_select.png)
+
 #1.JOIN::optimize
 ```cpp
 caller:
