@@ -1,0 +1,13 @@
+#1.enum keytype
+
+```cpp
+enum keytype {
+  KEYTYPE_PRIMARY,
+  KEYTYPE_UNIQUE,
+  KEYTYPE_MULTIPLE,
+  KEYTYPE_FULLTEXT,
+  KEYTYPE_SPATIAL,
+  KEYTYPE_FOREIGN
+};
+
+```
