@@ -11,7 +11,11 @@
 
 ![优化器详细主干流程](./images/optimizer_details.png)
 
-#1.JOIN::optimize
+
+#1.source code description
+![优化器主干流程](./images/source_code_desc.png)
+
+#2.JOIN::optimize
 ```cpp
 caller:
 --mysql_execute_select
