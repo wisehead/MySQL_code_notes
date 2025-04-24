@@ -32,6 +32,48 @@ mysql_execute_command
 --------write_record
 ----------handler::ha_write_row
 ------------ha_innobase::write_row
+--------------innobase_srv_conc_enter_innodb(m_prebuilt);
 --------------row_insert_for_mysql
 ----------------row_insert_for_mysql_using_ins_graph
+------------------row_get_prebuilt_insert_row
+------------------row_mysql_convert_row_to_innobase
+------------------que_fork_get_first_thr
+------------------que_thr_move_to_run_state_for_mysql
+------------------row_ins_step
+--------------------lock_table
+--------------------row_ins
+----------------------row_ins_index_entry_step
+------------------------row_ins_index_entry_set_vals
+------------------------row_ins_index_entry
+--------------------------row_ins_clust_index_entry
+----------------------------row_ins_clust_index_entry_low
+------------------------------mtr_start(&mtr);
+------------------------------btr_pcur_open_low
+--------------------------------btr_cur_search_to_nth_level
+----------------------------------btr_cur_latch_for_root_leaf
+----------------------------------btr_cur_get_page_cur
+--------------------------------btr_cur_optimistic_insert
+----------------------------------page_cur_get_rec
+----------------------------------btr_cur_ins_lock_and_undo
+----------------------------------page_cur_tuple_insert
+------------------------------------rec_convert_dtuple_to_rec
+------------------------------------page_cur_insert_rec_low
+--------------------------------------page_cur_insert_rec_write_log
+----------------------------------------mlog_open_and_write_index
+----------------------------------btr_search_update_hash_on_insert
+------------------------------mtr_commit(&mtr);
+------------------------------btr_pcur_close(&pcur);
+--------------------thr->run_node = que_node_get_parent(node);
+--------------innobase_srv_conc_exit_innodb(m_prebuilt);
+------------binlog_log_row
+------thd->get_stmt_da()->inc_current_row_for_condition();
+------query_cache.invalidate_single(thd, lex->insert_table_leaf, true);
+--thd->query_plan.set_query_plan(SQLCOM_END, NULL, false);
+--mysql_audit_notify
+--trans_commit_stmt(thd);
+--lex->unit->cleanup(true);
+--close_thread_tables(thd);
+--stmt_causes_implicit_commit
+--thd->mdl_context.release_transactional_locks();
+--binlog_gtid_end_transaction(thd);  // finalize GTID life-cycle
 ```
