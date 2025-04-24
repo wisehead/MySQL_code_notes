@@ -7,6 +7,10 @@
 
 ![优化器主干流程](./images/handle_select.png)
 
+--
+
+![优化器详细主干流程](./images/optimizer_details.png)
+
 #1.JOIN::optimize
 ```cpp
 caller:
