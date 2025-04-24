@@ -31,5 +31,7 @@ mysql_execute_command
 ------while ((values= its++))
 --------write_record
 ----------handler::ha_write_row
-------------ha_innobase::write_row(
+------------ha_innobase::write_row
+--------------row_insert_for_mysql
+----------------row_insert_for_mysql_using_ins_graph
 ```
