@@ -5,17 +5,26 @@
 -- ------华丽分割线------
 
 
-![优化器主干流程](./images/handle_select.png)
 
---
+#1.architecture details
 
 ![优化器详细主干流程](./images/optimizer_details.png)
 
-
-#1.source code description
+#2.source code description
 ![优化器主干流程](./images/source_code_desc.png)
 
-#2.JOIN::optimize
+
+#3.function flow
+
+![优化器主干流程](./images/handle_select.png)
+
+
+
+#4.key data structs
+
+![优化器详细主干流程](./images/key_structs.png)
+
+#11.JOIN::optimize
 ```cpp
 caller:
 --mysql_execute_select
@@ -60,7 +69,7 @@ JOIN::optimize
 --pick_table_access_method
 ```
 
-#2.JOIN::exec
+#12.JOIN::exec
 
 ```cpp
 caller:
