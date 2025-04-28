@@ -28,6 +28,9 @@
 
 ![优化器详细主干流程](./images/all_process.png)
 
+#6.make join select
+![优化器详细主干流程](./images/make_join_select.png)
+
 
 #11.JOIN::optimize
 ```cpp
