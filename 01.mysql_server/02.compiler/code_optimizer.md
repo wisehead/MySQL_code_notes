@@ -24,6 +24,11 @@
 
 ![优化器详细主干流程](./images/key_structs.png)
 
+#5.all process
+
+![优化器详细主干流程](./images/all_process.png)
+
+
 #11.JOIN::optimize
 ```cpp
 caller:
