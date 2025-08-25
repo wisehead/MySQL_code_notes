@@ -4,7 +4,8 @@
 Optimize_table_order::find_best_ref
 --enum idx_type {CLUSTERED_PK, UNIQUE, NOT_UNIQUE, FULLTEXT};
 --ha_rows distinct_keys_est= tab->records()/MATCHING_ROWS_IN_OTHER_TABLE;
---
+--for (Key_use *keyuse= tab->keyuse(); keyuse->table_ref == tab->table_ref; )
+----
 ```
 
 #2.caller
