@@ -6,7 +6,7 @@ mysql_execute_command
 ```
 
 
-#2.注释
+#2.注释链式事务相关
 
 ```cpp
 mysql_execute_command(THD *thd)  //MySQL Server层的命令分发器
@@ -80,5 +80,49 @@ goto error;
 ...
 ...}
 ...}
+
+```
+
+#3.非链式事务
+
+```cpp
+mysql_execute_command(THD *thd)  //MySQL Server层的命令分发器
+{...
+finish:  //mysql_execute_command()函数的函数尾部分
+...
+    if (! thd->in_sub_stmt) //不是多语句事务
+    {...
+        if (thd->is_error() || (thd->variables.option_bits & OPTION_MASTER_SQL_ERROR))
+trans_rollback_stmt(thd);   //如果有错误发生，必须回滚单语句事务，调用ha_rollback_
+                               trans()完成回滚
+        else
+        {
+            /* If commit fails, we should be able to reset the OK status. */
+            thd->get_stmt_da()->set_overwrite_status(true);
+trans_commit_stmt(thd); //否则，提交单语句事务
+            thd->get_stmt_da()->set_overwrite_status(false);
+        }
+...
+    }
+...
+    if (! thd->in_sub_stmt && thd->transaction_rollback_request)
+    {
+        /*
+            We are not in sub-statement and transaction rollback was requested by
+            one of storage engines (e.g. due to deadlock). Rollback transaction in
+            all storage engines including binary log.
+        */
+        trans_rollback_implicit(thd); //调用ha_rollback_trans()隐式回滚事务
+        thd->mdl_context.release_transactional_locks();
+    }
+    else if (stmt_causes_implicit_commit(thd, CF_IMPLICIT_COMMIT_END))
+    {...
+        /* Commit the normal transaction if one is active. */
+        trans_commit_implicit(thd); //调用ha_commit_trans()隐式提交事务
+        thd->get_stmt_da()->set_overwrite_status(false);
+        thd->mdl_context.release_transactional_locks();
+    }
+...
+}
 
 ```
