@@ -14,3 +14,5 @@ static my_bool snapshot_handlerton(THD *thd, plugin_ref plugin, void *arg)
     return FALSE;
 }
 ```
+
+innobase_start_trx_and_assign_read_view
