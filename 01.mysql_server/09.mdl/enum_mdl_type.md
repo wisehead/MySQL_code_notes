@@ -1,6 +1,7 @@
 #1.代码解释
 ![](./resource/2.png)
 
+![](./resource/3.png)
 ```cpp
 这段代码定义了 MySQL 元数据锁（MDL - Metadata Lock）系统中的锁类型枚举 enum_mdl_type。以下是详细解释：
 
